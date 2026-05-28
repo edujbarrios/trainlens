@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 KNOWN_FRAMEWORK_PREFIXES: dict[str, str] = {
+    "accelerate.": "accelerate",
+    "diffusers.": "diffusers",
+    "peft.": "peft",
     "sklearn.": "sklearn",
+    "timm.": "timm",
+    "transformers.": "transformers",
     "xgboost.": "xgboost",
     "lightgbm.": "lightgbm",
     "torch.": "pytorch",
@@ -32,4 +37,12 @@ def looks_like_model(obj: object) -> tuple[bool, tuple[str, ...]]:
         reasons.append("has learned feature weights")
     if hasattr(obj, "state_dict") and callable(getattr(obj, "parameters", None)):
         reasons.append("looks like torch module")
+    if hasattr(obj, "config") and hasattr(obj.config, "model_type"):
+        reasons.append("has transformer config")
+    if hasattr(obj, "vision_model") or hasattr(obj, "text_model"):
+        reasons.append("has multimodal towers")
+    if hasattr(obj, "language_model") and hasattr(obj, "vision_tower"):
+        reasons.append("looks like VLM")
+    if any(hasattr(obj, attr) for attr in ("lora_config", "peft_config", "active_adapters")):
+        reasons.append("has adapter fine-tuning state")
     return bool(reasons), tuple(reasons)

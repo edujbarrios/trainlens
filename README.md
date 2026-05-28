@@ -6,31 +6,26 @@ TrainLens is an open-source framework for understanding machine learning trainin
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
-TrainLens inspects notebook state, training histories, model objects, metrics, and prediction behavior to explain how a model is training and what to try next. It works locally by default with heuristic analysis and can optionally enhance explanations through an LLM provider.
+TrainLens inspects notebook state, training histories, model objects, metrics, and prediction behavior to explain how a model is training and what to try next. The project is now focused on understanding foundation-model training and fine-tuning runs: LLMs, CLIP-style contrastive models, ViTs, multimodal projectors, and VLMs.
 
 No package install is required for the direct llm7.io workflow. Clone the repo, point the tool at a Markdown report, and it will call llm7.io using only the Python standard library.
 
 ```text
-Model detected: RandomForestClassifier
+Model detected: LlavaForConditionalGeneration
 
 Training summary:
-- Accuracy improved from 0.81 to 0.89
-- Validation performance stabilized
-- Slight overfitting detected
+- Foundation-model profile: LLM, PROJECTOR, VLM
+- Validation loss plateaued across recent checkpoints
+- Tiny trainable parameter ratio detected
 
 Potential issues:
-- Class imbalance
-- Small validation split
-
-Top features:
-1. age
-2. account_balance
-3. transaction_count
+- Projector alignment may be under-capacity
+- Retrieval/caption validation is missing
 
 Recommended next steps:
-- Tune max_depth
-- Try stratified split
-- Inspect false negatives
+- Track eval_loss, perplexity, learning-rate schedule, and gradient norm
+- Validate projector alignment with frozen vision and language towers
+- Evaluate text-image retrieval or held-out multimodal instructions
 ```
 
 ## Why TrainLens?
@@ -38,10 +33,10 @@ Recommended next steps:
 Most notebook explainability tools require a dedicated explainability package or a lot of manual wiring. TrainLens starts with what your notebook already has:
 
 - Python variables in the active IPython shell
-- trained model objects
-- metric dictionaries and training histories
-- dataset-like objects and feature names
-- prediction arrays and validation targets
+- trained model objects from Transformers, PEFT, PyTorch, timm, diffusers, and notebook code
+- metric dictionaries and trainer histories from LLM/VLM fine-tuning loops
+- loss, perplexity, recall@k, contrastive loss, projector loss, and eval metrics
+- LoRA/adapters, trainable parameter ratios, and multimodal tower/projector hints
 
 It then turns that evidence into useful summaries, debugging signals, recommendations, and experiment ideas.
 
@@ -98,7 +93,7 @@ Core modules live under `src/trainlens`:
 
 - `introspection`: notebook namespace scanning and model discovery
 - `analyzers`: framework and training-session analyzers
-- `heuristics`: overfitting, convergence, class-balance, and metric rules
+- `heuristics`: loss, convergence, contrastive, adapter, projector, and multimodal rules
 - `models`: typed domain objects
 - `llm`: provider abstractions and optional enhancement
 - `magic`: IPython magic commands
@@ -107,12 +102,12 @@ Core modules live under `src/trainlens`:
 
 ## Roadmap
 
-- richer PyTorch and TensorFlow history extraction
-- first-class xgboost/lightgbm feature importance support
+- richer Hugging Face Trainer, Accelerate, PEFT, and DeepSpeed history extraction
+- first-class CLIP, SigLIP, ViT, projector, and VLM validation reports
 - notebook cell execution hooks
 - plugin discovery through entry points
 - local model adapters
-- visual diagnostics for metric drift
+- visual diagnostics for fine-tuning drift and alignment regressions
 - public example notebooks and screenshots
 
 ## Screenshots
