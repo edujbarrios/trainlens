@@ -158,6 +158,8 @@ TRAINLENS_LLM_MODEL=auto
 
 The current provider targets OpenAI-compatible chat completions. The provider interface is intentionally small so hosted APIs, Ollama-compatible gateways, and local model servers can be swapped without changing analyzer logic.
 
+LLM enhancement prompts are rendered from a parameterized Jinja2 template, so audience, tone, model-family focus, safety rules, and report content can evolve without hardcoding provider-specific strings.
+
 ## Architecture
 
 ```text
