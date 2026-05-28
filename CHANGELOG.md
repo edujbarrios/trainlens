@@ -7,7 +7,7 @@ All notable changes to TrainLens will be documented here.
 - initial notebook introspection engine
 - training metric heuristics
 - IPython magic commands
-- optional llm7.io-compatible LLM provider
+- optional OpenAI-compatible LLM provider
 - Markdown and Rich renderers
 - in-memory run comparison
 - foundation-model fine-tuning profile detection for LLMs, CLIP, ViTs, projectors, and VLMs
