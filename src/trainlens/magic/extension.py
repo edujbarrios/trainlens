@@ -1,5 +1,7 @@
 """IPython extension entry points."""
 
+# mypy: disable-error-code="no-untyped-call"
+
 from __future__ import annotations
 
 from IPython.core.interactiveshell import InteractiveShell

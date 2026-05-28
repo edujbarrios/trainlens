@@ -1,6 +1,10 @@
 """IPython magic commands."""
 
+# mypy: disable-error-code="misc,no-untyped-call"
+
 from __future__ import annotations
+
+from typing import Any, cast
 
 from IPython.core.magic import Magics, line_magic, magics_class
 from IPython.display import Markdown, display
@@ -15,14 +19,15 @@ from trainlens.storage.memory import InMemoryRunStore
 class TrainLensMagics(Magics):
     """Notebook commands for training explanations."""
 
-    def __init__(self, shell=None) -> None:  # type: ignore[no-untyped-def]
+    def __init__(self, shell: Any = None) -> None:
         super().__init__(shell)
         self.renderer = MarkdownRenderer()
         self.store = InMemoryRunStore()
 
     @line_magic
     def explain_training(self, line: str = "") -> None:
-        result = explain_namespace(self.shell.user_ns)
+        shell = cast(Any, self.shell)
+        result = explain_namespace(shell.user_ns)
         markdown = self.renderer.render(result)
         if "--llm" in line.split():
             markdown = maybe_enhance(markdown)
@@ -31,12 +36,14 @@ class TrainLensMagics(Magics):
 
     @line_magic
     def training_summary(self, line: str = "") -> None:
-        result = explain_namespace(self.shell.user_ns)
+        shell = cast(Any, self.shell)
+        result = explain_namespace(shell.user_ns)
         display(Markdown(self.renderer.render(result)))
 
     @line_magic
     def why_bad_model(self, line: str = "") -> None:
-        result = explain_namespace(self.shell.user_ns)
+        shell = cast(Any, self.shell)
+        result = explain_namespace(shell.user_ns)
         result.summary.insert(
             0,
             "Focused diagnosis mode: prioritizing risks and next debugging steps.",

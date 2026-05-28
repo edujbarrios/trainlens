@@ -43,6 +43,8 @@ It then turns that evidence into useful summaries, debugging signals, recommenda
 ## Use Without Installing
 
 ```bash
+git clone https://github.com/edujbarrios/trainlens.git
+cd trainlens
 python tools/trainlens_llm7.py --help
 ```
 
