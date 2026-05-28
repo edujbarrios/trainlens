@@ -16,7 +16,11 @@ from urllib import request
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Enhance a TrainLens report with llm7.io.")
-    parser.add_argument("report", nargs="?", help="Path to a Markdown report. Reads stdin when omitted.")
+    parser.add_argument(
+        "report",
+        nargs="?",
+        help="Path to a Markdown report. Reads stdin when omitted.",
+    )
     args = parser.parse_args()
 
     report = Path(args.report).read_text(encoding="utf-8") if args.report else sys.stdin.read()

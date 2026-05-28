@@ -23,7 +23,9 @@ class MarkdownRenderer:
                 lines.append(f"- **{signal.title}:** {signal.detail}")
         if result.top_features:
             lines.append("\n### Top features")
-            lines.extend(f"{index}. {name}" for index, name in enumerate(result.top_features, start=1))
+            lines.extend(
+                f"{index}. {name}" for index, name in enumerate(result.top_features, start=1)
+            )
         if result.recommendations:
             lines.append("\n### Recommended next steps")
             lines.extend(f"- {item.action} _{item.rationale}_" for item in result.recommendations)

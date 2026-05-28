@@ -8,7 +8,7 @@ from collections.abc import Sequence
 def infer_feature_names(namespace: dict[str, object]) -> list[str]:
     for name in ("feature_names", "features", "columns"):
         value = namespace.get(name)
-        if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        if isinstance(value, Sequence) and not isinstance(value, str | bytes):
             return [str(item) for item in value]
     for name in ("X_train", "X", "train_X"):
         value = namespace.get(name)
@@ -25,5 +25,9 @@ def top_features(model: object, feature_names: list[str], limit: int = 5) -> lis
         weights = coef[0] if getattr(coef, "ndim", 1) > 1 else coef
     if weights is None or not feature_names:
         return []
-    ranked = sorted(zip(feature_names, weights, strict=False), key=lambda item: abs(float(item[1])), reverse=True)
+    ranked = sorted(
+        zip(feature_names, weights, strict=False),
+        key=lambda item: abs(float(item[1])),
+        reverse=True,
+    )
     return [name for name, _ in ranked[:limit]]

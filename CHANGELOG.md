@@ -10,3 +10,5 @@ All notable changes to TrainLens will be documented here.
 - optional llm7.io-compatible LLM provider
 - Markdown and Rich renderers
 - in-memory run comparison
+- foundation-model fine-tuning profile detection for LLMs, CLIP, ViTs, projectors, and VLMs
+- contrastive, adapter-rank, loss-plateau, and projector-alignment recommendations
