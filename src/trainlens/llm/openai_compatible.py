@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from urllib import request
 
 from trainlens.llm.config import LLMConfig
+from trainlens.llm.prompts import render_report_enhancement_prompt
 
 
 @dataclass
@@ -14,14 +15,18 @@ class OpenAICompatibleProvider:
     config: LLMConfig
 
     def enhance(self, markdown_report: str) -> str:
+        prompt = render_report_enhancement_prompt(markdown_report)
         payload = {
             "model": self.config.model,
             "messages": [
                 {
                     "role": "system",
-                    "content": "Improve this ML training report without inventing facts.",
+                    "content": prompt,
                 },
-                {"role": "user", "content": markdown_report},
+                {
+                    "role": "user",
+                    "content": "Enhance the TrainLens report using the rendered instructions.",
+                },
             ],
         }
         body = json.dumps(payload).encode("utf-8")

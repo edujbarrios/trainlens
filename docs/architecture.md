@@ -30,3 +30,7 @@ Renderers convert `AnalysisResult` objects into Markdown or Rich output. They sh
 ## LLM Layer
 
 LLM providers are optional. Providers receive a completed local report and may improve wording, but analyzers remain the source of evidence.
+
+Prompting is handled by a parameterized Jinja2 template in `trainlens.llm.prompts`.
+The template receives the local report, audience, tone, model-family context,
+rules, and focus areas so provider adapters do not hardcode prompt strings.
