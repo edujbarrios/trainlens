@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trainlens"
+version = "0.1.0"
+description = "Open-source Jupyter AI training explainer."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Eduardo J. Barrios" }]
+keywords = ["jupyter", "machine-learning", "explainability", "notebooks", "training"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Framework :: Jupyter",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "ipython>=8.12",
+  "rich>=13.7",
+  "typing-extensions>=4.9; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.5",
+  "mypy>=1.10",
+]
+llm = ["httpx>=0.27"]
+
+[project.urls]
+Homepage = "https://github.com/edujbarrios/trainlens"
+Repository = "https://github.com/edujbarrios/trainlens"
+Issues = "https://github.com/edujbarrios/trainlens/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trainlens"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+packages = ["trainlens"]
+strict = true
+warn_unreachable = true
