@@ -13,7 +13,7 @@ class LLMConfig:
     model: str = "auto"
 
     @classmethod
-    def from_env(cls) -> "LLMConfig | None":
+    def from_env(cls) -> LLMConfig | None:
         base_url = getenv("TRAINLENS_LLM_BASE_URL")
         api_key = getenv("TRAINLENS_LLM_API_KEY")
         model = getenv("TRAINLENS_LLM_MODEL", "auto")

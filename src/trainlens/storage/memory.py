@@ -16,10 +16,21 @@ class InMemoryRunStore:
 
     def render_comparison(self) -> str:
         if not self._runs:
-            return "## TrainLens Run Comparison\n\nNo runs captured yet. Use `%explain_training` first.\n"
-        lines = ["## TrainLens Run Comparison", "", "| Run | Model | Metrics | Signals |", "| --- | --- | --- | --- |"]
+            return (
+                "## TrainLens Run Comparison\n\n"
+                "No runs captured yet. Use `%explain_training` first.\n"
+            )
+        lines = [
+            "## TrainLens Run Comparison",
+            "",
+            "| Run | Model | Metrics | Signals |",
+            "| --- | --- | --- | --- |",
+        ]
         for index, result in enumerate(self._runs, start=1):
-            metrics = ", ".join(f"{key}={value:.3f}" for key, value in result.metrics.items()) or "none"
+            metrics = (
+                ", ".join(f"{key}={value:.3f}" for key, value in result.metrics.items())
+                or "none"
+            )
             signals = ", ".join(signal.title for signal in result.signals) or "none"
             lines.append(f"| {index} | {result.model_name or 'unknown'} | {metrics} | {signals} |")
         return "\n".join(lines) + "\n"

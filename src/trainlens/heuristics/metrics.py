@@ -6,7 +6,9 @@ from trainlens.models.analysis import Signal
 from trainlens.models.metric import MetricSeries
 
 
-def detect_overfitting(train: MetricSeries | None, validation: MetricSeries | None) -> Signal | None:
+def detect_overfitting(
+    train: MetricSeries | None, validation: MetricSeries | None
+) -> Signal | None:
     if train is None or validation is None or train.last is None or validation.last is None:
         return None
     gap = train.last - validation.last

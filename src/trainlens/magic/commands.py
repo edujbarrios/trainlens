@@ -37,7 +37,10 @@ class TrainLensMagics(Magics):
     @line_magic
     def why_bad_model(self, line: str = "") -> None:
         result = explain_namespace(self.shell.user_ns)
-        result.summary.insert(0, "Focused diagnosis mode: prioritizing risks and next debugging steps.")
+        result.summary.insert(
+            0,
+            "Focused diagnosis mode: prioritizing risks and next debugging steps.",
+        )
         display(Markdown(self.renderer.render(result)))
 
     @line_magic

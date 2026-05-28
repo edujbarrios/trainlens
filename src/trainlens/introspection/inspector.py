@@ -50,7 +50,12 @@ class NotebookInspector:
         return sorted(candidates, key=lambda item: item.confidence, reverse=True)
 
     def _ignore(self, name: str, value: object) -> bool:
-        return name.startswith("_") or name in _IGNORED_NAMES or callable(value) and name.startswith("%%")
+        return (
+            name.startswith("_")
+            or name in _IGNORED_NAMES
+            or callable(value)
+            and name.startswith("%%")
+        )
 
     def _describe(self, name: str, value: Any) -> VariableInfo:
         shape = getattr(value, "shape", None)
@@ -73,6 +78,6 @@ class NotebookInspector:
             return None
 
     def _is_small_literal(self, value: object) -> bool:
-        return isinstance(value, (str, int, float, bool, type(None))) or (
-            isinstance(value, (list, tuple, dict, set)) and len(value) <= 20
+        return isinstance(value, str | int | float | bool | type(None)) or (
+            isinstance(value, list | tuple | dict | set) and len(value) <= 20
         )
