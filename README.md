@@ -66,6 +66,84 @@ From a notebook cell, without installing TrainLens as a library:
 !python tools/trainlens_llm7.py training_report.md
 ```
 
+## Jupyter Cell Examples
+
+Use TrainLens directly from a cloned repo by adding `src/` to the notebook path.
+This does not install a package into the environment.
+
+```python
+from pathlib import Path
+import sys
+
+TRAINLENS_REPO = Path("/path/to/trainlens").resolve()
+sys.path.insert(0, str(TRAINLENS_REPO / "src"))
+```
+
+### Analyze an LLM fine-tune
+
+```python
+from trainlens.pipeline import explain_namespace
+from trainlens.renderers.markdown import MarkdownRenderer
+from IPython.display import Markdown, display
+
+
+class MistralLoRAFineTune:
+    class Config:
+        model_type = "mistral"
+
+    config = Config()
+
+
+model = MistralLoRAFineTune()
+history = {
+    "train_loss": [2.6, 2.1, 1.92, 1.91],
+    "eval_loss": [2.5, 2.18, 2.16, 2.16],
+    "eval_perplexity": [12.2, 9.1, 8.9, 8.9],
+}
+lora_rank = 4
+trainable_params = 8_000_000
+total_params = 7_000_000_000
+
+report = MarkdownRenderer().render(explain_namespace(globals()))
+display(Markdown(report))
+```
+
+### Analyze a VLM projector run
+
+```python
+class LlavaProjectorRun:
+    vision_tower = object()
+    language_model = object()
+    mm_projector = object()
+
+    class Config:
+        model_type = "llava"
+
+    config = Config()
+
+
+model = LlavaProjectorRun()
+history = {
+    "train_loss": [2.4, 1.9, 1.72, 1.71],
+    "eval_loss": [2.3, 2.0, 1.99, 1.99],
+}
+lora_rank = 4
+
+display(Markdown(MarkdownRenderer().render(explain_namespace(globals()))))
+```
+
+### Enhance a report with llm7.io from a notebook cell
+
+```python
+Path("training_report.md").write_text(report, encoding="utf-8")
+```
+
+```python
+!python /path/to/trainlens/tools/trainlens_llm7.py training_report.md
+```
+
+More examples live in [`notebooks/`](notebooks/).
+
 Contributor setup for package internals lives in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Optional LLM Enhancement
