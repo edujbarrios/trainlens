@@ -8,7 +8,7 @@ TrainLens is an open-source framework for understanding machine learning trainin
 
 TrainLens inspects notebook state, training histories, model objects, metrics, and prediction behavior to explain how a model is training and what to try next. The project is now focused on understanding foundation-model training and fine-tuning runs: LLMs, CLIP-style contrastive models, ViTs, multimodal projectors, and VLMs.
 
-No package install is required for the direct llm7.io workflow. Clone the repo, point the tool at a Markdown report, and it will call llm7.io using only the Python standard library.
+No package install is required for the direct OpenAI-compatible API workflow. Clone the repo, point the tool at a Markdown report, and it will call your configured chat-completions endpoint using only the Python standard library.
 
 ```text
 Model detected: LlavaForConditionalGeneration
@@ -45,25 +45,25 @@ It then turns that evidence into useful summaries, debugging signals, recommenda
 ```bash
 git clone https://github.com/edujbarrios/trainlens.git
 cd trainlens
-python tools/trainlens_llm7.py --help
+python tools/trainlens_openai_compatible.py --help
 ```
 
-TrainLens is designed so the notebook-side explainer can run locally without requiring users to install an extra Python library. The standalone llm7.io tool uses only the Python standard library and reads configuration from environment variables.
+TrainLens is designed so the notebook-side explainer can run locally without requiring users to install an extra Python library. The standalone OpenAI-compatible API tool uses only the Python standard library and reads configuration from environment variables.
 
 ```env
-TRAINLENS_LLM_BASE_URL=https://api.llm7.io/v1
-TRAINLENS_LLM_API_KEY=your_llm7_api_key_here
+TRAINLENS_LLM_BASE_URL=https://api.example.com/v1
+TRAINLENS_LLM_API_KEY=your_api_key_here
 TRAINLENS_LLM_MODEL=auto
 ```
 
 ```bash
-python tools/trainlens_llm7.py training_report.md
+python tools/trainlens_openai_compatible.py training_report.md
 ```
 
 From a notebook cell, without installing TrainLens as a library:
 
 ```python
-!python tools/trainlens_llm7.py training_report.md
+!python tools/trainlens_openai_compatible.py training_report.md
 ```
 
 ## Jupyter Cell Examples
@@ -132,14 +132,14 @@ lora_rank = 4
 display(Markdown(MarkdownRenderer().render(explain_namespace(globals()))))
 ```
 
-### Enhance a report with llm7.io from a notebook cell
+### Enhance a report with an OpenAI-compatible API from a notebook cell
 
 ```python
 Path("training_report.md").write_text(report, encoding="utf-8")
 ```
 
 ```python
-!python /path/to/trainlens/tools/trainlens_llm7.py training_report.md
+!python /path/to/trainlens/tools/trainlens_openai_compatible.py training_report.md
 ```
 
 More examples live in [`notebooks/`](notebooks/).
@@ -151,12 +151,12 @@ Contributor setup for package internals lives in [CONTRIBUTING.md](CONTRIBUTING.
 TrainLens never requires API access. LLM support is opt-in and provider based.
 
 ```env
-TRAINLENS_LLM_BASE_URL=https://api.llm7.io/v1
-TRAINLENS_LLM_API_KEY=your_llm7_api_key_here
+TRAINLENS_LLM_BASE_URL=https://api.example.com/v1
+TRAINLENS_LLM_API_KEY=your_api_key_here
 TRAINLENS_LLM_MODEL=auto
 ```
 
-The current placeholder provider targets llm7.io-compatible chat completions. The provider interface is intentionally small so future adapters can support OpenAI, Anthropic, Ollama, and local models without changing analyzer logic.
+The current provider targets OpenAI-compatible chat completions. The provider interface is intentionally small so hosted APIs, Ollama-compatible gateways, and local model servers can be swapped without changing analyzer logic.
 
 ## Architecture
 
