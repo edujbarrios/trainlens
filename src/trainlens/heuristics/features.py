@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any, cast
 
 
 def infer_feature_names(namespace: dict[str, object]) -> list[str]:
@@ -22,9 +23,11 @@ def top_features(model: object, feature_names: list[str], limit: int = 5) -> lis
     weights = getattr(model, "feature_importances_", None)
     if weights is None:
         coef = getattr(model, "coef_", None)
-        weights = coef[0] if getattr(coef, "ndim", 1) > 1 else coef
+        if coef is not None:
+            weights = coef[0] if getattr(coef, "ndim", 1) > 1 else coef
     if weights is None or not feature_names:
         return []
+    weights = cast(Sequence[Any], weights)
     ranked = sorted(
         zip(feature_names, weights, strict=False),
         key=lambda item: abs(float(item[1])),

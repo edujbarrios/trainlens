@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from typing import Any
+
 from trainlens.analyzers.base import Analyzer
 from trainlens.analyzers.metrics import extract_metric_series, paired_metric
 from trainlens.heuristics import (
@@ -115,8 +118,9 @@ class TrainingSessionAnalyzer(Analyzer):
         return recommendations
 
 
-def _first_present(namespace: dict[str, object], *names: str) -> object | None:
+def _first_present(namespace: dict[str, object], *names: str) -> Iterable[Any] | None:
     for name in names:
-        if name in namespace:
-            return namespace[name]
+        value = namespace.get(name)
+        if isinstance(value, Iterable):
+            return value
     return None

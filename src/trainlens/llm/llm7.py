@@ -36,4 +36,5 @@ class LLM7Provider:
         )
         with request.urlopen(req, timeout=20) as response:  # noqa: S310
             data = json.loads(response.read().decode("utf-8"))
-        return data["choices"][0]["message"]["content"]
+        content = data["choices"][0]["message"]["content"]
+        return str(content)
