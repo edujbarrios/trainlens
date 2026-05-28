@@ -3,21 +3,12 @@
 TrainLens is an open-source framework for understanding machine learning training sessions directly inside Jupyter notebooks.
 
 [![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/badge/pypi-planned-blue)](#roadmap)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 TrainLens inspects notebook state, training histories, model objects, metrics, and prediction behavior to explain how a model is training and what to try next. It works locally by default with heuristic analysis and can optionally enhance explanations through an LLM provider.
 
-```python
-from trainlens import load_ipython_extension
-
-model.fit(X_train, y_train)
-%explain_training
-%why_bad_model
-%training_summary
-%compare_runs
-```
+No package install is required for the direct llm7.io workflow. Clone the repo, point the tool at a Markdown report, and it will call llm7.io using only the Python standard library.
 
 ```text
 Model detected: RandomForestClassifier
@@ -54,35 +45,31 @@ Most notebook explainability tools require a dedicated explainability package or
 
 It then turns that evidence into useful summaries, debugging signals, recommendations, and experiment ideas.
 
-## Install
+## Use Without Installing
 
 ```bash
-pip install trainlens
+python tools/trainlens_llm7.py --help
 ```
 
-Local development:
+TrainLens is designed so the notebook-side explainer can run locally without requiring users to install an extra Python library. The standalone llm7.io tool uses only the Python standard library and reads configuration from environment variables.
+
+```env
+TRAINLENS_LLM_BASE_URL=https://api.llm7.io/v1
+TRAINLENS_LLM_API_KEY=your_llm7_api_key_here
+TRAINLENS_LLM_MODEL=auto
+```
 
 ```bash
-git clone https://github.com/edujbarrios/trainlens.git
-cd trainlens
-python -m venv .venv
-pip install -e ".[dev]"
-pytest
+python tools/trainlens_llm7.py training_report.md
 ```
 
-## Notebook Usage
+From a notebook cell, without installing TrainLens as a library:
 
 ```python
-%load_ext trainlens
+!python tools/trainlens_llm7.py training_report.md
 ```
 
-```python
-%explain_training
-%explain_training --llm
-%why_bad_model
-%training_summary
-%compare_runs
-```
+Contributor setup for package internals lives in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Optional LLM Enhancement
 
@@ -138,4 +125,4 @@ TrainLens is open source from day one. Contributors are welcome across analyzers
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](LICENSE).
