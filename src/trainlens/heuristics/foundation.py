@@ -1,4 +1,4 @@
-"""Heuristics for LLM, CLIP, ViT, projector, and VLM fine-tuning."""
+"""Heuristics for foundation-model fine-tuning."""
 
 from __future__ import annotations
 
@@ -25,6 +25,19 @@ ARCHITECTURE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "vit": ("vit", "visiontransformer", "deit", "swin"),
     "projector": ("projector", "mm_projector", "vision_projector", "resampler"),
     "vlm": ("vlm", "llava", "blip", "flamingo", "paligemma", "vision2seq", "vision_tower"),
+    "music": (
+        "audio",
+        "music",
+        "musicgen",
+        "audiocraft",
+        "encodec",
+        "vocoder",
+        "clap",
+        "midi",
+        "spectrogram",
+        "stft",
+        "mel",
+    ),
 }
 
 
@@ -180,6 +193,20 @@ def foundation_recommendations(families: list[str], signals: list[Signal]) -> li
                     "instruction-following failures."
                 ),
                 confidence=0.82,
+            )
+        )
+    if "music" in families:
+        recommendations.append(
+            Recommendation(
+                action=(
+                    "Track FAD, CLAP score, spectral convergence, loudness, "
+                    "clip duration buckets, and held-out prompt-audio retrieval."
+                ),
+                rationale=(
+                    "Music generation quality depends on audio fidelity, prompt "
+                    "alignment, structure, and dataset leakage risk."
+                ),
+                confidence=0.75,
             )
         )
     if "Loss plateau detected" in titles:

@@ -6,7 +6,7 @@ TrainLens is an open-source framework for understanding machine learning trainin
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
-TrainLens inspects notebook state, training histories, model objects, metrics, and prediction behavior to explain how a model is training and what to try next. The project is now focused on understanding foundation-model training and fine-tuning runs: LLMs, CLIP-style contrastive models, ViTs, multimodal projectors, and VLMs.
+TrainLens inspects notebook state, training histories, model objects, metrics, and prediction behavior to explain how a model is training and what to try next. The project is now focused on understanding foundation-model training and fine-tuning runs: LLMs, CLIP-style contrastive models, ViTs, multimodal projectors, VLMs, and emerging audio/music generation systems.
 
 No package install is required for the direct OpenAI-compatible API workflow. Clone the repo, point the tool at a Markdown report, and it will call your configured chat-completions endpoint using only the Python standard library.
 
@@ -33,10 +33,10 @@ Recommended next steps:
 Most notebook explainability tools require a dedicated explainability package or a lot of manual wiring. TrainLens starts with what your notebook already has:
 
 - Python variables in the active IPython shell
-- trained model objects from Transformers, PEFT, PyTorch, timm, diffusers, and notebook code
+- trained model objects from Transformers, PEFT, PyTorch, timm, diffusers, audio stacks, and notebook code
 - metric dictionaries and trainer histories from LLM/VLM fine-tuning loops
-- loss, perplexity, recall@k, contrastive loss, projector loss, and eval metrics
-- LoRA/adapters, trainable parameter ratios, and multimodal tower/projector hints
+- loss, perplexity, recall@k, contrastive loss, projector loss, audio reconstruction loss, and eval metrics
+- LoRA/adapters, trainable parameter ratios, multimodal tower/projector hints, and audio-conditioning clues
 
 It then turns that evidence into useful summaries, debugging signals, recommendations, and experiment ideas.
 
@@ -132,6 +132,45 @@ lora_rank = 4
 display(Markdown(MarkdownRenderer().render(explain_namespace(globals()))))
 ```
 
+### Analyze an AI music generation run
+
+TrainLens can also summarize the evidence around music-generation experiments, including
+text-to-music, audio-to-audio, MIDI/symbolic generation, stem-aware models, vocal models,
+and multimodal audio-language alignment runs.
+
+```python
+class MusicDiffusionFineTune:
+    text_encoder = object()
+    audio_autoencoder = object()
+    diffusion_unet = object()
+
+    class Config:
+        model_type = "musicgen"
+
+    config = Config()
+
+
+model = MusicDiffusionFineTune()
+history = {
+    "train_loss": [1.82, 1.41, 1.22, 1.18],
+    "eval_loss": [1.75, 1.48, 1.42, 1.43],
+    "spectral_convergence": [0.38, 0.31, 0.29, 0.28],
+    "clap_score": [0.21, 0.27, 0.30, 0.31],
+}
+sample_rate = 44_100
+conditioning = ["text_prompt", "tempo", "key", "genre"]
+
+display(Markdown(MarkdownRenderer().render(explain_namespace(globals()))))
+```
+
+For music-generation notebooks, useful evidence to expose in the namespace includes:
+
+- objective metrics: reconstruction loss, diffusion loss, STFT loss, mel loss, spectral convergence, FAD, CLAP score, beat alignment, pitch accuracy, and prompt-audio retrieval
+- conditioning metadata: text prompts, tempo, key, genre, style tags, lyrics, chord charts, MIDI controls, seed audio, stems, and duration buckets
+- architecture hints: audio autoencoders, diffusion/flow/transformer decoders, EnCodec-style tokenizers, CLAP/audio-language encoders, vocoders, LoRA adapters, and control modules
+- dataset signals: clip length distribution, sample rate, loudness normalization, silence ratio, duplicate tracks, train/validation artist leakage, license labels, and vocal/instrumental splits
+- generation risks: memorization of copyrighted material, prompt leakage, singer or artist imitation, lyric toxicity, degraded stereo image, clipping, mode collapse, and weak long-range structure
+
 ### Enhance a report with an OpenAI-compatible API from a notebook cell
 
 ```python
@@ -182,14 +221,27 @@ Core modules live under `src/trainlens`:
 - `renderers`: notebook Markdown/Rich output
 - `storage`: run persistence and comparison
 
+## AI Music Generation Coverage
+
+AI music generation spans more than one model family, so TrainLens treats it as a multimodal training problem rather than a single metric dashboard. The page and roadmap cover these sides:
+
+- `text-to-music`: prompt adherence, style control, genre conditioning, duration handling, and audio-language retrieval metrics
+- `audio-to-audio`: continuation, inpainting, variation, timbre transfer, denoising, source-conditioned generation, and reconstruction quality
+- `symbolic music`: MIDI tokens, note density, pitch range, chord progression, tempo maps, quantization, and arrangement structure
+- `vocals and lyrics`: lyric alignment, phoneme timing, singer identity risk, pronunciation, intelligibility, and separation between voice and instrumental quality
+- `stems and production`: drum/bass/melody/stem conditioning, mix balance, stereo field, loudness, clipping, and mastering artifacts
+- `evaluation`: FAD, CLAP score, spectral metrics, beat and pitch tracking, human preference tests, prompt-audio retrieval, and held-out style validation
+- `responsible release`: dataset licenses, attribution, opt-out lists, duplicate detection, memorization probes, watermarking, and artist/style imitation policy
+
 ## Roadmap
 
 - richer Hugging Face Trainer, Accelerate, PEFT, and DeepSpeed history extraction
 - first-class CLIP, SigLIP, ViT, projector, and VLM validation reports
+- first-class AI music generation diagnostics for audio tokenizers, diffusion models, CLAP alignment, MIDI/symbolic models, vocals, stems, and long-form structure
 - notebook cell execution hooks
 - plugin discovery through entry points
 - local model adapters
-- visual diagnostics for fine-tuning drift and alignment regressions
+- visual and audio diagnostics for fine-tuning drift, alignment regressions, waveform quality, spectrogram artifacts, and memorization probes
 - public example notebooks and screenshots
 
 ## Screenshots

@@ -25,6 +25,18 @@ _ALIASES = {
     "retrieval_recall": "retrieval_recall",
     "recall@1": "recall_at_1",
     "eval_recall@1": "validation_recall_at_1",
+    "fad": "frechet_audio_distance",
+    "frechet_audio_distance": "frechet_audio_distance",
+    "eval_fad": "validation_frechet_audio_distance",
+    "eval_frechet_audio_distance": "validation_frechet_audio_distance",
+    "clap_score": "clap_score",
+    "eval_clap_score": "validation_clap_score",
+    "stft_loss": "stft_loss",
+    "eval_stft_loss": "validation_stft_loss",
+    "mel_loss": "mel_loss",
+    "eval_mel_loss": "validation_mel_loss",
+    "spectral_convergence": "spectral_convergence",
+    "eval_spectral_convergence": "validation_spectral_convergence",
 }
 
 

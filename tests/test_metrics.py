@@ -33,3 +33,19 @@ def test_extracts_trainer_style_log_history():
     assert train.steps == (0, 1, 2)
     assert validation.values == (2.3, 2.0)
     assert validation.steps == (1, 2)
+
+
+def test_normalizes_music_generation_metric_aliases():
+    series = extract_metric_series(
+        {
+            "history": {
+                "fad": [4.2, 3.8],
+                "eval_clap_score": [0.24, 0.31],
+                "eval_stft_loss": [0.72, 0.61],
+            }
+        }
+    )
+
+    assert series["frechet_audio_distance"].last == 3.8
+    assert series["validation_clap_score"].split == "validation"
+    assert series["validation_stft_loss"].last == 0.61
