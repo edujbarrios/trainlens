@@ -17,6 +17,17 @@ class MarkdownRenderer:
         if result.summary:
             lines.append("\n### Training summary")
             lines.extend(f"- {item}" for item in result.summary)
+        if result.metrics:
+            lines.extend(
+                [
+                    "\n### Metrics",
+                    "| Metric | Value |",
+                    "| --- | ---: |",
+                ]
+            )
+            lines.extend(
+                f"| {name} | {value:.3f} |" for name, value in sorted(result.metrics.items())
+            )
         if result.signals:
             lines.append("\n### Potential issues")
             for signal in result.signals:
