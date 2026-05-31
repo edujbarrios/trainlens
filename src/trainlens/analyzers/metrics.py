@@ -54,6 +54,8 @@ def _looks_like_history_name(name: str) -> bool:
 def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
     if hasattr(value, "history"):
         value = value.history
+    if _looks_like_log_history(value):
+        return _series_from_log_history(value)
     if not isinstance(value, Mapping):
         return {}
     found: dict[str, MetricSeries] = {}
@@ -71,6 +73,64 @@ def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
                 name=normalized, values=(float(raw_values),), split=split
             )
     return found
+
+
+def _looks_like_log_history(value: Any) -> bool:
+    return (
+        isinstance(value, Sequence)
+        and not isinstance(value, str | bytes)
+        and all(isinstance(item, Mapping) for item in value)
+    )
+
+
+def _series_from_log_history(value: Sequence[Any]) -> dict[str, MetricSeries]:
+    grouped: dict[str, list[float]] = {}
+    steps: dict[str, list[int]] = {}
+    for index, entry in enumerate(value, start=1):
+        if not isinstance(entry, Mapping):
+            continue
+        raw_step = _first_present(entry, "step", "global_step")
+        step = _coerce_step(index if raw_step is None else raw_step)
+        for key, raw_value in entry.items():
+            if key in {"step", "global_step", "epoch"}:
+                continue
+            if not isinstance(raw_value, int | float):
+                continue
+            normalized, _split = _normalize_name(str(key))
+            grouped.setdefault(normalized, []).append(float(raw_value))
+            if step is not None:
+                steps.setdefault(normalized, []).append(step)
+    return {
+        name: MetricSeries(
+            name=name,
+            values=tuple(values),
+            split=_split_from_name(name),
+            steps=tuple(steps.get(name, ())),
+        )
+        for name, values in grouped.items()
+    }
+
+
+def _coerce_step(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _first_present(entry: Mapping[Any, Any], *names: str) -> Any:
+    for name in names:
+        if name in entry:
+            return entry[name]
+    return None
+
+
+def _split_from_name(name: str) -> str | None:
+    if name.startswith("train_"):
+        return "train"
+    if name.startswith("validation_"):
+        return "validation"
+    return None
 
 
 def _coerce_floats(values: Sequence[Any]) -> list[float]:
