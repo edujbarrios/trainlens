@@ -18,6 +18,17 @@ class LlavaLikeModel:
     config = Config()
 
 
+class MusicGenerationModel:
+    text_encoder = object()
+    audio_autoencoder = object()
+    diffusion_unet = object()
+
+    class Config:
+        model_type = "musicgen"
+
+    config = Config()
+
+
 def test_detects_vlm_projector_profile():
     families = detect_foundation_architecture(LlavaLikeModel(), {"mm_projector": object()})
 
@@ -50,3 +61,20 @@ def test_pipeline_recommends_vlm_validation_workflow():
 
     assert any("Foundation-model profile" in item for item in result.summary)
     assert any("projector alignment" in item.action.lower() for item in result.recommendations)
+
+
+def test_pipeline_recommends_music_generation_metrics():
+    result = explain_namespace(
+        {
+            "model": MusicGenerationModel(),
+            "history": {
+                "train_loss": [1.8, 1.4, 1.2, 1.19],
+                "eval_loss": [1.7, 1.5, 1.45, 1.44],
+                "eval_clap_score": [0.22, 0.25, 0.29, 0.31],
+            },
+            "sample_rate": 44_100,
+        }
+    )
+
+    assert any("MUSIC" in item for item in result.summary)
+    assert any("FAD" in item.action for item in result.recommendations)
