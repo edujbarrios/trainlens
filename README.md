@@ -6,9 +6,21 @@ TrainLens is an open-source framework for understanding machine learning trainin
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
-TrainLens inspects notebook state, training histories, model objects, metrics, and prediction behavior to explain how a model is training and what to try next. The project is now focused on understanding foundation-model training and fine-tuning runs: LLMs, CLIP-style contrastive models, ViTs, multimodal projectors, VLMs, and emerging audio/music generation systems.
+TrainLens inspects the state of a Jupyter notebook and turns training evidence into a readable report. It looks at model objects, metric histories, execution traces, dataset hints, and notebook variables, then explains what is happening and what to try next.
 
-No package install is required for the direct OpenAI-compatible API workflow. Clone the repo, point the tool at a Markdown report, and it will call your configured chat-completions endpoint using only the Python standard library.
+The project is focused on foundation-model training and fine-tuning runs: LLMs, CLIP-style contrastive models, ViTs, multimodal projectors, VLMs, and emerging audio/music generation systems.
+
+## What TrainLens Does
+
+TrainLens gives you a notebook-local training report:
+
+1. It scans the notebook namespace for models, histories, metrics, traces, and useful metadata.
+2. It normalizes common training artifacts such as Keras histories and Hugging Face `log_history`.
+3. It applies heuristics for loss behavior, validation gaps, class balance, adapters, projectors, contrastive training, and multimodal runs.
+4. It renders a Markdown report in the notebook.
+5. Optionally, it sends that report to an OpenAI-compatible chat-completions endpoint for LLM-enhanced explanation.
+
+No API key is required for the local analysis. API access is only needed for optional LLM enhancement.
 
 ```text
 Model detected: LlavaForConditionalGeneration
@@ -35,10 +47,30 @@ Most notebook explainability tools require a dedicated explainability package or
 - Python variables in the active IPython shell
 - trained model objects from Transformers, PEFT, PyTorch, timm, diffusers, audio stacks, and notebook code
 - metric dictionaries and trainer histories from LLM/VLM fine-tuning loops
+- execution traces such as `training_trace`, `execution_trace`, `log_history`, or `trainer.state.log_history`
 - loss, perplexity, recall@k, contrastive loss, projector loss, audio reconstruction loss, and eval metrics
 - LoRA/adapters, trainable parameter ratios, multimodal tower/projector hints, and audio-conditioning clues
 
 It then turns that evidence into useful summaries, debugging signals, recommendations, and experiment ideas.
+
+## How It Works
+
+TrainLens is intentionally simple:
+
+```text
+Notebook variables
+  -> namespace snapshot
+  -> model and framework detection
+  -> metric and execution-trace extraction
+  -> training heuristics
+  -> Markdown report
+  -> optional LLM enhancement
+```
+
+You can use it in two ways:
+
+- From inside a notebook with `explain_namespace(globals())` or the IPython magic commands.
+- From the command line by passing an existing Markdown report to `tools/trainlens_openai_compatible.py`.
 
 ## Use Without Installing
 
@@ -107,6 +139,23 @@ total_params = 7_000_000_000
 report = MarkdownRenderer().render(explain_namespace(globals()))
 display(Markdown(report))
 ```
+
+### Include execution traces
+
+TrainLens can include recent training events in the report. Use a list of dictionaries named `training_trace`, `execution_trace`, `trace`, `logs`, or `log_history`. Hugging Face-style `trainer.state.log_history` is also detected.
+
+```python
+training_trace = [
+    {"step": 100, "epoch": 0.5, "event": "batch_end", "loss": 1.92, "lr": 2e-5},
+    {"step": 200, "epoch": 1.0, "event": "eval", "eval_loss": 1.76, "eval_perplexity": 5.8},
+    {"step": 300, "epoch": 1.5, "event": "checkpoint", "message": "saved adapter weights"},
+]
+
+report = MarkdownRenderer().render(explain_namespace(globals()))
+display(Markdown(report))
+```
+
+The report will show an `Execution trace` table with step, epoch, event, and numeric metrics. This makes it easier to connect the final diagnosis with what actually happened during the run.
 
 ### Analyze a VLM projector run
 
@@ -255,6 +304,7 @@ LLM enhancement prompts are rendered from a parameterized Jinja2 template, so au
 Notebook Hook Layer
   -> Notebook Introspection Engine
   -> Training Session Analyzer
+  -> Execution Trace Extractor
   -> Metric Interpretation Engine
   -> Explanation Generator
   -> Notebook Renderer
