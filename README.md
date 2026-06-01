@@ -169,6 +169,27 @@ display(Markdown(report))
 
 The report will show an `Execution trace` table with step, epoch, event, and numeric metrics. This makes it easier to connect the final diagnosis with what actually happened during the run.
 
+### Analyze PyTorch loop metrics
+
+TrainLens detects common PyTorch training-loop variables such as `train_losses`, `val_losses`, `epoch_logs`, `callback_metrics`, and `logged_metrics`. Tensor-like scalar values are supported when they expose `.item()`, which covers the common `torch.Tensor` case.
+
+```python
+train_losses = [2.3, 1.9, 1.55, 1.34]
+val_losses = [2.4, 2.0, 1.78, 1.72]
+epoch_logs = [
+    {"epoch": 1, "train_loss": 2.3, "val_loss": 2.4},
+    {"epoch": 2, "train_loss": 1.9, "val_loss": 2.0},
+]
+
+display(Markdown(MarkdownRenderer().render(explain_namespace(globals()))))
+```
+
+For a runnable no-PyTorch dependency example:
+
+```bash
+python examples/pytorch_loop_metrics.py
+```
+
 ### Generate dark visual explanations
 
 Use `DarkVisualRenderer` when you want notebook-friendly SVG images alongside the Markdown report.
