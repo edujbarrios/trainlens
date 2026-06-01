@@ -51,7 +51,9 @@ callback_metrics = {
 result = explain_namespace(globals())
 print(MarkdownRenderer().render(result))
 
-assets = DarkVisualRenderer().write_dashboard_assets(result, ROOT / "docs" / "assets")
+assets = DarkVisualRenderer().write_dashboard_assets(
+    result, ROOT / "examples" / "generated" / "pytorch-loop-metrics"
+)
 print("Wrote visual assets:")
 for name, path in assets.items():
     print(f"- {name}: {path.relative_to(ROOT)}")
