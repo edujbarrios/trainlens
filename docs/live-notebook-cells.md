@@ -29,17 +29,15 @@ epoch_logs = [
 ## 3. Render Markdown And Visual Dashboard
 
 ```python
-from IPython.display import HTML, Markdown, display
-
-from trainlens.pipeline import explain_namespace
-from trainlens.renderers.markdown import MarkdownRenderer
-from trainlens.renderers.visual import DarkVisualRenderer
+from trainlens.notebook import display_live_report
 
 
-result = explain_namespace(globals())
-display(Markdown(MarkdownRenderer().render(result)))
-display(HTML(DarkVisualRenderer().render_dashboard_html(result)))
+live_report = display_live_report(globals())
 ```
+
+`live_report.result` keeps the structured analysis object, while
+`live_report.markdown` and `live_report.dashboard_html` keep the rendered
+artifacts.
 
 ## 4. Use Magic Commands
 
