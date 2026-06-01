@@ -27,6 +27,30 @@ _BLUE = "#60a5fa"
 class DarkVisualRenderer:
     """Render notebook explanations as dependency-free dark-mode SVG images."""
 
+    def render_dashboard_html(self, result: AnalysisResult) -> str:
+        visuals = [
+            self.render_overview_card(result),
+            self.render_metric_trace(result),
+            self.render_signal_panel(result),
+            self.render_trace_timeline(result),
+            self.render_feature_lens(result),
+        ]
+        cards = "\n".join(
+            f'<section class="trainlens-visual-card">{visual}</section>' for visual in visuals
+        )
+        return (
+            '<div class="trainlens-dark-dashboard">'
+            "<style>"
+            ".trainlens-dark-dashboard{background:#0b1020;color:#e5edf6;"
+            "display:grid;gap:18px;padding:18px;border-radius:14px;"
+            "grid-template-columns:repeat(auto-fit,minmax(340px,1fr));}"
+            ".trainlens-dark-dashboard svg{width:100%;height:auto;display:block;}"
+            ".trainlens-visual-card{min-width:0;}"
+            "</style>"
+            f"{cards}"
+            "</div>"
+        )
+
     def render_overview_card(self, result: AnalysisResult) -> str:
         width, height = 920, 420
         model = result.model_name or "No confident model detected"

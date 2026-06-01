@@ -84,3 +84,13 @@ def test_visual_renderer_writes_all_dashboard_assets():
     assert assets["trace_timeline"].exists()
 
     shutil.rmtree(output_dir)
+
+
+def test_visual_renderer_outputs_inline_dashboard_html():
+    result = AnalysisResult(trace=[TraceEvent(step=1, name="batch_end", metrics={"loss": 2.0})])
+
+    html = DarkVisualRenderer().render_dashboard_html(result)
+
+    assert 'class="trainlens-dark-dashboard"' in html
+    assert html.count("<svg ") == 5
+    assert "Execution Timeline" in html
