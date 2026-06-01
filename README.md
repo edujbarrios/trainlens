@@ -209,6 +209,14 @@ assets["signal_panel"]
 assets["feature_lens"]
 ```
 
+For an inline notebook dashboard:
+
+```python
+from IPython.display import HTML, display
+
+display(HTML(DarkVisualRenderer().render_dashboard_html(result)))
+```
+
 The same flow is available as a runnable example:
 
 ```bash
