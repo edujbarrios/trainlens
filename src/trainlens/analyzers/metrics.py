@@ -16,6 +16,13 @@ _ALIASES = {
     "train/loss": "train_loss",
     "eval_loss": "validation_loss",
     "train_loss": "train_loss",
+    "train_losses": "train_loss",
+    "training_losses": "train_loss",
+    "val_loss": "validation_loss",
+    "val_losses": "validation_loss",
+    "valid_loss": "validation_loss",
+    "valid_losses": "validation_loss",
+    "validation_losses": "validation_loss",
     "perplexity": "perplexity",
     "eval_perplexity": "validation_perplexity",
     "validation_perplexity": "validation_perplexity",
@@ -45,7 +52,16 @@ def extract_metric_series(namespace: Mapping[str, Any]) -> dict[str, MetricSerie
     for name, value in namespace.items():
         if _looks_like_history_name(name):
             candidates.update(_series_from_mapping(value))
-    for key in ("history", "training_history", "metrics"):
+        candidates.update(_series_from_named_value(name, value))
+    for key in (
+        "history",
+        "training_history",
+        "metrics",
+        "train_metrics",
+        "validation_metrics",
+        "val_metrics",
+        "pytorch_metrics",
+    ):
         candidates.update(_series_from_mapping(namespace.get(key)))
     return candidates
 
@@ -60,12 +76,33 @@ def paired_metric(
 
 def _looks_like_history_name(name: str) -> bool:
     lower = name.lower()
-    return "history" in lower or lower in {"metrics", "logs"}
+    return (
+        "history" in lower
+        or "log" in lower
+        or lower in {"metrics", "losses", "accuracies"}
+        or lower.endswith(("_loss", "_losses", "_accuracy", "_accuracies"))
+    )
+
+
+def _series_from_named_value(name: str, value: Any) -> dict[str, MetricSeries]:
+    if _looks_like_log_history(value):
+        return _series_from_log_history(value)
+    if not isinstance(value, Sequence) or isinstance(value, str | bytes):
+        return {}
+    numeric = _coerce_floats(value)
+    if not numeric:
+        return {}
+    normalized, split = _normalize_name(name)
+    return {normalized: MetricSeries(name=normalized, values=tuple(numeric), split=split)}
 
 
 def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
     if hasattr(value, "history"):
         value = value.history
+    elif hasattr(value, "metrics"):
+        value = value.metrics
+    elif hasattr(value, "log_history"):
+        value = value.log_history
     if _looks_like_log_history(value):
         return _series_from_log_history(value)
     if not isinstance(value, Mapping):
@@ -101,7 +138,7 @@ def _series_from_log_history(value: Sequence[Any]) -> dict[str, MetricSeries]:
     for index, entry in enumerate(value, start=1):
         if not isinstance(entry, Mapping):
             continue
-        raw_step = _first_present(entry, "step", "global_step")
+        raw_step = _first_present(entry, "step", "global_step", "epoch")
         step = _coerce_step(index if raw_step is None else raw_step)
         for key, raw_value in entry.items():
             if key in {"step", "global_step", "epoch"}:
