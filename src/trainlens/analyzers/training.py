@@ -7,6 +7,7 @@ from typing import Any
 
 from trainlens.analyzers.base import Analyzer
 from trainlens.analyzers.metrics import extract_metric_series, paired_metric
+from trainlens.analyzers.traces import extract_trace_events
 from trainlens.heuristics import (
     detect_class_imbalance,
     detect_convergence,
@@ -62,6 +63,8 @@ class TrainingSessionAnalyzer(Analyzer):
             result.metrics["validation_loss"] = validation_loss.last
         if families:
             result.summary.append(f"Foundation-model profile: {', '.join(families).upper()}.")
+
+        result.trace.extend(extract_trace_events(namespace))
 
         for signal in (
             detect_overfitting(train_acc, validation_acc),

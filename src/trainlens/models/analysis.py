@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from trainlens.models.trace import TraceEvent
+
 Severity = Literal["info", "warning", "critical"]
 
 
@@ -38,6 +40,13 @@ class AnalysisResult:
     recommendations: list[Recommendation] = field(default_factory=list)
     top_features: list[str] = field(default_factory=list)
     metrics: dict[str, float] = field(default_factory=dict)
+    trace: list[TraceEvent] = field(default_factory=list)
 
     def has_findings(self) -> bool:
-        return bool(self.summary or self.signals or self.recommendations or self.top_features)
+        return bool(
+            self.summary
+            or self.signals
+            or self.recommendations
+            or self.top_features
+            or self.trace
+        )
