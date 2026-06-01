@@ -36,6 +36,8 @@ TrainLens is growing its own visual language for training runs: fast visual summ
 
 ![TrainLens dark feature lens](docs/assets/trainlens-dark-feature-lens.svg)
 
+![TrainLens dark improvement plan](docs/assets/trainlens-dark-improvement-plan.svg)
+
 ```text
 Model detected: LlavaForConditionalGeneration
 

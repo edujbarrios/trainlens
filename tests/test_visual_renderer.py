@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-from trainlens.models.analysis import AnalysisResult, Signal
+from trainlens.models.analysis import AnalysisResult, Recommendation, Signal
 from trainlens.models.trace import TraceEvent
 from trainlens.renderers.visual import DarkVisualRenderer
 
@@ -76,6 +76,7 @@ def test_visual_renderer_writes_all_dashboard_assets():
 
     assert sorted(assets) == [
         "feature_lens",
+        "improvement_plan",
         "metric_trace",
         "overview",
         "signal_panel",
@@ -92,5 +93,19 @@ def test_visual_renderer_outputs_inline_dashboard_html():
     html = DarkVisualRenderer().render_dashboard_html(result)
 
     assert 'class="trainlens-dark-dashboard"' in html
-    assert html.count("<svg ") == 5
+    assert html.count("<svg ") == 6
     assert "Execution Timeline" in html
+
+
+def test_visual_renderer_outputs_improvement_plan():
+    result = AnalysisResult(
+        recommendations=[
+            Recommendation("Lower learning rate.", "Validation loss is lagging.", 0.82),
+        ]
+    )
+
+    svg = DarkVisualRenderer().render_improvement_plan(result)
+
+    assert "Improvement Plan" in svg
+    assert "Lower learning rate" in svg
+    assert "82%" in svg
