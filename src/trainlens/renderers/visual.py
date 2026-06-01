@@ -27,6 +27,44 @@ _BLUE = "#60a5fa"
 class DarkVisualRenderer:
     """Render notebook explanations as dependency-free dark-mode SVG images."""
 
+    def render_overview_card(self, result: AnalysisResult) -> str:
+        width, height = 920, 420
+        model = result.model_name or "No confident model detected"
+        framework = result.framework or "framework unknown"
+        lines = _svg_header(width, height, "TrainLens overview")
+        lines.extend(
+            [
+                _text(42, 46, "TrainLens Overview", 26, weight=700),
+                _text(42, 70, "Dark visual summary of the current training run", 13, _MUTED),
+                _text(42, 126, model, 30, _TEXT, 800),
+                _text(42, 154, framework, 15, _MUTED),
+            ]
+        )
+        stat_cards = (
+            ("Signals", len(result.signals), _severity_color(_highest_severity(result.signals))),
+            ("Metrics", len(result.metrics), _CYAN),
+            ("Trace events", len(result.trace), _GREEN),
+            ("Next steps", len(result.recommendations), _PURPLE),
+        )
+        for index, (label, stat_value, color) in enumerate(stat_cards):
+            x = 42 + index * 210
+            lines.append(_rect(x, 198, 182, 86, _PANEL_ALT, 12, opacity=0.9))
+            lines.append(_rect(x, 198, 182, 4, color, 2))
+            lines.append(_text(x + 18, 234, str(stat_value), 30, _TEXT, 800))
+            lines.append(_text(x + 18, 260, label, 13, _MUTED, 600))
+        metric_items = sorted(result.metrics.items())[:4]
+        if metric_items:
+            lines.append(_text(42, 326, "Key metrics", 15, _TEXT, 700))
+            for index, (name, metric_value) in enumerate(metric_items):
+                x = 42 + index * 210
+                lines.append(_rect(x, 346, 182, 34, _BACKGROUND, 8, opacity=0.7))
+                lines.append(
+                    _text(x + 14, 368, f"{name} {metric_value:.3f}", 12, _MUTED, 600)
+                )
+        else:
+            lines.append(_text(42, 344, "No scalar metrics found yet", 15, _MUTED, 600))
+        return _svg_footer(lines)
+
     def render_metric_trace(self, result: AnalysisResult) -> str:
         series = _series_from_trace(result.trace)
         if not series and result.metrics:
@@ -168,10 +206,12 @@ class DarkVisualRenderer:
         output_dir = Path(directory)
         output_dir.mkdir(parents=True, exist_ok=True)
         assets = {
+            "overview": output_dir / "trainlens-dark-overview.svg",
             "metric_trace": output_dir / "trainlens-dark-metric-trace.svg",
             "signal_panel": output_dir / "trainlens-dark-signal-panel.svg",
             "feature_lens": output_dir / "trainlens-dark-feature-lens.svg",
         }
+        assets["overview"].write_text(self.render_overview_card(result), encoding="utf-8")
         assets["metric_trace"].write_text(self.render_metric_trace(result), encoding="utf-8")
         assets["signal_panel"].write_text(self.render_signal_panel(result), encoding="utf-8")
         assets["feature_lens"].write_text(self.render_feature_lens(result), encoding="utf-8")
@@ -251,3 +291,12 @@ def _severity_color(severity: str) -> str:
     if severity == "warning":
         return _AMBER
     return _CYAN
+
+
+def _highest_severity(signals: list[Signal]) -> str:
+    severities = {signal.severity for signal in signals}
+    if "critical" in severities:
+        return "critical"
+    if "warning" in severities:
+        return "warning"
+    return "info"
