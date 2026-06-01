@@ -4,6 +4,7 @@ from trainlens.models.analysis import AnalysisResult, Recommendation, Signal
 from trainlens.models.metric import MetricPoint, MetricSeries
 from trainlens.models.run import TrainingRun
 from trainlens.models.snapshot import NotebookSnapshot, VariableInfo
+from trainlens.models.trace import TraceEvent
 
 __all__ = [
     "AnalysisResult",
@@ -12,6 +13,7 @@ __all__ = [
     "NotebookSnapshot",
     "Recommendation",
     "Signal",
+    "TraceEvent",
     "TrainingRun",
     "VariableInfo",
 ]
