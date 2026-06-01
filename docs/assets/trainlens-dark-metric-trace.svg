@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420" role="img" aria-label="TrainLens metric trace">
+<rect width="920" height="420" fill="#0b1020" />
+<rect x="18" y="18" width="884" height="384" rx="18" fill="#111827" stroke="#293246" />
+<text x="42.0" y="46.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">Metric Trace</text>
+<text x="42.0" y="70.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">Recent training signals rendered in dark mode</text>
+<rect x="78.0" y="76.0" width="770.0" height="260.0" rx="10.0" fill="#172033" opacity="0.84" />
+<line x1="78" y1="76.0" x2="848" y2="76.0" stroke="#293246" stroke-width="1" />
+<line x1="78" y1="141.0" x2="848" y2="141.0" stroke="#293246" stroke-width="1" />
+<line x1="78" y1="206.0" x2="848" y2="206.0" stroke="#293246" stroke-width="1" />
+<line x1="78" y1="271.0" x2="848" y2="271.0" stroke="#293246" stroke-width="1" />
+<line x1="78" y1="336.0" x2="848" y2="336.0" stroke="#293246" stroke-width="1" />
+<polyline points="78.0,262.8 232.0,274.3 540.0,281.0" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="78.0" cy="262.8" r="5" fill="#22d3ee" stroke="#0b1020" stroke-width="2" />
+<circle cx="232.0" cy="274.3" r="5" fill="#22d3ee" stroke="#0b1020" stroke-width="2" />
+<circle cx="540.0" cy="281.0" r="5" fill="#22d3ee" stroke="#0b1020" stroke-width="2" />
+<rect x="868.0" y="92.0" width="14.0" height="14.0" rx="3.0" fill="#22d3ee" opacity="1.00" />
+<text x="890.0" y="104.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">loss</text>
+<polyline points="78.0,336.0 232.0,336.0 540.0,336.0" fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="78.0" cy="336.0" r="5" fill="#34d399" stroke="#0b1020" stroke-width="2" />
+<circle cx="232.0" cy="336.0" r="5" fill="#34d399" stroke="#0b1020" stroke-width="2" />
+<circle cx="540.0" cy="336.0" r="5" fill="#34d399" stroke="#0b1020" stroke-width="2" />
+<rect x="868.0" y="122.0" width="14.0" height="14.0" rx="3.0" fill="#34d399" opacity="1.00" />
+<text x="890.0" y="134.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">lr</text>
+<polyline points="386.0,271.9 694.0,274.9 848.0,275.2" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="386.0" cy="271.9" r="5" fill="#f59e0b" stroke="#0b1020" stroke-width="2" />
+<circle cx="694.0" cy="274.9" r="5" fill="#f59e0b" stroke="#0b1020" stroke-width="2" />
+<circle cx="848.0" cy="275.2" r="5" fill="#f59e0b" stroke="#0b1020" stroke-width="2" />
+<rect x="868.0" y="152.0" width="14.0" height="14.0" rx="3.0" fill="#f59e0b" opacity="1.00" />
+<text x="890.0" y="164.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">eval_loss</text>
+<polyline points="386.0,76.0 694.0,97.2 848.0,100.2" fill="none" stroke="#a78bfa" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="386.0" cy="76.0" r="5" fill="#a78bfa" stroke="#0b1020" stroke-width="2" />
+<circle cx="694.0" cy="97.2" r="5" fill="#a78bfa" stroke="#0b1020" stroke-width="2" />
+<circle cx="848.0" cy="100.2" r="5" fill="#a78bfa" stroke="#0b1020" stroke-width="2" />
+<rect x="868.0" y="182.0" width="14.0" height="14.0" rx="3.0" fill="#a78bfa" opacity="1.00" />
+<text x="890.0" y="194.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">eval_perplexity</text>
+<text x="78.0" y="370.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500">step 100</text>
+<text x="788.0" y="370.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500">step 600</text>
+<text x="26.0" y="88.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500">8.6</text>
+<text x="26.0" y="336.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500">2.4e-05</text>
+</svg>
