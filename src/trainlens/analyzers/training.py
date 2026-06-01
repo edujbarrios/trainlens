@@ -59,8 +59,17 @@ class TrainingSessionAnalyzer(Analyzer):
             result.metrics["validation_accuracy"] = validation_acc.last
         if train_loss and train_loss.last is not None:
             result.metrics["train_loss"] = train_loss.last
+            if train_loss.first is not None and train_loss.delta is not None:
+                result.summary.append(
+                    f"Training loss changed from {train_loss.first:.3f} to {train_loss.last:.3f}."
+                )
         if validation_loss and validation_loss.last is not None:
             result.metrics["validation_loss"] = validation_loss.last
+            if validation_loss.first is not None and validation_loss.delta is not None:
+                result.summary.append(
+                    "Validation loss changed from "
+                    f"{validation_loss.first:.3f} to {validation_loss.last:.3f}."
+                )
         if families:
             result.summary.append(f"Foundation-model profile: {', '.join(families).upper()}.")
 
