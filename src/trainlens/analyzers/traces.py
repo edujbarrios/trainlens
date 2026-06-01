@@ -14,8 +14,12 @@ _TRACE_NAMES = {
     "execution_traces",
     "training_trace",
     "training_traces",
+    "epoch_logs",
     "log_history",
     "logs",
+    "train_logs",
+    "validation_logs",
+    "val_logs",
 }
 _META_KEYS = {"step", "global_step", "epoch", "event", "name", "message", "msg"}
 
@@ -25,7 +29,7 @@ def extract_trace_events(namespace: Mapping[str, Any], max_events: int = 8) -> l
 
     events: list[TraceEvent] = []
     for name, value in namespace.items():
-        if name.lower() in _TRACE_NAMES or "trace" in name.lower():
+        if _looks_like_trace_name(name):
             events.extend(_events_from_value(value))
 
     trainer_state = namespace.get("trainer_state")
@@ -61,8 +65,9 @@ def _event_from_mapping(entry: Mapping[Any, Any]) -> TraceEvent:
     for key, value in entry.items():
         if str(key) in _META_KEYS:
             continue
-        if isinstance(value, int | float):
-            metrics[str(key)] = float(value)
+        numeric_value = _coerce_float(value)
+        if numeric_value is not None:
+            metrics[str(key)] = numeric_value
     return TraceEvent(
         step=_coerce_int(_first_present(entry, "step", "global_step")),
         epoch=_coerce_float(entry.get("epoch")),
@@ -79,7 +84,17 @@ def _first_present(entry: Mapping[Any, Any], *names: str) -> Any:
     return None
 
 
+def _looks_like_trace_name(name: str) -> bool:
+    lower = name.lower()
+    return lower in _TRACE_NAMES or "trace" in lower or lower.endswith("_logs")
+
+
 def _coerce_int(value: Any) -> int | None:
+    if hasattr(value, "item"):
+        try:
+            value = value.item()
+        except (AttributeError, TypeError, ValueError):
+            return None
     try:
         return int(value)
     except (TypeError, ValueError):
@@ -87,6 +102,13 @@ def _coerce_int(value: Any) -> int | None:
 
 
 def _coerce_float(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if hasattr(value, "item"):
+        try:
+            value = value.item()
+        except (AttributeError, TypeError, ValueError):
+            return None
     try:
         return float(value)
     except (TypeError, ValueError):
