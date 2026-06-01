@@ -28,6 +28,23 @@ class MarkdownRenderer:
             lines.extend(
                 f"| {name} | {value:.3f} |" for name, value in sorted(result.metrics.items())
             )
+        if result.trace:
+            lines.extend(
+                [
+                    "\n### Execution trace",
+                    "| Step | Epoch | Event | Metrics |",
+                    "| ---: | ---: | --- | --- |",
+                ]
+            )
+            for event in result.trace:
+                step = str(event.step) if event.step is not None else ""
+                epoch = f"{event.epoch:.2f}" if event.epoch is not None else ""
+                label = event.name or event.message or "training event"
+                metrics = (
+                    ", ".join(f"{name}={value:.3f}" for name, value in event.metrics.items())
+                    or "none"
+                )
+                lines.append(f"| {step} | {epoch} | {label} | {metrics} |")
         if result.signals:
             lines.append("\n### Potential issues")
             for signal in result.signals:
