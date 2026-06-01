@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Mapping
 from typing import Any
 
@@ -53,6 +54,9 @@ class NotebookInspector:
         return (
             name.startswith("_")
             or name in _IGNORED_NAMES
+            or inspect.isclass(value)
+            or inspect.isfunction(value)
+            or inspect.ismodule(value)
             or callable(value)
             and name.startswith("%%")
         )
