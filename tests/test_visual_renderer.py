@@ -1,3 +1,6 @@
+import shutil
+from pathlib import Path
+
 from trainlens.models.analysis import AnalysisResult, Signal
 from trainlens.models.trace import TraceEvent
 from trainlens.renderers.visual import DarkVisualRenderer
@@ -61,3 +64,23 @@ def test_visual_renderer_outputs_trace_timeline():
     assert "Execution Timeline" in svg
     assert "batch_end" in svg
     assert "eval_loss=1.8" in svg
+
+
+def test_visual_renderer_writes_all_dashboard_assets():
+    result = AnalysisResult(trace=[TraceEvent(step=1, name="batch_end", metrics={"loss": 2.0})])
+    output_dir = Path(".trainlens") / "visual-renderer-test-assets"
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+
+    assets = DarkVisualRenderer().write_dashboard_assets(result, output_dir)
+
+    assert sorted(assets) == [
+        "feature_lens",
+        "metric_trace",
+        "overview",
+        "signal_panel",
+        "trace_timeline",
+    ]
+    assert assets["trace_timeline"].exists()
+
+    shutil.rmtree(output_dir)

@@ -17,7 +17,7 @@
 <text x="270.0" y="260.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">Metrics</text>
 <rect x="462.0" y="198.0" width="182.0" height="86.0" rx="12.0" fill="#172033" opacity="0.90" />
 <rect x="462.0" y="198.0" width="182.0" height="4.0" rx="2.0" fill="#34d399" opacity="1.00" />
-<text x="480.0" y="234.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="800">6</text>
+<text x="480.0" y="234.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="800">7</text>
 <text x="480.0" y="260.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">Trace events</text>
 <rect x="672.0" y="198.0" width="182.0" height="86.0" rx="12.0" fill="#172033" opacity="0.90" />
 <rect x="672.0" y="198.0" width="182.0" height="4.0" rx="2.0" fill="#a78bfa" opacity="1.00" />
