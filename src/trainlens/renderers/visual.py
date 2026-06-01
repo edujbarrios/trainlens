@@ -34,6 +34,7 @@ class DarkVisualRenderer:
             self.render_signal_panel(result),
             self.render_trace_timeline(result),
             self.render_feature_lens(result),
+            self.render_improvement_plan(result),
         ]
         cards = "\n".join(
             f'<section class="trainlens-visual-card">{visual}</section>' for visual in visuals
@@ -287,6 +288,41 @@ class DarkVisualRenderer:
             lines.append(_text(250 + bar_width + 14, y + 15, f"{impact:.2f}", 12, _MUTED))
         return _svg_footer(lines)
 
+    def render_improvement_plan(self, result: AnalysisResult) -> str:
+        width, height = 920, 420
+        lines = _svg_header(
+            width,
+            height,
+            "TrainLens improvement plan",
+            "Prioritized recommended actions with confidence and rationale.",
+        )
+        lines.extend(
+            [
+                _text(42, 46, "Improvement Plan", 26, weight=700),
+                _text(42, 70, "Prioritized next experiments from the report", 13, _MUTED),
+            ]
+        )
+        recommendations = sorted(
+            result.recommendations, key=lambda item: item.confidence, reverse=True
+        )[:4]
+        if not recommendations:
+            lines.append(_text(42, 210, "No recommendations generated yet", 18, _MUTED))
+            return _svg_footer(lines)
+        for index, recommendation in enumerate(recommendations):
+            y = 104 + index * 72
+            confidence_width = 170 * max(min(recommendation.confidence, 1), 0)
+            color = (_GREEN, _CYAN, _AMBER, _PURPLE)[index % 4]
+            lines.append(_rect(42, y, 830, 54, _PANEL_ALT, 10, opacity=0.92))
+            lines.append(_rect(42, y, 8, 54, color, 4))
+            lines.append(_text(66, y + 21, _clip(recommendation.action, 68), 14, _TEXT, 700))
+            lines.append(_text(66, y + 41, _clip(recommendation.rationale, 86), 11, _MUTED))
+            lines.append(_rect(682, y + 17, 170, 10, _BACKGROUND, 5, opacity=0.8))
+            lines.append(_rect(682, y + 17, confidence_width, 10, color, 5, opacity=0.9))
+            lines.append(
+                _text(682, y + 43, f"{int(recommendation.confidence * 100)}%", 11, color, 700)
+            )
+        return _svg_footer(lines)
+
     def write_dashboard_assets(
         self, result: AnalysisResult, directory: Path | str
     ) -> dict[str, Path]:
@@ -298,12 +334,16 @@ class DarkVisualRenderer:
             "signal_panel": output_dir / "trainlens-dark-signal-panel.svg",
             "trace_timeline": output_dir / "trainlens-dark-trace-timeline.svg",
             "feature_lens": output_dir / "trainlens-dark-feature-lens.svg",
+            "improvement_plan": output_dir / "trainlens-dark-improvement-plan.svg",
         }
         assets["overview"].write_text(self.render_overview_card(result), encoding="utf-8")
         assets["metric_trace"].write_text(self.render_metric_trace(result), encoding="utf-8")
         assets["signal_panel"].write_text(self.render_signal_panel(result), encoding="utf-8")
         assets["trace_timeline"].write_text(self.render_trace_timeline(result), encoding="utf-8")
         assets["feature_lens"].write_text(self.render_feature_lens(result), encoding="utf-8")
+        assets["improvement_plan"].write_text(
+            self.render_improvement_plan(result), encoding="utf-8"
+        )
         return assets
 
 
