@@ -125,6 +125,48 @@ TRAINLENS_REPO = Path("/path/to/trainlens").resolve()
 sys.path.insert(0, str(TRAINLENS_REPO / "src"))
 ```
 
+### Live notebook workflow
+
+Cell 1: keep your normal training variables in the notebook.
+
+```python
+model = my_model
+train_losses = [2.3, 1.9, 1.55, 1.34]
+val_losses = [2.4, 2.0, 1.78, 1.72]
+epoch_logs = [
+    {"epoch": 1, "train_loss": 2.3, "val_loss": 2.4},
+    {"epoch": 2, "train_loss": 1.9, "val_loss": 2.0},
+    {"epoch": 3, "train_loss": 1.55, "val_loss": 1.78},
+    {"epoch": 4, "train_loss": 1.34, "val_loss": 1.72},
+]
+```
+
+Cell 2: render the live report and the dark visual dashboard.
+
+```python
+from IPython.display import HTML, Markdown, display
+
+from trainlens.pipeline import explain_namespace
+from trainlens.renderers.markdown import MarkdownRenderer
+from trainlens.renderers.visual import DarkVisualRenderer
+
+
+result = explain_namespace(globals())
+display(Markdown(MarkdownRenderer().render(result)))
+display(HTML(DarkVisualRenderer().render_dashboard_html(result)))
+```
+
+Cell 3: use notebook magics after loading the extension.
+
+```python
+%load_ext trainlens.magic.extension
+%explain_training
+%training_dashboard
+%compare_runs
+```
+
+See [docs/live-notebook-cells.md](docs/live-notebook-cells.md) for the same flow in a compact copy-paste format.
+
 ### Analyze an LLM fine-tune
 
 ```python
@@ -221,6 +263,7 @@ The same flow is available as a runnable example:
 
 ```bash
 python examples/visual_explanations.py
+python examples/live_dashboard_export.py
 ```
 
 ### Analyze a VLM projector run
