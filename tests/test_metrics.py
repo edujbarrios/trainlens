@@ -1,6 +1,14 @@
 from trainlens.analyzers.metrics import extract_metric_series, paired_metric
 
 
+class ScalarTensor:
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def item(self) -> float:
+        return self.value
+
+
 def test_extracts_keras_style_history():
     series = extract_metric_series(
         {"history": {"accuracy": [0.7, 0.8], "val_accuracy": [0.68, 0.75]}}
@@ -71,6 +79,41 @@ def test_extracts_pytorch_epoch_logs():
     assert train.steps == (1, 2)
     assert validation.values == (2.2, 1.8)
     assert validation.steps == (1, 2)
+
+
+def test_extracts_pytorch_lightning_tensor_metrics():
+    series = extract_metric_series(
+        {
+            "callback_metrics": {
+                "train_loss": ScalarTensor(1.4),
+                "val_loss": ScalarTensor(1.6),
+            }
+        }
+    )
+
+    train, validation = paired_metric(series, "loss")
+
+    assert train is not None
+    assert validation is not None
+    assert train.last == 1.4
+    assert validation.last == 1.6
+
+
+def test_extracts_tensor_like_values_from_pytorch_logs():
+    series = extract_metric_series(
+        {
+            "train_logs": [
+                {"epoch": 1, "loss": ScalarTensor(2.1)},
+                {"epoch": 2, "loss": ScalarTensor(1.7)},
+            ]
+        }
+    )
+
+    train, _validation = paired_metric(series, "loss")
+
+    assert train is not None
+    assert train.values == (2.1, 1.7)
+    assert train.steps == (1, 2)
 
 
 def test_normalizes_music_generation_metric_aliases():

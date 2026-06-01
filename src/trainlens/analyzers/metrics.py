@@ -61,6 +61,8 @@ def extract_metric_series(namespace: Mapping[str, Any]) -> dict[str, MetricSerie
         "validation_metrics",
         "val_metrics",
         "pytorch_metrics",
+        "callback_metrics",
+        "logged_metrics",
     ):
         candidates.update(_series_from_mapping(namespace.get(key)))
     return candidates
@@ -79,7 +81,7 @@ def _looks_like_history_name(name: str) -> bool:
     return (
         "history" in lower
         or "log" in lower
-        or lower in {"metrics", "losses", "accuracies"}
+        or lower in {"metrics", "losses", "accuracies", "callback_metrics", "logged_metrics"}
         or lower.endswith(("_loss", "_losses", "_accuracy", "_accuracies"))
     )
 
@@ -116,10 +118,13 @@ def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
                 found[normalized] = MetricSeries(
                     name=normalized, values=tuple(numeric), split=split
                 )
-        elif isinstance(raw_values, int | float):
+        else:
+            numeric_value = _coerce_float(raw_values)
+            if numeric_value is None:
+                continue
             normalized, split = _normalize_name(str(key))
             found[normalized] = MetricSeries(
-                name=normalized, values=(float(raw_values),), split=split
+                name=normalized, values=(numeric_value,), split=split
             )
     return found
 
@@ -143,10 +148,11 @@ def _series_from_log_history(value: Sequence[Any]) -> dict[str, MetricSeries]:
         for key, raw_value in entry.items():
             if key in {"step", "global_step", "epoch"}:
                 continue
-            if not isinstance(raw_value, int | float):
+            numeric_value = _coerce_float(raw_value)
+            if numeric_value is None:
                 continue
             normalized, _split = _normalize_name(str(key))
-            grouped.setdefault(normalized, []).append(float(raw_value))
+            grouped.setdefault(normalized, []).append(numeric_value)
             if step is not None:
                 steps.setdefault(normalized, []).append(step)
     return {
@@ -185,11 +191,25 @@ def _split_from_name(name: str) -> str | None:
 def _coerce_floats(values: Sequence[Any]) -> list[float]:
     numeric: list[float] = []
     for value in values:
-        try:
-            numeric.append(float(value))
-        except (TypeError, ValueError):
+        numeric_value = _coerce_float(value)
+        if numeric_value is None:
             return []
+        numeric.append(numeric_value)
     return numeric
+
+
+def _coerce_float(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if hasattr(value, "item"):
+        try:
+            value = value.item()
+        except (AttributeError, TypeError, ValueError):
+            return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _normalize_name(name: str) -> tuple[str, str | None]:
