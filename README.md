@@ -15,7 +15,7 @@ The project is focused on foundation-model training and fine-tuning runs: LLMs, 
 TrainLens gives you a notebook-local training report:
 
 1. It scans the notebook namespace for models, histories, metrics, traces, and useful metadata.
-2. It normalizes common training artifacts such as Keras histories and Hugging Face `log_history`.
+2. It normalizes common training artifacts such as Keras histories, Hugging Face `log_history`, and PyTorch loop metrics.
 3. It applies heuristics for loss behavior, validation gaps, class balance, adapters, projectors, contrastive training, and multimodal runs.
 4. It renders a Markdown report in the notebook.
 5. Optionally, it sends that report to an OpenAI-compatible chat-completions endpoint for LLM-enhanced explanation.

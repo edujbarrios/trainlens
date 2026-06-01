@@ -35,6 +35,44 @@ def test_extracts_trainer_style_log_history():
     assert validation.steps == (1, 2)
 
 
+def test_extracts_pytorch_loop_loss_lists():
+    series = extract_metric_series(
+        {
+            "train_losses": [2.3, 1.8, 1.4],
+            "val_losses": [2.4, 1.9, 1.7],
+        }
+    )
+
+    train, validation = paired_metric(series, "loss")
+
+    assert train is not None
+    assert validation is not None
+    assert train.name == "train_loss"
+    assert train.values == (2.3, 1.8, 1.4)
+    assert validation.name == "validation_loss"
+    assert validation.values == (2.4, 1.9, 1.7)
+
+
+def test_extracts_pytorch_epoch_logs():
+    series = extract_metric_series(
+        {
+            "epoch_logs": [
+                {"epoch": 1, "train_loss": 2.0, "val_loss": 2.2},
+                {"epoch": 2, "train_loss": 1.6, "val_loss": 1.8},
+            ]
+        }
+    )
+
+    train, validation = paired_metric(series, "loss")
+
+    assert train is not None
+    assert validation is not None
+    assert train.values == (2.0, 1.6)
+    assert train.steps == (1, 2)
+    assert validation.values == (2.2, 1.8)
+    assert validation.steps == (1, 2)
+
+
 def test_normalizes_music_generation_metric_aliases():
     series = extract_metric_series(
         {
