@@ -45,3 +45,19 @@ def test_visual_renderer_outputs_signal_and_feature_views():
 
     assert "Possible overfitting" in renderer.render_signal_panel(result)
     assert "caption_length" in renderer.render_feature_lens(result)
+
+
+def test_visual_renderer_outputs_trace_timeline():
+    result = AnalysisResult(
+        trace=[
+            TraceEvent(step=10, name="batch_end", metrics={"loss": 2.0}),
+            TraceEvent(step=20, name="eval", metrics={"eval_loss": 1.8}),
+            TraceEvent(step=30, name="checkpoint", message="saved adapter"),
+        ]
+    )
+
+    svg = DarkVisualRenderer().render_trace_timeline(result)
+
+    assert "Execution Timeline" in svg
+    assert "batch_end" in svg
+    assert "eval_loss=1.8" in svg
