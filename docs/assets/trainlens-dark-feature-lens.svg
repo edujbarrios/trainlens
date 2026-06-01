@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420" role="img" aria-label="TrainLens feature lens">
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420" role="img" aria-labelledby="trainlens-feature-lens-title trainlens-feature-lens-description">
+<title id="trainlens-feature-lens-title">TrainLens feature lens</title>
+<desc id="trainlens-feature-lens-description">Ranked evidence bars for model features and training signals.</desc>
 <rect width="920" height="420" fill="#0b1020" />
 <rect x="18" y="18" width="884" height="384" rx="18" fill="#111827" stroke="#293246" />
 <text x="42.0" y="46.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">Feature Lens</text>

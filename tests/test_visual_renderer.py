@@ -16,6 +16,7 @@ def test_visual_renderer_outputs_dark_metric_svg():
 
     assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg"')
     assert 'fill="#0b1020"' in svg
+    assert "<title id=\"trainlens-metric-trace-title\">TrainLens metric trace</title>" in svg
     assert "Metric Trace" in svg
     assert "eval_loss" in svg
 

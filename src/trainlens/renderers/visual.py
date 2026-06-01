@@ -31,7 +31,12 @@ class DarkVisualRenderer:
         width, height = 920, 420
         model = result.model_name or "No confident model detected"
         framework = result.framework or "framework unknown"
-        lines = _svg_header(width, height, "TrainLens overview")
+        lines = _svg_header(
+            width,
+            height,
+            "TrainLens overview",
+            "Summary card with model, framework, metrics, signals, trace events, and next steps.",
+        )
         lines.extend(
             [
                 _text(42, 46, "TrainLens Overview", 26, weight=700),
@@ -74,7 +79,12 @@ class DarkVisualRenderer:
             }
         width, height = 920, 420
         plot_x, plot_y, plot_w, plot_h = 78, 76, 770, 260
-        lines = _svg_header(width, height, "TrainLens metric trace")
+        lines = _svg_header(
+            width,
+            height,
+            "TrainLens metric trace",
+            "Line chart showing numeric training metrics collected from execution trace events.",
+        )
         lines.extend(
             [
                 _text(42, 46, "Metric Trace", 26, weight=700),
@@ -134,7 +144,12 @@ class DarkVisualRenderer:
 
     def render_signal_panel(self, result: AnalysisResult) -> str:
         width, height = 920, 420
-        lines = _svg_header(width, height, "TrainLens signal panel")
+        lines = _svg_header(
+            width,
+            height,
+            "TrainLens signal panel",
+            "Severity panel showing training risks and useful findings.",
+        )
         lines.extend(
             [
                 _text(42, 46, "Signal Panel", 26, weight=700),
@@ -168,7 +183,12 @@ class DarkVisualRenderer:
 
     def render_feature_lens(self, result: AnalysisResult) -> str:
         width, height = 920, 420
-        lines = _svg_header(width, height, "TrainLens feature lens")
+        lines = _svg_header(
+            width,
+            height,
+            "TrainLens feature lens",
+            "Ranked evidence bars for model features and training signals.",
+        )
         lines.extend(
             [
                 _text(42, 46, "Feature Lens", 26, weight=700),
@@ -227,10 +247,15 @@ def _series_from_trace(trace: list[TraceEvent]) -> Mapping[str, list[tuple[int, 
     return {name: points for name, points in grouped.items() if points}
 
 
-def _svg_header(width: int, height: int, label: str) -> list[str]:
+def _svg_header(width: int, height: int, label: str, description: str) -> list[str]:
+    title_id = _slug_id(label, "title")
+    description_id = _slug_id(label, "description")
     return [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
-        f'viewBox="0 0 {width} {height}" role="img" aria-label="{escape(label)}">',
+        f'viewBox="0 0 {width} {height}" role="img" '
+        f'aria-labelledby="{title_id} {description_id}">',
+        f'<title id="{title_id}">{escape(label)}</title>',
+        f'<desc id="{description_id}">{escape(description)}</desc>',
         f'<rect width="{width}" height="{height}" fill="{_BACKGROUND}" />',
         f'<rect x="18" y="18" width="{width - 36}" height="{height - 36}" '
         f'rx="18" fill="{_PANEL}" stroke="{_GRID}" />',
@@ -300,3 +325,9 @@ def _highest_severity(signals: list[Signal]) -> str:
     if "warning" in severities:
         return "warning"
     return "info"
+
+
+def _slug_id(value: str, suffix: str) -> str:
+    normalized = "".join(character.lower() if character.isalnum() else "-" for character in value)
+    compact = "-".join(part for part in normalized.split("-") if part)
+    return f"{compact}-{suffix}"
