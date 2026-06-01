@@ -2,7 +2,7 @@
 <rect width="920" height="420" fill="#0b1020" />
 <rect x="18" y="18" width="884" height="384" rx="18" fill="#111827" stroke="#293246" />
 <text x="42.0" y="46.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">Feature Lens</text>
-<text x="42.0" y="70.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">SHAP-inspired ranked feature explanation, always dark</text>
+<text x="42.0" y="70.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">Ranked training evidence for quick dark-mode inspection</text>
 <text x="42.0" y="127.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">1</text>
 <text x="76.0" y="127.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">validation_loss</text>
 <rect x="250.0" y="112.0" width="620.0" height="20.0" rx="10.0" fill="#172033" opacity="1.00" />

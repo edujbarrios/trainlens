@@ -134,7 +134,13 @@ class DarkVisualRenderer:
         lines.extend(
             [
                 _text(42, 46, "Feature Lens", 26, weight=700),
-                _text(42, 70, "SHAP-inspired ranked feature explanation, always dark", 13, _MUTED),
+                _text(
+                    42,
+                    70,
+                    "Ranked training evidence for quick dark-mode inspection",
+                    13,
+                    _MUTED,
+                ),
             ]
         )
         features = result.top_features[:7] or [
