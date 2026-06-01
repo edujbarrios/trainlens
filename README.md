@@ -171,14 +171,64 @@ For music-generation notebooks, useful evidence to expose in the namespace inclu
 - dataset signals: clip length distribution, sample rate, loudness normalization, silence ratio, duplicate tracks, train/validation artist leakage, license labels, and vocal/instrumental splits
 - generation risks: memorization of copyrighted material, prompt leakage, singer or artist imitation, lyric toxicity, degraded stereo image, clipping, mode collapse, and weak long-range structure
 
-### Enhance a report with an OpenAI-compatible API from a notebook cell
+### Create and enhance a Markdown report from Jupyter
+
+You can generate the TrainLens report, save it as Markdown, preview it in the
+notebook, and then send that same file to an OpenAI-compatible endpoint. This is
+the most direct workflow when you want a reproducible report artifact from one
+cell.
 
 ```python
-Path("training_report.md").write_text(report, encoding="utf-8")
+from pathlib import Path
+
+from IPython.display import Markdown, display
+from trainlens.pipeline import explain_namespace
+from trainlens.renderers.markdown import MarkdownRenderer
+
+
+report_path = Path("training_report.md")
+report = MarkdownRenderer().render(explain_namespace(globals()))
+report_path.write_text(report, encoding="utf-8")
+
+display(Markdown(report))
+print(f"Wrote {report_path.resolve()}")
 ```
+
+Then run the optional LLM enhancement against the Markdown file:
 
 ```python
 !python /path/to/trainlens/tools/trainlens_openai_compatible.py training_report.md
+```
+
+If you prefer to keep the whole workflow in Python instead of using notebook
+shell syntax, call the helper with `subprocess`:
+
+```python
+import os
+import subprocess
+import sys
+
+env = {
+    **os.environ,
+    "TRAINLENS_LLM_BASE_URL": "https://api.example.com/v1",
+    "TRAINLENS_LLM_API_KEY": "your_api_key_here",
+    "TRAINLENS_LLM_MODEL": "auto",
+}
+
+completed = subprocess.run(
+    [
+        sys.executable,
+        "/path/to/trainlens/tools/trainlens_openai_compatible.py",
+        str(report_path),
+    ],
+    check=True,
+    capture_output=True,
+    env=env,
+    text=True,
+)
+
+enhanced_report = completed.stdout
+display(Markdown(enhanced_report))
 ```
 
 More examples live in [`notebooks/`](notebooks/).
