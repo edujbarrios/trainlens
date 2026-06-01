@@ -17,7 +17,7 @@ TrainLens gives you a notebook-local training report:
 1. It scans the notebook namespace for models, histories, metrics, traces, and useful metadata.
 2. It normalizes common training artifacts such as Keras histories, Hugging Face `log_history`, and PyTorch loop metrics.
 3. It applies heuristics for loss behavior, validation gaps, class balance, adapters, projectors, contrastive training, and multimodal runs.
-4. It renders a Markdown report in the notebook.
+4. It renders a Markdown report with result explanation, potential issues, and a prioritized improvement plan.
 5. Optionally, it sends that report to an OpenAI-compatible chat-completions endpoint for LLM-enhanced explanation.
 
 No API key is required for the local analysis. API access is only needed for optional LLM enhancement.
@@ -44,6 +44,10 @@ Training summary:
 - Validation loss plateaued across recent checkpoints
 - Tiny trainable parameter ratio detected
 
+Result explanation:
+- Validation loss is materially higher than training loss, so the run may be generalizing worse than it fits the training batches.
+- Execution trace evidence is available, so the metric readings can be tied back to concrete training events.
+
 Potential issues:
 - Projector alignment may be under-capacity
 - Retrieval/caption validation is missing
@@ -52,6 +56,10 @@ Recommended next steps:
 - Track eval_loss, perplexity, learning-rate schedule, and gradient norm
 - Validate projector alignment with frozen vision and language towers
 - Evaluate text-image retrieval or held-out multimodal instructions
+
+Improvement plan:
+1. Track eval_loss, perplexity, learning-rate schedule, and gradient norm per checkpoint.
+2. Run a focused validation error analysis.
 ```
 
 ## Why TrainLens?
@@ -153,6 +161,14 @@ live_report = display_live_report(globals())
 `live_report.markdown` and `live_report.dashboard_html` keep the rendered
 artifacts.
 
+The Markdown report always includes:
+
+- `Training summary`: what TrainLens found in the notebook state.
+- `Result explanation`: what the metrics and signals mean.
+- `Potential issues`: concrete risks detected by heuristics.
+- `Recommended next steps`: direct suggestions.
+- `Improvement plan`: prioritized actions with confidence and rationale.
+
 Cell 3: use notebook magics after loading the extension.
 
 ```python
@@ -162,7 +178,7 @@ Cell 3: use notebook magics after loading the extension.
 %compare_runs
 ```
 
-See [docs/live-notebook-cells.md](docs/live-notebook-cells.md) for the same flow in a compact copy-paste format.
+See [docs/live-notebook-cells.md](docs/live-notebook-cells.md) for the same flow in a compact copy-paste format, and [docs/report-sections.md](docs/report-sections.md) for how to read each report section.
 
 ### Analyze an LLM fine-tune
 
