@@ -1,5 +1,6 @@
 """Notebook renderers."""
 
 from trainlens.renderers.markdown import MarkdownRenderer
+from trainlens.renderers.visual import DarkVisualRenderer
 
-__all__ = ["MarkdownRenderer"]
+__all__ = ["DarkVisualRenderer", "MarkdownRenderer"]
