@@ -24,7 +24,7 @@ No API key is required for the local analysis. API access is only needed for opt
 
 ## Visual Explanations
 
-TrainLens is growing toward SHAP-style visual explanations for training runs: fast visual summaries that help you see which metrics, events, and model signals are driving the diagnosis. The visual renderer is dark-mode only, so generated assets are consistent in notebooks, docs, and reports.
+TrainLens is growing its own visual language for training runs: fast visual summaries that help you see which metrics, events, and model signals are driving the diagnosis. The visual renderer is dark-mode only, so generated assets are consistent in notebooks, docs, and reports.
 
 ![TrainLens dark metric trace](docs/assets/trainlens-dark-metric-trace.svg)
 
