@@ -24,3 +24,17 @@ def test_pipeline_generates_report_with_features():
     assert result.model_name == "DemoModel"
     assert result.top_features[0] == "balance"
     assert result.recommendations
+
+
+def test_pipeline_summarizes_loss_changes():
+    result = explain_namespace(
+        {
+            "history": {
+                "train_loss": [2.0, 1.6, 1.3],
+                "eval_loss": [2.1, 1.8, 1.7],
+            }
+        }
+    )
+
+    assert "Training loss changed from 2.000 to 1.300." in result.summary
+    assert "Validation loss changed from 2.100 to 1.700." in result.summary
