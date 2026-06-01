@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="420" viewBox="0 0 920 420" role="img" aria-label="TrainLens overview">
+<rect width="920" height="420" fill="#0b1020" />
+<rect x="18" y="18" width="884" height="384" rx="18" fill="#111827" stroke="#293246" />
+<text x="42.0" y="46.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">TrainLens Overview</text>
+<text x="42.0" y="70.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">Dark visual summary of the current training run</text>
+<text x="42.0" y="126.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="800">VisionLanguageProjectorRun</text>
+<text x="42.0" y="154.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="500">framework unknown</text>
+<rect x="42.0" y="198.0" width="182.0" height="86.0" rx="12.0" fill="#172033" opacity="0.90" />
+<rect x="42.0" y="198.0" width="182.0" height="4.0" rx="2.0" fill="#f59e0b" opacity="1.00" />
+<text x="60.0" y="234.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="800">2</text>
+<text x="60.0" y="260.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">Signals</text>
+<rect x="252.0" y="198.0" width="182.0" height="86.0" rx="12.0" fill="#172033" opacity="0.90" />
+<rect x="252.0" y="198.0" width="182.0" height="4.0" rx="2.0" fill="#22d3ee" opacity="1.00" />
+<text x="270.0" y="234.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="800">2</text>
+<text x="270.0" y="260.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">Metrics</text>
+<rect x="462.0" y="198.0" width="182.0" height="86.0" rx="12.0" fill="#172033" opacity="0.90" />
+<rect x="462.0" y="198.0" width="182.0" height="4.0" rx="2.0" fill="#34d399" opacity="1.00" />
+<text x="480.0" y="234.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="800">6</text>
+<text x="480.0" y="260.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">Trace events</text>
+<rect x="672.0" y="198.0" width="182.0" height="86.0" rx="12.0" fill="#172033" opacity="0.90" />
+<rect x="672.0" y="198.0" width="182.0" height="4.0" rx="2.0" fill="#a78bfa" opacity="1.00" />
+<text x="690.0" y="234.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="800">4</text>
+<text x="690.0" y="260.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="600">Next steps</text>
+<text x="42.0" y="326.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700">Key metrics</text>
+<rect x="42.0" y="346.0" width="182.0" height="34.0" rx="8.0" fill="#0b1020" opacity="0.70" />
+<text x="56.0" y="368.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600">train_loss 1.700</text>
+<rect x="252.0" y="346.0" width="182.0" height="34.0" rx="8.0" fill="#0b1020" opacity="0.70" />
+<text x="266.0" y="368.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600">validation_loss 2.020</text>
+</svg>
