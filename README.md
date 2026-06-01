@@ -32,6 +32,8 @@ TrainLens is growing its own visual language for training runs: fast visual summ
 
 ![TrainLens dark signal panel](docs/assets/trainlens-dark-signal-panel.svg)
 
+![TrainLens dark execution timeline](docs/assets/trainlens-dark-trace-timeline.svg)
+
 ![TrainLens dark feature lens](docs/assets/trainlens-dark-feature-lens.svg)
 
 ```text

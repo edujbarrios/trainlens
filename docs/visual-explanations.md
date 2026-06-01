@@ -7,6 +7,7 @@ TrainLens visual explanations are dark-mode SVG reports generated from the same 
 - `overview`: model, framework, counts for signals, metrics, trace events, and next steps.
 - `metric_trace`: line chart from numeric values captured in execution trace events.
 - `signal_panel`: compact severity view for warnings and findings.
+- `trace_timeline`: chronological view of batches, evaluations, checkpoints, and other run events.
 - `feature_lens`: ranked evidence view from `top_features` or fallback training evidence.
 
 ## Generate Assets

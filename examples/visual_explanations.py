@@ -16,6 +16,7 @@ class VisionLanguageProjectorRun:
     vision_tower = object()
     language_model = object()
     mm_projector = object()
+    feature_importances_ = [0.28, 0.16, 0.34, 0.22]
 
     class Config:
         model_type = "llava"
@@ -29,6 +30,11 @@ def main() -> None:
         "train_loss": [2.42, 2.04, 1.82, 1.74, 1.70],
         "eval_loss": [2.35, 2.12, 2.02, 2.01, 2.02],
         "eval_perplexity": [10.4, 8.6, 7.9, 7.8, 7.8],
+        "eval_recall@1": [0.18, 0.27, 0.31, 0.32, 0.32],
+    }
+    epoch_logs = {
+        "alignment_score": [0.22, 0.31, 0.38, 0.39, 0.39],
+        "projector_grad_norm": [1.9, 1.4, 1.1, 0.9, 0.8],
     }
     training_trace = [
         {"step": 100, "epoch": 0.2, "event": "batch_end", "loss": 2.42, "lr": 0.00003},
@@ -47,7 +53,12 @@ def main() -> None:
     lora_rank = 4
     trainable_params = 8_000_000
     total_params = 7_000_000_000
-    feature_names = ["projector_lr", "lora_rank", "caption_length", "image_resolution"]
+    feature_names = [
+        "projector_lr",
+        "lora_rank",
+        "caption_length",
+        "image_resolution",
+    ]
 
     namespace = locals()
     result = explain_namespace(namespace)

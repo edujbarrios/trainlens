@@ -6,22 +6,22 @@
 <text x="42.0" y="46.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">Feature Lens</text>
 <text x="42.0" y="70.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="500">Ranked training evidence for quick dark-mode inspection</text>
 <text x="42.0" y="127.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">1</text>
-<text x="76.0" y="127.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">validation_loss</text>
+<text x="76.0" y="127.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">caption_length</text>
 <rect x="250.0" y="112.0" width="620.0" height="20.0" rx="10.0" fill="#172033" opacity="1.00" />
 <rect x="250.0" y="112.0" width="620.0" height="20.0" rx="10.0" fill="#22d3ee" opacity="0.86" />
 <text x="884.0" y="127.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500">1.00</text>
 <text x="42.0" y="165.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">2</text>
-<text x="76.0" y="165.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">train_loss</text>
+<text x="76.0" y="165.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">projector_lr</text>
 <rect x="250.0" y="150.0" width="620.0" height="20.0" rx="10.0" fill="#172033" opacity="1.00" />
 <rect x="250.0" y="150.0" width="465.0" height="20.0" rx="10.0" fill="#34d399" opacity="0.86" />
 <text x="729.0" y="165.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500">0.75</text>
 <text x="42.0" y="203.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">3</text>
-<text x="76.0" y="203.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">lora_rank</text>
+<text x="76.0" y="203.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">image_resolution</text>
 <rect x="250.0" y="188.0" width="620.0" height="20.0" rx="10.0" fill="#172033" opacity="1.00" />
 <rect x="250.0" y="188.0" width="310.0" height="20.0" rx="10.0" fill="#f59e0b" opacity="0.86" />
 <text x="574.0" y="203.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500">0.50</text>
 <text x="42.0" y="241.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="13" font-weight="700">4</text>
-<text x="76.0" y="241.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">dataset_balance</text>
+<text x="76.0" y="241.0" fill="#e5edf6" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="500">lora_rank</text>
 <rect x="250.0" y="226.0" width="620.0" height="20.0" rx="10.0" fill="#172033" opacity="1.00" />
 <rect x="250.0" y="226.0" width="155.0" height="20.0" rx="10.0" fill="#a78bfa" opacity="0.86" />
 <text x="419.0" y="241.0" fill="#94a3b8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500">0.25</text>
