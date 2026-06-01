@@ -181,6 +181,49 @@ class DarkVisualRenderer:
             lines.append(_text(806, y + 26, signal.severity.upper(), 12, color, 700))
         return _svg_footer(lines)
 
+    def render_trace_timeline(self, result: AnalysisResult) -> str:
+        width, height = 920, 420
+        lines = _svg_header(
+            width,
+            height,
+            "TrainLens execution timeline",
+            "Timeline showing recent training events, checkpoints, and evaluations.",
+        )
+        lines.extend(
+            [
+                _text(42, 46, "Execution Timeline", 26, weight=700),
+                _text(42, 70, "Recent run events connected to training evidence", 13, _MUTED),
+            ]
+        )
+        events = result.trace[-7:]
+        if not events:
+            lines.append(_text(42, 210, "No execution events found yet", 18, _MUTED))
+            return _svg_footer(lines)
+
+        axis_x, axis_y, axis_w = 82, 196, 756
+        lines.append(
+            f'<line x1="{axis_x}" y1="{axis_y}" x2="{axis_x + axis_w}" y2="{axis_y}" '
+            f'stroke="{_GRID}" stroke-width="2" />'
+        )
+        for index, event in enumerate(events):
+            x = axis_x + (axis_w * index / max(len(events) - 1, 1))
+            color = _event_color(event)
+            label = _event_label(event)
+            metric_label = _compact_metrics(event.metrics)
+            lines.append(_rect(x - 8, axis_y - 8, 16, 16, color, 8))
+            lines.append(_text(x - 28, axis_y - 28, _event_position(event, index), 12, _MUTED, 700))
+            card_y = 238 if index % 2 == 0 else 104
+            lines.append(_rect(x - 66, card_y, 132, 62, _PANEL_ALT, 9, opacity=0.92))
+            lines.append(_rect(x - 66, card_y, 132, 4, color, 2))
+            lines.append(_text(x - 54, card_y + 24, _clip(label, 17), 13, _TEXT, 700))
+            lines.append(_text(x - 54, card_y + 44, _clip(metric_label, 20), 11, _MUTED, 600))
+            connector_y = card_y if card_y > axis_y else card_y + 62
+            lines.append(
+                f'<line x1="{x:.1f}" y1="{axis_y}" x2="{x:.1f}" y2="{connector_y}" '
+                f'stroke="{color}" stroke-width="1.5" opacity="0.65" />'
+            )
+        return _svg_footer(lines)
+
     def render_feature_lens(self, result: AnalysisResult) -> str:
         width, height = 920, 420
         lines = _svg_header(
@@ -229,11 +272,13 @@ class DarkVisualRenderer:
             "overview": output_dir / "trainlens-dark-overview.svg",
             "metric_trace": output_dir / "trainlens-dark-metric-trace.svg",
             "signal_panel": output_dir / "trainlens-dark-signal-panel.svg",
+            "trace_timeline": output_dir / "trainlens-dark-trace-timeline.svg",
             "feature_lens": output_dir / "trainlens-dark-feature-lens.svg",
         }
         assets["overview"].write_text(self.render_overview_card(result), encoding="utf-8")
         assets["metric_trace"].write_text(self.render_metric_trace(result), encoding="utf-8")
         assets["signal_panel"].write_text(self.render_signal_panel(result), encoding="utf-8")
+        assets["trace_timeline"].write_text(self.render_trace_timeline(result), encoding="utf-8")
         assets["feature_lens"].write_text(self.render_feature_lens(result), encoding="utf-8")
         return assets
 
@@ -316,6 +361,45 @@ def _severity_color(severity: str) -> str:
     if severity == "warning":
         return _AMBER
     return _CYAN
+
+
+def _event_color(event: TraceEvent) -> str:
+    label = ((event.name or "") + " " + (event.message or "")).lower()
+    if "checkpoint" in label or "save" in label:
+        return _PURPLE
+    has_validation_metric = any(
+        name.startswith(("eval_", "val_", "validation_")) for name in event.metrics
+    )
+    if "eval" in label or has_validation_metric:
+        return _AMBER
+    if "error" in label or "fail" in label:
+        return _RED
+    return _CYAN
+
+
+def _event_label(event: TraceEvent) -> str:
+    return event.name or event.message or "training event"
+
+
+def _event_position(event: TraceEvent, index: int) -> str:
+    if event.step is not None:
+        return f"step {event.step}"
+    if event.epoch is not None:
+        return f"epoch {event.epoch:g}"
+    return f"event {index + 1}"
+
+
+def _compact_metrics(metrics: Mapping[str, float]) -> str:
+    if not metrics:
+        return "no scalar metrics"
+    name, value = next(iter(metrics.items()))
+    return f"{name}={value:.3g}"
+
+
+def _clip(value: str, limit: int) -> str:
+    if len(value) <= limit:
+        return value
+    return value[: max(limit - 1, 0)] + "..."
 
 
 def _highest_severity(signals: list[Signal]) -> str:
