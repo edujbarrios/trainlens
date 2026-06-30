@@ -7,6 +7,7 @@ metrics, logs, traces, hyperparameters, and notes.
 [![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![PyPI release](https://img.shields.io/badge/PyPI-planned%20after%20minor%20fixes-orange)](https://pypi.org/project/trainlens/)
 
 Maintained by Eduardo J. Barrios.
 
