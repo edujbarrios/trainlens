@@ -8,9 +8,9 @@ class DemoShell:
     }
 
 
-def test_training_dashboard_magic_captures_run():
+def test_explain_training_magic_captures_run():
     magics = TrainLensMagics(DemoShell())
 
-    magics.training_dashboard("")
+    magics.explain_training("")
 
     assert magics.store.latest() is not None
