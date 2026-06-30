@@ -11,8 +11,8 @@ metrics, logs, traces, hyperparameters, and notes.
 
 Maintained by Eduardo J. Barrios.
 
-It produces a local Markdown diagnosis plus an atlas-style notebook UI, and can
-enhance that same report with an OpenAI-compatible LLM provider in-place.
+It produces a local Markdown diagnosis in the notebook output, and can enhance
+that same report with an OpenAI-compatible LLM provider in-place.
 
 ## Quickstart
 
@@ -39,8 +39,8 @@ os.environ["TRAINLENS_LLM_MODEL"] = "your-model-name"
 display(Markdown(maybe_enhance(report.markdown)))
 ```
 
-The local atlas and report work without an API key. The LLM call is only used
-for the enhanced explanation.
+The local report works without an API key. The LLM call is only used for the
+enhanced explanation.
 
 ## What It Answers
 
@@ -68,14 +68,12 @@ sys.path.insert(0, str(TRAINLENS_REPO / "src"))
 Use the helper or magics:
 
 ```python
-from trainlens.notebook import display_live_report, display_training_atlas
+from trainlens.notebook import display_live_report
 
 display_live_report(globals())
-display_training_atlas(globals())
 
 %load_ext trainlens.magic.extension
 %explain_training
-%training_atlas
 %compare_runs
 ```
 
@@ -86,7 +84,7 @@ notebook variables
   -> namespace snapshot
   -> model, dataset, metric, and trace extraction
   -> training heuristics
-  -> Markdown report and atlas UI
+  -> Markdown report
   -> optional LLM enhancement
 ```
 

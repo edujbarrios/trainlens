@@ -14,11 +14,3 @@ def test_explain_training_magic_captures_run():
     magics.explain_training("")
 
     assert magics.store.latest() is not None
-
-
-def test_training_atlas_magic_captures_run():
-    magics = TrainLensMagics(DemoShell())
-
-    magics.training_atlas("")
-
-    assert magics.store.latest() is not None

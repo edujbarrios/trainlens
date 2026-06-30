@@ -35,16 +35,14 @@ from trainlens.notebook import display_live_report
 live_report = display_live_report(globals())
 ```
 
-`live_report.result` keeps the structured analysis object,
-`live_report.markdown` keeps the rendered notebook report, and
-`live_report.atlas_html` keeps the atlas-style HTML UI.
+`live_report.result` keeps the structured analysis object, while
+`live_report.markdown` keeps the rendered notebook report.
 
 ## 4. Use Magic Commands
 
 ```python
 %load_ext trainlens.magic.extension
 %explain_training
-%training_atlas
 %training_summary
 %why_bad_model
 %compare_runs
