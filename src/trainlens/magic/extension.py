@@ -18,4 +18,3 @@ def unload_ipython_extension(ipython: InteractiveShell) -> None:
     ipython.magics_manager.magics["line"].pop("why_bad_model", None)
     ipython.magics_manager.magics["line"].pop("training_summary", None)
     ipython.magics_manager.magics["line"].pop("compare_runs", None)
-    ipython.magics_manager.magics["line"].pop("training_dashboard", None)

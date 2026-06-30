@@ -10,7 +10,6 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from trainlens.pipeline import explain_namespace  # noqa: E402
 from trainlens.renderers.markdown import MarkdownRenderer  # noqa: E402
-from trainlens.renderers.visual import DarkVisualRenderer  # noqa: E402
 
 
 class ScalarTensor:
@@ -50,10 +49,3 @@ callback_metrics = {
 
 result = explain_namespace(globals())
 print(MarkdownRenderer().render(result))
-
-assets = DarkVisualRenderer().write_dashboard_assets(
-    result, ROOT / "examples" / "generated" / "pytorch-loop-metrics"
-)
-print("Wrote visual assets:")
-for name, path in assets.items():
-    print(f"- {name}: {path.relative_to(ROOT)}")

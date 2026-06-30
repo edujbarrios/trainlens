@@ -9,12 +9,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from IPython import get_ipython
-from IPython.display import HTML, Markdown, display
+from IPython.display import Markdown, display
 
 from trainlens.models.analysis import AnalysisResult
 from trainlens.pipeline import explain_namespace
 from trainlens.renderers.markdown import MarkdownRenderer
-from trainlens.renderers.visual import DarkVisualRenderer
 
 
 @dataclass(frozen=True)
@@ -23,27 +22,24 @@ class LiveReport:
 
     result: AnalysisResult
     markdown: str
-    dashboard_html: str
 
 
 def build_live_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
-    """Build Markdown and visual dashboard output from a notebook namespace."""
+    """Build Markdown training-result output from a notebook namespace."""
 
     report_namespace = namespace or _current_user_namespace()
     result = explain_namespace(report_namespace)
     return LiveReport(
         result=result,
         markdown=MarkdownRenderer().render(result),
-        dashboard_html=DarkVisualRenderer().render_dashboard_html(result),
     )
 
 
 def display_live_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
-    """Display a Markdown report and dark visual dashboard in a notebook."""
+    """Display a Markdown training-result report in a notebook."""
 
     report = build_live_report(namespace)
     display(Markdown(report.markdown))
-    display(HTML(report.dashboard_html))
     return report
 
 
