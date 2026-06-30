@@ -1,6 +1,42 @@
 # TrainLens
 
-TrainLens describes machine-learning training results directly inside Jupyter notebooks.
+TrainLens is a notebook-native training-result explainer. It reads the model,
+metrics, histories, traces, and metadata already present in a Jupyter notebook,
+then writes a Markdown diagnosis of what happened during training and what to
+try next.
+
+```python
+# In a Jupyter notebook, after your training cell has created model/history/logs:
+from IPython.display import Markdown, display
+
+from trainlens.llm.enhancer import maybe_enhance
+from trainlens.pipeline import explain_namespace
+from trainlens.renderers.markdown import MarkdownRenderer
+
+
+history = {
+    "train_loss": [2.6, 2.1, 1.92, 1.91],
+    "eval_loss": [2.5, 2.18, 2.16, 2.16],
+    "eval_perplexity": [12.2, 9.1, 8.9, 8.9],
+}
+training_trace = [
+    {"step": 100, "event": "batch_end", "loss": 1.92},
+    {"step": 200, "event": "eval", "eval_loss": 2.16},
+]
+lora_rank = 4
+trainable_params = 8_000_000
+total_params = 7_000_000_000
+
+result = explain_namespace(globals())
+report = MarkdownRenderer().render(result)
+display(Markdown(report))
+
+# Optional: power up the report with an OpenAI-compatible API.
+# Set TRAINLENS_LLM_BASE_URL, TRAINLENS_LLM_API_KEY, and TRAINLENS_LLM_MODEL
+# in your notebook environment first.
+enhanced_report = maybe_enhance(report)
+display(Markdown(enhanced_report))
+```
 
 [![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
