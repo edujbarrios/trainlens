@@ -1,13 +1,12 @@
 # TrainLens
 
-TrainLens is built for AI/LLM-powered training analysis without leaving your
-Jupyter notebook.
+TrainLens explains training results from the full context of your Jupyter
+notebook: the model, dataset, metrics, logs, traces, hyperparameters, and notes
+you already have in memory.
 
-It reads the model, metrics, histories, traces, and metadata already present in
-the notebook, then writes a Markdown diagnosis of what happened during training
-and what to try next. Local heuristics work immediately, and an
-OpenAI-compatible LLM can enhance the same report inside the notebook when API
-credentials are configured.
+It is built for AI/LLM-powered training analysis without leaving the notebook.
+Local heuristics work immediately, and an OpenAI-compatible LLM can enhance the
+same report in-place when API credentials are configured.
 
 ```python
 # In a Jupyter notebook, after or during training:
@@ -21,10 +20,13 @@ history = {
     "train_loss": [2.4, 1.9, 1.6],
     "eval_loss": [2.5, 2.0, 1.8],
 }
+dataset_name = "customer-support-instructions"
+dataset_notes = "Small validation split; long answers are underrepresented."
+learning_rate = 2e-5
 
 report = display_live_report(globals())
 
-# LLM enhancement stays in the same notebook when API credentials are set.
+# Ask the LLM to explain the results using the notebook context.
 # First set TRAINLENS_LLM_BASE_URL, TRAINLENS_LLM_API_KEY, and TRAINLENS_LLM_MODEL.
 display(Markdown(maybe_enhance(report.markdown)))
 ```
@@ -33,9 +35,10 @@ display(Markdown(maybe_enhance(report.markdown)))
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
-TrainLens reads the variables that already exist in a notebook, finds training metrics and run evidence, and renders a concise Markdown explanation in the notebook output. It is focused on answering practical questions after or during a training run:
+TrainLens reads the variables that already exist in a notebook, finds training metrics, dataset context, and run evidence, and renders a concise Markdown explanation in the notebook output. It is focused on answering practical questions after or during a training run:
 
 - What did this notebook train?
+- What dataset and training context shaped the result?
 - Which metrics matter right now?
 - Is the run improving, plateauing, overfitting, or missing validation evidence?
 - What should I try next in this same notebook?
