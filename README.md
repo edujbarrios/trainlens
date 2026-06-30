@@ -1,7 +1,8 @@
 # TrainLens
 
-TrainLens explains training results from the context already inside a Jupyter
-notebook: model, dataset, metrics, logs, traces, hyperparameters, and notes.
+TrainLens lets you explain training results without leaving the Jupyter
+notebook you are running. It uses the context already in memory: model, dataset,
+metrics, logs, traces, hyperparameters, and notes.
 
 [![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
@@ -9,9 +10,8 @@ notebook: model, dataset, metrics, logs, traces, hyperparameters, and notes.
 
 Maintained by Eduardo J. Barrios.
 
-TrainLens runs in the notebook, produces a local Markdown diagnosis, and can
-enhance that report with an OpenAI-compatible LLM provider without leaving
-Jupyter.
+It produces a local Markdown diagnosis in the notebook output, and can enhance
+that same report with an OpenAI-compatible LLM provider in-place.
 
 ## Quickstart
 
