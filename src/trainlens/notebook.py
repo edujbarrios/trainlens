@@ -9,10 +9,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from IPython import get_ipython
-from IPython.display import Markdown, display
+from IPython.display import HTML, Markdown, display
 
 from trainlens.models.analysis import AnalysisResult
 from trainlens.pipeline import explain_namespace
+from trainlens.renderers.atlas import AtlasRenderer
 from trainlens.renderers.markdown import MarkdownRenderer
 
 
@@ -22,6 +23,7 @@ class LiveReport:
 
     result: AnalysisResult
     markdown: str
+    atlas_html: str
 
 
 def build_live_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
@@ -32,6 +34,7 @@ def build_live_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
     return LiveReport(
         result=result,
         markdown=MarkdownRenderer().render(result),
+        atlas_html=AtlasRenderer().render(result),
     )
 
 
@@ -39,7 +42,16 @@ def display_live_report(namespace: Mapping[str, Any] | None = None) -> LiveRepor
     """Display a Markdown training-result report in a notebook."""
 
     report = build_live_report(namespace)
+    display(HTML(report.atlas_html))
     display(Markdown(report.markdown))
+    return report
+
+
+def display_training_atlas(namespace: Mapping[str, Any] | None = None) -> LiveReport:
+    """Display only the atlas-style notebook UI for a training result."""
+
+    report = build_live_report(namespace)
+    display(HTML(report.atlas_html))
     return report
 
 

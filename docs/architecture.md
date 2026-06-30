@@ -9,7 +9,7 @@ Notebook Hook Layer
   -> Execution Trace Extractor
   -> Metric Interpretation Engine
   -> Explanation Generator
-  -> Notebook Markdown Renderer
+  -> Notebook Markdown And Atlas Renderers
 ```
 
 ## Notebook Hook Layer
@@ -37,9 +37,9 @@ report.
 
 ## Renderer Layer
 
-Renderers convert `AnalysisResult` objects into Markdown or Rich output. They
-should not perform analysis. The notebook Markdown renderer is the primary
-product surface.
+Renderers convert `AnalysisResult` objects into Markdown, Rich output, or the
+atlas-style notebook HTML UI. They should not perform analysis; they only
+present the same analyzer output in different notebook-friendly forms.
 
 ## LLM Layer
 

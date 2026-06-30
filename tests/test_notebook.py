@@ -10,4 +10,5 @@ def test_build_live_report_returns_markdown():
     )
 
     assert "TrainLens Report" in report.markdown
+    assert "trainlens-atlas" in report.atlas_html
     assert report.result.metrics["train_loss"] == 1.6
