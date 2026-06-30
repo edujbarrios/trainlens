@@ -6,7 +6,7 @@
 - add persisted run stores
 - support notebook cell execution hooks
 - expand fine-tuning metric aliases for LoRA, CLIP, projector, and VLM runs
-- add public screenshots and demo notebooks
+- add more notebook examples
 
 ## Mid term
 
@@ -21,6 +21,5 @@
 ## Long term
 
 - experiment lineage across notebooks
-- visual metric diagnostics for alignment drift
 - automated train/eval leakage checks for instruction and image-text datasets
 - contributor plugin catalog

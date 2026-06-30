@@ -9,7 +9,7 @@ Notebook Hook Layer
   -> Execution Trace Extractor
   -> Metric Interpretation Engine
   -> Explanation Generator
-  -> Notebook and Visual Renderers
+  -> Notebook Markdown Renderer
 ```
 
 ## Notebook Hook Layer
@@ -32,18 +32,14 @@ Hugging Face `log_history`, PyTorch loop lists such as `train_losses` and
 
 Execution traces are extracted separately from variables such as
 `training_trace`, `execution_trace`, `logs`, `log_history`, and
-`trainer.state.log_history`. Trace events can feed both Markdown tables and
-dark-mode visual explanations.
+`trainer.state.log_history`. Trace events feed Markdown tables in the notebook
+report.
 
 ## Renderer Layer
 
-Renderers convert `AnalysisResult` objects into Markdown, Rich output, or
-dependency-free SVG visuals. They should not perform analysis.
-
-The visual renderer writes dark-mode SVG assets for overview cards, metric
-traces, signal panels, and ranked evidence views. These visuals use the same
-analysis output as the notebook Markdown report, so docs and notebooks stay
-aligned.
+Renderers convert `AnalysisResult` objects into Markdown or Rich output. They
+should not perform analysis. The notebook Markdown renderer is the primary
+product surface.
 
 ## LLM Layer
 

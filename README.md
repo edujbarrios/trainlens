@@ -1,72 +1,35 @@
 # TrainLens
 
-TrainLens is an open-source framework for understanding machine learning training sessions directly inside Jupyter notebooks.
+TrainLens describes machine-learning training results directly inside Jupyter notebooks.
 
 [![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
-TrainLens inspects the state of a Jupyter notebook and turns training evidence into a readable report. It looks at model objects, metric histories, execution traces, dataset hints, and notebook variables, then explains what is happening and what to try next.
+TrainLens reads the variables that already exist in a notebook, finds training metrics and run evidence, and renders a concise Markdown explanation in the notebook output. It is focused on answering practical questions after or during a training run:
 
-The project is focused on foundation-model training and fine-tuning runs: LLMs, CLIP-style contrastive models, ViTs, multimodal projectors, VLMs, and emerging audio/music generation systems.
+- What did this notebook train?
+- Which metrics matter right now?
+- Is the run improving, plateauing, overfitting, or missing validation evidence?
+- What should I try next in this same notebook?
+
+The project intentionally does not provide a GUI, image dashboard, or screenshot workflow. The primary interface is notebook Markdown.
 
 ## What TrainLens Does
 
 TrainLens gives you a notebook-local training report:
 
 1. It scans the notebook namespace for models, histories, metrics, traces, and useful metadata.
-2. It normalizes common training artifacts such as Keras histories, Hugging Face `log_history`, and PyTorch loop metrics.
-3. It applies heuristics for loss behavior, validation gaps, class balance, adapters, projectors, contrastive training, and multimodal runs.
-4. It renders a Markdown report with result explanation, potential issues, and a prioritized improvement plan.
-5. Optionally, it sends that report to an OpenAI-compatible chat-completions endpoint for LLM-enhanced explanation.
+2. It normalizes common training artifacts such as Keras histories, Hugging Face `log_history`, PyTorch loop metrics, and Lightning-style metric dictionaries.
+3. It applies heuristics for loss behavior, validation gaps, class balance, adapters, projectors, contrastive training, multimodal runs, and music-generation experiments.
+4. It renders a Markdown report with a training summary, result explanation, potential issues, recommended next steps, and an improvement plan.
+5. Optionally, it sends that Markdown report to an OpenAI-compatible chat-completions endpoint for LLM-enhanced wording.
 
-No API key is required for the local analysis. API access is only needed for optional LLM enhancement.
-
-## Visual Explanations
-
-TrainLens is growing its own visual language for training runs: fast visual summaries that help you see which metrics, events, and model signals are driving the diagnosis. The visual renderer is dark-mode only, so generated assets are consistent in notebooks, docs, and reports.
-
-![TrainLens dark overview](docs/assets/trainlens-dark-overview.svg)
-
-![TrainLens dark metric trace](docs/assets/trainlens-dark-metric-trace.svg)
-
-![TrainLens dark signal panel](docs/assets/trainlens-dark-signal-panel.svg)
-
-![TrainLens dark execution timeline](docs/assets/trainlens-dark-trace-timeline.svg)
-
-![TrainLens dark feature lens](docs/assets/trainlens-dark-feature-lens.svg)
-
-![TrainLens dark improvement plan](docs/assets/trainlens-dark-improvement-plan.svg)
-
-```text
-Model detected: LlavaForConditionalGeneration
-
-Training summary:
-- Foundation-model profile: LLM, PROJECTOR, VLM
-- Validation loss plateaued across recent checkpoints
-- Tiny trainable parameter ratio detected
-
-Result explanation:
-- Validation loss is materially higher than training loss, so the run may be generalizing worse than it fits the training batches.
-- Execution trace evidence is available, so the metric readings can be tied back to concrete training events.
-
-Potential issues:
-- Projector alignment may be under-capacity
-- Retrieval/caption validation is missing
-
-Recommended next steps:
-- Track eval_loss, perplexity, learning-rate schedule, and gradient norm
-- Validate projector alignment with frozen vision and language towers
-- Evaluate text-image retrieval or held-out multimodal instructions
-
-Improvement plan:
-1. Track eval_loss, perplexity, learning-rate schedule, and gradient norm per checkpoint.
-2. Run a focused validation error analysis.
-```
+No API key is required for local analysis. API access is only needed for optional LLM enhancement.
 
 ## Why TrainLens?
 
-Most notebook explainability tools require a dedicated explainability package or a lot of manual wiring. TrainLens starts with what your notebook already has:
+Most notebook training reports require manual plotting, custom logging, or a separate experiment-tracking service. TrainLens starts with what your notebook already has:
 
 - Python variables in the active IPython shell
 - trained model objects from Transformers, PEFT, PyTorch, timm, diffusers, audio stacks, and notebook code
@@ -75,11 +38,9 @@ Most notebook explainability tools require a dedicated explainability package or
 - loss, perplexity, recall@k, contrastive loss, projector loss, audio reconstruction loss, and eval metrics
 - LoRA/adapters, trainable parameter ratios, multimodal tower/projector hints, and audio-conditioning clues
 
-It then turns that evidence into useful summaries, debugging signals, recommendations, and experiment ideas.
+It then turns that evidence into a readable notebook report.
 
 ## How It Works
-
-TrainLens is intentionally simple:
 
 ```text
 Notebook variables
@@ -87,45 +48,20 @@ Notebook variables
   -> model and framework detection
   -> metric and execution-trace extraction
   -> training heuristics
-  -> Markdown report
+  -> notebook Markdown report
   -> optional LLM enhancement
 ```
 
-You can use it in two ways:
+You can use TrainLens in two notebook-first ways:
 
-- From inside a notebook with `explain_namespace(globals())` or the IPython magic commands.
-- From the command line by passing an existing Markdown report to `tools/trainlens_openai_compatible.py`.
+- Call `display_live_report(globals())` from a notebook cell.
+- Load the IPython extension and run `%explain_training`, `%training_summary`, `%why_bad_model`, or `%compare_runs`.
 
-## Use Without Installing
+You can also pass a saved Markdown report to `tools/trainlens_openai_compatible.py` when you want optional LLM enhancement from a notebook shell cell.
 
-```bash
-git clone https://github.com/edujbarrios/trainlens.git
-cd trainlens
-python tools/trainlens_openai_compatible.py --help
-```
+## Use From A Clone
 
-TrainLens is designed so the notebook-side explainer can run locally without requiring users to install an extra Python library. The standalone OpenAI-compatible API tool uses only the Python standard library and reads configuration from environment variables.
-
-```env
-TRAINLENS_LLM_BASE_URL=https://api.example.com/v1
-TRAINLENS_LLM_API_KEY=your_api_key_here
-TRAINLENS_LLM_MODEL=auto
-```
-
-```bash
-python tools/trainlens_openai_compatible.py training_report.md
-```
-
-From a notebook cell, without installing TrainLens as a library:
-
-```python
-!python tools/trainlens_openai_compatible.py training_report.md
-```
-
-## Jupyter Cell Examples
-
-Use TrainLens directly from a cloned repo by adding `src/` to the notebook path.
-This does not install a package into the environment.
+Use TrainLens directly from a cloned repository by adding `src/` to the notebook path. This does not install a package into the environment.
 
 ```python
 from pathlib import Path
@@ -135,7 +71,7 @@ TRAINLENS_REPO = Path("/path/to/trainlens").resolve()
 sys.path.insert(0, str(TRAINLENS_REPO / "src"))
 ```
 
-### Live notebook workflow
+## Notebook Workflow
 
 Cell 1: keep your normal training variables in the notebook.
 
@@ -151,7 +87,7 @@ epoch_logs = [
 ]
 ```
 
-Cell 2: render the live report and the dark visual dashboard.
+Cell 2: render the report inside the notebook.
 
 ```python
 from trainlens.notebook import display_live_report
@@ -159,11 +95,9 @@ from trainlens.notebook import display_live_report
 live_report = display_live_report(globals())
 ```
 
-`live_report.result` keeps the structured analysis object, while
-`live_report.markdown` and `live_report.dashboard_html` keep the rendered
-artifacts.
+`live_report.result` keeps the structured analysis object, while `live_report.markdown` keeps the rendered notebook report.
 
-The Markdown report always includes:
+The Markdown report includes:
 
 - `Training summary`: what TrainLens found in the notebook state.
 - `Result explanation`: what the metrics and signals mean.
@@ -176,18 +110,19 @@ Cell 3: use notebook magics after loading the extension.
 ```python
 %load_ext trainlens.magic.extension
 %explain_training
-%training_dashboard
+%training_summary
+%why_bad_model
 %compare_runs
 ```
 
-See [docs/live-notebook-cells.md](docs/live-notebook-cells.md) for the same flow in a compact copy-paste format, and [docs/report-sections.md](docs/report-sections.md) for how to read each report section.
+See [docs/live-notebook-cells.md](docs/live-notebook-cells.md) for a compact copy-paste workflow, and [docs/report-sections.md](docs/report-sections.md) for how to read each report section.
 
-### Analyze an LLM fine-tune
+## Analyze An LLM Fine-Tune
 
 ```python
+from IPython.display import Markdown, display
 from trainlens.pipeline import explain_namespace
 from trainlens.renderers.markdown import MarkdownRenderer
-from IPython.display import Markdown, display
 
 
 class MistralLoRAFineTune:
@@ -211,7 +146,7 @@ report = MarkdownRenderer().render(explain_namespace(globals()))
 display(Markdown(report))
 ```
 
-### Include execution traces
+## Include Execution Traces
 
 TrainLens can include recent training events in the report. Use a list of dictionaries named `training_trace`, `execution_trace`, `trace`, `logs`, or `log_history`. Hugging Face-style `trainer.state.log_history` is also detected.
 
@@ -228,7 +163,7 @@ display(Markdown(report))
 
 The report will show an `Execution trace` table with step, epoch, event, and numeric metrics. This makes it easier to connect the final diagnosis with what actually happened during the run.
 
-### Analyze PyTorch loop metrics
+## Analyze PyTorch Loop Metrics
 
 TrainLens detects common PyTorch training-loop variables such as `train_losses`, `val_losses`, `epoch_logs`, `callback_metrics`, and `logged_metrics`. Tensor-like scalar values are supported when they expose `.item()`, which covers the common `torch.Tensor` case.
 
@@ -249,107 +184,17 @@ For a runnable no-PyTorch dependency example:
 python examples/pytorch_loop_metrics.py
 ```
 
-### Generate dark visual explanations
+## Optional LLM Enhancement
 
-Use `DarkVisualRenderer` when you want notebook-friendly SVG images alongside the Markdown report.
+TrainLens never requires API access. LLM support is opt-in and provider based.
 
-```python
-from trainlens.pipeline import explain_namespace
-from trainlens.renderers.visual import DarkVisualRenderer
-
-
-result = explain_namespace(globals())
-assets = DarkVisualRenderer().write_dashboard_assets(result, "trainlens_assets")
-
-assets["metric_trace"]
-assets["signal_panel"]
-assets["feature_lens"]
+```env
+TRAINLENS_LLM_BASE_URL=https://api.example.com/v1
+TRAINLENS_LLM_API_KEY=your_api_key_here
+TRAINLENS_LLM_MODEL=auto
 ```
 
-For an inline notebook dashboard:
-
-```python
-from IPython.display import HTML, display
-
-display(HTML(DarkVisualRenderer().render_dashboard_html(result)))
-```
-
-The same flow is available as a runnable example:
-
-```bash
-python examples/visual_explanations.py
-python examples/live_dashboard_export.py
-```
-
-### Analyze a VLM projector run
-
-```python
-class LlavaProjectorRun:
-    vision_tower = object()
-    language_model = object()
-    mm_projector = object()
-
-    class Config:
-        model_type = "llava"
-
-    config = Config()
-
-
-model = LlavaProjectorRun()
-history = {
-    "train_loss": [2.4, 1.9, 1.72, 1.71],
-    "eval_loss": [2.3, 2.0, 1.99, 1.99],
-}
-lora_rank = 4
-
-display(Markdown(MarkdownRenderer().render(explain_namespace(globals()))))
-```
-
-### Analyze an AI music generation run
-
-TrainLens can also summarize the evidence around music-generation experiments, including
-text-to-music, audio-to-audio, MIDI/symbolic generation, stem-aware models, vocal models,
-and multimodal audio-language alignment runs.
-
-```python
-class MusicDiffusionFineTune:
-    text_encoder = object()
-    audio_autoencoder = object()
-    diffusion_unet = object()
-
-    class Config:
-        model_type = "musicgen"
-
-    config = Config()
-
-
-model = MusicDiffusionFineTune()
-history = {
-    "train_loss": [1.82, 1.41, 1.22, 1.18],
-    "eval_loss": [1.75, 1.48, 1.42, 1.43],
-    "spectral_convergence": [0.38, 0.31, 0.29, 0.28],
-    "clap_score": [0.21, 0.27, 0.30, 0.31],
-}
-sample_rate = 44_100
-conditioning = ["text_prompt", "tempo", "key", "genre"]
-
-display(Markdown(MarkdownRenderer().render(explain_namespace(globals()))))
-```
-
-For music-generation notebooks, useful evidence to expose in the namespace includes:
-
-- objective metrics: reconstruction loss, diffusion loss, STFT loss, mel loss, spectral convergence, FAD, CLAP score, beat alignment, pitch accuracy, and prompt-audio retrieval
-- conditioning metadata: text prompts, tempo, key, genre, style tags, lyrics, chord charts, MIDI controls, seed audio, stems, and duration buckets
-- architecture hints: audio autoencoders, diffusion/flow/transformer decoders, EnCodec-style tokenizers, CLAP/audio-language encoders, vocoders, LoRA adapters, and control modules
-- dataset signals: clip length distribution, sample rate, loudness normalization, silence ratio, duplicate tracks, train/validation artist leakage, license labels, and vocal/instrumental splits
-- generation risks: memorization of copyrighted material, prompt leakage, singer or artist imitation, lyric toxicity, degraded stereo image, clipping, mode collapse, and weak long-range structure
-
-### Create and enhance a Markdown report from Jupyter
-
-You can generate the TrainLens report, save it as Markdown, preview it in the
-notebook, and then send that same file to an OpenAI-compatible endpoint. This is
-the most direct workflow when you want a reproducible report artifact from one
-cell.
+Generate a report, save it as Markdown, preview it in the notebook, and then send that same file to an OpenAI-compatible endpoint:
 
 ```python
 from pathlib import Path
@@ -367,60 +212,11 @@ display(Markdown(report))
 print(f"Wrote {report_path.resolve()}")
 ```
 
-Then run the optional LLM enhancement against the Markdown file:
-
 ```python
 !python /path/to/trainlens/tools/trainlens_openai_compatible.py training_report.md
 ```
 
-If you prefer to keep the whole workflow in Python instead of using notebook
-shell syntax, call the helper with `subprocess`:
-
-```python
-import os
-import subprocess
-import sys
-
-env = {
-    **os.environ,
-    "TRAINLENS_LLM_BASE_URL": "https://api.example.com/v1",
-    "TRAINLENS_LLM_API_KEY": "your_api_key_here",
-    "TRAINLENS_LLM_MODEL": "auto",
-}
-
-completed = subprocess.run(
-    [
-        sys.executable,
-        "/path/to/trainlens/tools/trainlens_openai_compatible.py",
-        str(report_path),
-    ],
-    check=True,
-    capture_output=True,
-    env=env,
-    text=True,
-)
-
-enhanced_report = completed.stdout
-display(Markdown(enhanced_report))
-```
-
-More examples live in [`notebooks/`](notebooks/).
-
-Contributor setup for package internals lives in [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Optional LLM Enhancement
-
-TrainLens never requires API access. LLM support is opt-in and provider based.
-
-```env
-TRAINLENS_LLM_BASE_URL=https://api.example.com/v1
-TRAINLENS_LLM_API_KEY=your_api_key_here
-TRAINLENS_LLM_MODEL=auto
-```
-
 The current provider targets OpenAI-compatible chat completions. The provider interface is intentionally small so hosted APIs, Ollama-compatible gateways, and local model servers can be swapped without changing analyzer logic.
-
-LLM enhancement prompts are rendered from a parameterized Jinja2 template, so audience, tone, model-family focus, safety rules, and report content can evolve without hardcoding provider-specific strings.
 
 ## Architecture
 
@@ -431,31 +227,21 @@ Notebook Hook Layer
   -> Execution Trace Extractor
   -> Metric Interpretation Engine
   -> Explanation Generator
-  -> Notebook Renderer
+  -> Notebook Markdown Renderer
 ```
 
 Core modules live under `src/trainlens`:
 
 - `introspection`: notebook namespace scanning and model discovery
 - `analyzers`: framework and training-session analyzers
-- `heuristics`: loss, convergence, contrastive, adapter, projector, and multimodal rules
+- `heuristics`: loss, convergence, contrastive, adapter, projector, multimodal, and music-generation rules
 - `models`: typed domain objects
 - `llm`: provider abstractions and optional enhancement
 - `magic`: IPython magic commands
-- `renderers`: notebook Markdown/Rich output and dark-mode SVG visual explanations
-- `storage`: run persistence and comparison
+- `renderers`: notebook Markdown and Rich output
+- `storage`: notebook-local run persistence and comparison
 
-## AI Music Generation Coverage
-
-AI music generation spans more than one model family, so TrainLens treats it as a multimodal training problem rather than a single metric dashboard. The page and roadmap cover these sides:
-
-- `text-to-music`: prompt adherence, style control, genre conditioning, duration handling, and audio-language retrieval metrics
-- `audio-to-audio`: continuation, inpainting, variation, timbre transfer, denoising, source-conditioned generation, and reconstruction quality
-- `symbolic music`: MIDI tokens, note density, pitch range, chord progression, tempo maps, quantization, and arrangement structure
-- `vocals and lyrics`: lyric alignment, phoneme timing, singer identity risk, pronunciation, intelligibility, and separation between voice and instrumental quality
-- `stems and production`: drum/bass/melody/stem conditioning, mix balance, stereo field, loudness, clipping, and mastering artifacts
-- `evaluation`: FAD, CLAP score, spectral metrics, beat and pitch tracking, human preference tests, prompt-audio retrieval, and held-out style validation
-- `responsible release`: dataset licenses, attribution, opt-out lists, duplicate detection, memorization probes, watermarking, and artist/style imitation policy
+More examples live in [notebooks/](notebooks/). Contributor setup for package internals lives in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Roadmap
 
@@ -465,12 +251,6 @@ AI music generation spans more than one model family, so TrainLens treats it as 
 - notebook cell execution hooks
 - plugin discovery through entry points
 - local model adapters
-- visual and audio diagnostics for fine-tuning drift, alignment regressions, waveform quality, spectrogram artifacts, and memorization probes
-- public example notebooks and screenshots
-
-## Screenshots
-
-Dark-mode visual examples live in `docs/assets/` and are generated by [`examples/visual_explanations.py`](examples/visual_explanations.py). See [docs/visual-explanations.md](docs/visual-explanations.md) for the visual report shape.
 
 ## Contributing
 

@@ -26,7 +26,7 @@ epoch_logs = [
 ]
 ```
 
-## 3. Render Markdown And Visual Dashboard
+## 3. Render The Notebook Report
 
 ```python
 from trainlens.notebook import display_live_report
@@ -36,15 +36,15 @@ live_report = display_live_report(globals())
 ```
 
 `live_report.result` keeps the structured analysis object, while
-`live_report.markdown` and `live_report.dashboard_html` keep the rendered
-artifacts.
+`live_report.markdown` keeps the rendered notebook report.
 
 ## 4. Use Magic Commands
 
 ```python
 %load_ext trainlens.magic.extension
 %explain_training
-%training_dashboard
+%training_summary
+%why_bad_model
 %compare_runs
 ```
 
