@@ -1,15 +1,29 @@
 # TrainLens
 
-TrainLens explains training results from the full context of your Jupyter
-notebook: the model, dataset, metrics, logs, traces, hyperparameters, and notes
-you already have in memory.
+TrainLens explains machine-learning training results from the full context of a
+Jupyter notebook: model objects, dataset details, metric history, logs, traces,
+hyperparameters, and experiment notes already present in memory.
 
-It is built for AI/LLM-powered training analysis without leaving the notebook.
-Local heuristics work immediately, and an OpenAI-compatible LLM can enhance the
-same report in-place when API credentials are configured.
+[![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+
+Maintained by Eduardo J. Barrios.
+
+TrainLens is built for AI/LLM-powered training analysis without leaving the
+notebook. It produces a local Markdown diagnosis immediately, then can enhance
+that same report with an OpenAI-compatible LLM provider from inside the same
+notebook cell.
+
+## Quickstart
+
+Use TrainLens after or during a training run. Keep the training context in the
+notebook namespace so the report can explain results against the dataset,
+metrics, model setup, and run notes.
 
 ```python
-# In a Jupyter notebook, after or during training:
+import os
+
 from IPython.display import Markdown, display
 
 from trainlens.llm.enhancer import maybe_enhance
@@ -22,76 +36,71 @@ history = {
 }
 dataset_name = "customer-support-instructions"
 dataset_notes = "Small validation split; long answers are underrepresented."
+model_name = "mistral-lora-support-bot"
 learning_rate = 2e-5
 
 report = display_live_report(globals())
 
-# Ask the LLM to explain the results using the notebook context.
-# First set TRAINLENS_LLM_BASE_URL, TRAINLENS_LLM_API_KEY, and TRAINLENS_LLM_MODEL.
-display(Markdown(maybe_enhance(report.markdown)))
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.example.com/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
+os.environ["TRAINLENS_LLM_MODEL"] = "your-model-name"
+
+enhanced_report = maybe_enhance(report.markdown)
+display(Markdown(enhanced_report))
 ```
 
-[![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+The first `display_live_report(globals())` call works without an API key. The
+LLM enhancement uses the environment variables shown above and stays inside the
+notebook.
 
-TrainLens reads the variables that already exist in a notebook, finds training metrics, dataset context, and run evidence, and renders a concise Markdown explanation in the notebook output. It is focused on answering practical questions after or during a training run:
+## What TrainLens Explains
+
+TrainLens is focused on practical training questions:
 
 - What did this notebook train?
-- What dataset and training context shaped the result?
+- Which dataset and training context shaped the result?
 - Which metrics matter right now?
 - Is the run improving, plateauing, overfitting, or missing validation evidence?
 - What should I try next in this same notebook?
 
-The project intentionally does not provide a GUI, image dashboard, or screenshot workflow. The primary interface is notebook Markdown.
+It looks for evidence already available in the active notebook:
 
-## What TrainLens Does
-
-TrainLens gives you a notebook-local training report:
-
-1. It scans the notebook namespace for models, histories, metrics, traces, and useful metadata.
-2. It normalizes common training artifacts such as Keras histories, Hugging Face `log_history`, PyTorch loop metrics, and Lightning-style metric dictionaries.
-3. It applies heuristics for loss behavior, validation gaps, class balance, adapters, projectors, contrastive training, multimodal runs, and music-generation experiments.
-4. It renders a Markdown report with a training summary, result explanation, potential issues, recommended next steps, and an improvement plan.
-5. Optionally, it sends that Markdown report to an OpenAI-compatible chat-completions endpoint for LLM-enhanced wording.
-
-No API key is required for local analysis. API access is only needed for optional LLM enhancement.
-
-## Why TrainLens?
-
-Most notebook training reports require manual plotting, custom logging, or a separate experiment-tracking service. TrainLens starts with what your notebook already has:
-
-- Python variables in the active IPython shell
-- trained model objects from Transformers, PEFT, PyTorch, timm, diffusers, audio stacks, and notebook code
-- metric dictionaries and trainer histories from LLM/VLM fine-tuning loops
-- execution traces such as `training_trace`, `execution_trace`, `log_history`, or `trainer.state.log_history`
+- model objects and framework hints
+- dataset names, labels, feature names, and notes
+- Keras histories, Hugging Face `log_history`, PyTorch loop metrics, and Lightning-style metrics
+- execution traces such as `training_trace`, `execution_trace`, `logs`, or `trainer.state.log_history`
 - loss, perplexity, recall@k, contrastive loss, projector loss, audio reconstruction loss, and eval metrics
 - LoRA/adapters, trainable parameter ratios, multimodal tower/projector hints, and audio-conditioning clues
 
-It then turns that evidence into a readable notebook report.
+TrainLens intentionally does not provide a GUI, image dashboard, or screenshot
+workflow. The main interface is notebook Markdown.
 
 ## How It Works
 
 ```text
 Notebook variables
   -> namespace snapshot
-  -> model and framework detection
+  -> model, dataset, and framework detection
   -> metric and execution-trace extraction
   -> training heuristics
   -> notebook Markdown report
-  -> optional LLM enhancement
+  -> optional LLM-enhanced explanation
 ```
 
-You can use TrainLens in two notebook-first ways:
+Core modules live under `src/trainlens`:
 
-- Call `display_live_report(globals())` from a notebook cell.
-- Load the IPython extension and run `%explain_training`, `%training_summary`, `%why_bad_model`, or `%compare_runs`.
+- `introspection`: notebook namespace scanning and model discovery
+- `analyzers`: framework and training-session analyzers
+- `heuristics`: loss, convergence, contrastive, adapter, projector, multimodal, and music-generation rules
+- `models`: typed domain objects
+- `llm`: OpenAI-compatible report enhancement
+- `magic`: IPython magic commands
+- `renderers`: notebook Markdown and Rich output
+- `storage`: notebook-local run persistence and comparison
 
-You can also pass a saved Markdown report to `tools/trainlens_openai_compatible.py` when you want optional LLM enhancement from a notebook shell cell.
+## Notebook Usage
 
-## Use From A Clone
-
-Use TrainLens directly from a cloned repository by adding `src/` to the notebook path. This does not install a package into the environment.
+Load TrainLens from a clone without installing it into the environment:
 
 ```python
 from pathlib import Path
@@ -101,23 +110,7 @@ TRAINLENS_REPO = Path("/path/to/trainlens").resolve()
 sys.path.insert(0, str(TRAINLENS_REPO / "src"))
 ```
 
-## Notebook Workflow
-
-Cell 1: keep your normal training variables in the notebook.
-
-```python
-model = my_model
-train_losses = [2.3, 1.9, 1.55, 1.34]
-val_losses = [2.4, 2.0, 1.78, 1.72]
-epoch_logs = [
-    {"epoch": 1, "train_loss": 2.3, "val_loss": 2.4},
-    {"epoch": 2, "train_loss": 1.9, "val_loss": 2.0},
-    {"epoch": 3, "train_loss": 1.55, "val_loss": 1.78},
-    {"epoch": 4, "train_loss": 1.34, "val_loss": 1.72},
-]
-```
-
-Cell 2: render the report inside the notebook.
+Render the current notebook report:
 
 ```python
 from trainlens.notebook import display_live_report
@@ -125,17 +118,7 @@ from trainlens.notebook import display_live_report
 live_report = display_live_report(globals())
 ```
 
-`live_report.result` keeps the structured analysis object, while `live_report.markdown` keeps the rendered notebook report.
-
-The Markdown report includes:
-
-- `Training summary`: what TrainLens found in the notebook state.
-- `Result explanation`: what the metrics and signals mean.
-- `Potential issues`: concrete risks detected by heuristics.
-- `Recommended next steps`: direct suggestions.
-- `Improvement plan`: prioritized actions with confidence and rationale.
-
-Cell 3: use notebook magics after loading the extension.
+Use IPython magics:
 
 ```python
 %load_ext trainlens.magic.extension
@@ -145,133 +128,44 @@ Cell 3: use notebook magics after loading the extension.
 %compare_runs
 ```
 
-See [docs/live-notebook-cells.md](docs/live-notebook-cells.md) for a compact copy-paste workflow, and [docs/report-sections.md](docs/report-sections.md) for how to read each report section.
+See [docs/live-notebook-cells.md](docs/live-notebook-cells.md) for a compact
+copy-paste workflow, and [docs/report-sections.md](docs/report-sections.md) for
+how to read each report section.
 
-## Analyze An LLM Fine-Tune
+## Optional LLM Provider
+
+TrainLens uses OpenAI-compatible chat completions for report enhancement. Set
+these variables in the notebook or in the process environment:
+
+```python
+import os
+
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.example.com/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
+os.environ["TRAINLENS_LLM_MODEL"] = "your-model-name"
+```
+
+Then enhance any generated report:
 
 ```python
 from IPython.display import Markdown, display
-from trainlens.pipeline import explain_namespace
-from trainlens.renderers.markdown import MarkdownRenderer
+from trainlens.llm.enhancer import maybe_enhance
 
-
-class MistralLoRAFineTune:
-    class Config:
-        model_type = "mistral"
-
-    config = Config()
-
-
-model = MistralLoRAFineTune()
-history = {
-    "train_loss": [2.6, 2.1, 1.92, 1.91],
-    "eval_loss": [2.5, 2.18, 2.16, 2.16],
-    "eval_perplexity": [12.2, 9.1, 8.9, 8.9],
-}
-lora_rank = 4
-trainable_params = 8_000_000
-total_params = 7_000_000_000
-
-report = MarkdownRenderer().render(explain_namespace(globals()))
-display(Markdown(report))
+display(Markdown(maybe_enhance(live_report.markdown)))
 ```
 
-## Include Execution Traces
+No API key is required for the local report. API access is only used when you
+call the LLM enhancement path.
 
-TrainLens can include recent training events in the report. Use a list of dictionaries named `training_trace`, `execution_trace`, `trace`, `logs`, or `log_history`. Hugging Face-style `trainer.state.log_history` is also detected.
+## Examples
 
-```python
-training_trace = [
-    {"step": 100, "epoch": 0.5, "event": "batch_end", "loss": 1.92, "lr": 2e-5},
-    {"step": 200, "epoch": 1.0, "event": "eval", "eval_loss": 1.76, "eval_perplexity": 5.8},
-    {"step": 300, "epoch": 1.5, "event": "checkpoint", "message": "saved adapter weights"},
-]
-
-report = MarkdownRenderer().render(explain_namespace(globals()))
-display(Markdown(report))
-```
-
-The report will show an `Execution trace` table with step, epoch, event, and numeric metrics. This makes it easier to connect the final diagnosis with what actually happened during the run.
-
-## Analyze PyTorch Loop Metrics
-
-TrainLens detects common PyTorch training-loop variables such as `train_losses`, `val_losses`, `epoch_logs`, `callback_metrics`, and `logged_metrics`. Tensor-like scalar values are supported when they expose `.item()`, which covers the common `torch.Tensor` case.
-
-```python
-train_losses = [2.3, 1.9, 1.55, 1.34]
-val_losses = [2.4, 2.0, 1.78, 1.72]
-epoch_logs = [
-    {"epoch": 1, "train_loss": 2.3, "val_loss": 2.4},
-    {"epoch": 2, "train_loss": 1.9, "val_loss": 2.0},
-]
-
-display(Markdown(MarkdownRenderer().render(explain_namespace(globals()))))
-```
-
-For a runnable no-PyTorch dependency example:
+Run a no-PyTorch dependency example:
 
 ```bash
 python examples/pytorch_loop_metrics.py
 ```
 
-## Optional LLM Enhancement
-
-TrainLens never requires API access. LLM support is opt-in and provider based.
-
-```env
-TRAINLENS_LLM_BASE_URL=https://api.example.com/v1
-TRAINLENS_LLM_API_KEY=your_api_key_here
-TRAINLENS_LLM_MODEL=auto
-```
-
-Generate a report, save it as Markdown, preview it in the notebook, and then send that same file to an OpenAI-compatible endpoint:
-
-```python
-from pathlib import Path
-
-from IPython.display import Markdown, display
-from trainlens.pipeline import explain_namespace
-from trainlens.renderers.markdown import MarkdownRenderer
-
-
-report_path = Path("training_report.md")
-report = MarkdownRenderer().render(explain_namespace(globals()))
-report_path.write_text(report, encoding="utf-8")
-
-display(Markdown(report))
-print(f"Wrote {report_path.resolve()}")
-```
-
-```python
-!python /path/to/trainlens/tools/trainlens_openai_compatible.py training_report.md
-```
-
-The current provider targets OpenAI-compatible chat completions. The provider interface is intentionally small so hosted APIs, Ollama-compatible gateways, and local model servers can be swapped without changing analyzer logic.
-
-## Architecture
-
-```text
-Notebook Hook Layer
-  -> Notebook Introspection Engine
-  -> Training Session Analyzer
-  -> Execution Trace Extractor
-  -> Metric Interpretation Engine
-  -> Explanation Generator
-  -> Notebook Markdown Renderer
-```
-
-Core modules live under `src/trainlens`:
-
-- `introspection`: notebook namespace scanning and model discovery
-- `analyzers`: framework and training-session analyzers
-- `heuristics`: loss, convergence, contrastive, adapter, projector, multimodal, and music-generation rules
-- `models`: typed domain objects
-- `llm`: provider abstractions and optional enhancement
-- `magic`: IPython magic commands
-- `renderers`: notebook Markdown and Rich output
-- `storage`: notebook-local run persistence and comparison
-
-More examples live in [notebooks/](notebooks/). Contributor setup for package internals lives in [CONTRIBUTING.md](CONTRIBUTING.md).
+More examples live in [notebooks/](notebooks/).
 
 ## Roadmap
 
@@ -284,7 +178,9 @@ More examples live in [notebooks/](notebooks/). Contributor setup for package in
 
 ## Contributing
 
-TrainLens is open source from day one. Contributors are welcome across analyzers, notebook UX, docs, examples, and tests. See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/roadmap.md](docs/roadmap.md).
+TrainLens is open source from day one. Contributions are welcome across
+analyzers, notebook UX, docs, examples, and tests. See
+[CONTRIBUTING.md](CONTRIBUTING.md) and [docs/roadmap.md](docs/roadmap.md).
 
 ## License
 
