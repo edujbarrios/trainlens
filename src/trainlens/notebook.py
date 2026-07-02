@@ -28,7 +28,7 @@ class LiveReport:
 def build_live_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
     """Build Markdown training-result output from a notebook namespace."""
 
-    report_namespace = namespace or _current_user_namespace()
+    report_namespace = _current_user_namespace() if namespace is None else namespace
     result = explain_namespace(report_namespace)
     return LiveReport(
         result=result,

@@ -13,6 +13,15 @@ def test_build_live_report_returns_markdown():
     assert report.result.metrics["train_loss"] == 1.6
 
 
+def test_build_live_report_respects_explicit_empty_namespace(monkeypatch):
+    monkeypatch.setattr("trainlens.notebook.get_ipython", lambda: None)
+
+    report = build_live_report({})
+
+    assert "TrainLens Report" in report.markdown
+    assert report.result.metrics == {}
+
+
 def test_build_llm_report_uses_local_report_as_context(monkeypatch):
     monkeypatch.delenv("TRAINLENS_LLM_BASE_URL", raising=False)
     monkeypatch.delenv("TRAINLENS_LLM_API_KEY", raising=False)
