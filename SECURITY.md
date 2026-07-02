@@ -2,7 +2,7 @@
 
 Please report suspected vulnerabilities privately by opening a GitHub security advisory or emailing the maintainer.
 
-TrainLens is notebook software and may inspect objects in the active Python namespace. It does not send data to external services unless optional LLM enhancement is explicitly requested and configured by the user.
+TrainLens is notebook software and may inspect objects in the active Python namespace. It does not send data to external services unless optional LLM explanation is explicitly requested and configured by the user.
 
 ## Supported versions
 
