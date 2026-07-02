@@ -42,3 +42,19 @@ def test_inspector_ignores_helper_classes_and_functions():
     assert [candidate.variable_name for candidate in candidates] == ["model"]
     assert snapshot.by_name("HelperModelClass") is None
     assert snapshot.by_name("helper_function") is None
+
+
+def test_inspector_redacts_sensitive_small_literals():
+    inspector = NotebookInspector()
+    snapshot = inspector.snapshot(
+        {
+            "api_token": "plain-text-token",
+            "config": {"password": "secret-password", "batch_size": 8},
+        }
+    )
+
+    assert snapshot.by_name("api_token").value == "[REDACTED]"
+    assert snapshot.by_name("config").value == {
+        "password": "[REDACTED]",
+        "batch_size": 8,
+    }
