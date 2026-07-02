@@ -9,6 +9,7 @@ from typing import Any
 from trainlens.introspection.frameworks import detect_framework, looks_like_model
 from trainlens.introspection.models import ModelCandidate
 from trainlens.models.snapshot import NotebookSnapshot, VariableInfo
+from trainlens.security import sanitize_value
 
 _IGNORED_NAMES = {"In", "Out", "get_ipython", "exit", "quit"}
 
@@ -72,7 +73,7 @@ class NotebookInspector:
             module=module,
             shape=normalized_shape,
             length=length,
-            value=value if self._is_small_literal(value) else None,
+            value=sanitize_value(name, value) if self._is_small_literal(value) else None,
         )
 
     def _safe_len(self, value: object) -> int | None:

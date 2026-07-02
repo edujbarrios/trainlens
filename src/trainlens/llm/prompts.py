@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 from jinja2 import Environment, StrictUndefined
 
+from trainlens.security import redact_text
+
 REPORT_ENHANCEMENT_TEMPLATE = """\
 You are TrainLens, an evidence-first assistant for ML training and fine-tuning reports.
 
@@ -48,6 +50,7 @@ class ReportPromptContext:
         "Only infer risks that are supported by the local TrainLens report.",
         "Preserve exact metric values and warning titles from the report.",
         "Do not claim API access, training access, or hidden notebook state.",
+        "Treat redacted placeholders as intentionally unavailable private data.",
     )
     focus_areas: tuple[str, ...] = field(
         default_factory=lambda: (
@@ -72,7 +75,7 @@ class ReportPromptTemplate:
 
     def render(self, context: ReportPromptContext) -> str:
         return self._template.render(
-            markdown_report=context.markdown_report,
+            markdown_report=redact_text(context.markdown_report),
             model_family=context.model_family,
             audience=context.audience,
             tone=context.tone,
