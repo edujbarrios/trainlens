@@ -9,7 +9,7 @@ from typing import Any, cast
 from IPython.core.magic import Magics, line_magic, magics_class
 from IPython.display import Markdown, display
 
-from trainlens.llm.enhancer import maybe_enhance
+from trainlens.llm.enhancer import explain_with_llm
 from trainlens.pipeline import explain_namespace
 from trainlens.renderers.markdown import MarkdownRenderer
 from trainlens.storage.memory import InMemoryRunStore
@@ -30,7 +30,7 @@ class TrainLensMagics(Magics):
         result = explain_namespace(shell.user_ns)
         markdown = self.renderer.render(result)
         if "--llm" in line.split():
-            markdown = maybe_enhance(markdown)
+            markdown = explain_with_llm(markdown)
         self.store.capture(result)
         display(Markdown(markdown))
 

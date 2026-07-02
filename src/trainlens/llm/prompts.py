@@ -1,4 +1,4 @@
-"""Prompt templates for LLM-enhanced reports."""
+"""Prompt templates for LLM explanations of ML/DL results."""
 
 from __future__ import annotations
 
@@ -8,8 +8,10 @@ from jinja2 import Environment, StrictUndefined
 
 from trainlens.security import redact_text
 
-REPORT_ENHANCEMENT_TEMPLATE = """\
-You are TrainLens, an evidence-first assistant for ML training and fine-tuning reports.
+ML_RESULTS_EXPLANATION_TEMPLATE = """\
+You are TrainLens, an evidence-first assistant for explaining ML and DL training results.
+
+Task: explain the following DL/ML results with the provided notebook context.
 
 Audience: {{ audience }}
 Tone: {{ tone }}
@@ -30,16 +32,17 @@ Return format:
 - Keep the original Markdown structure when it is already clear.
 - Prefer short, actionable bullets over generic advice.
 - Separate evidence from recommendations.
+- Explain why the observed result likely happened before suggesting changes.
 - Include uncertainty when the notebook evidence is incomplete.
 
-Local TrainLens report:
+Notebook context and local TrainLens report:
 {{ markdown_report }}
 """
 
 
 @dataclass(frozen=True)
 class ReportPromptContext:
-    """Inputs used to render an enhancement prompt."""
+    """Inputs used to render an LLM explanation prompt."""
 
     markdown_report: str
     model_family: str = "foundation model fine-tuning"
@@ -63,9 +66,9 @@ class ReportPromptContext:
 
 
 class ReportPromptTemplate:
-    """Parameterized Jinja2 template for report enhancement."""
+    """Parameterized Jinja2 template for explaining ML/DL results."""
 
-    def __init__(self, template: str = REPORT_ENHANCEMENT_TEMPLATE) -> None:
+    def __init__(self, template: str = ML_RESULTS_EXPLANATION_TEMPLATE) -> None:
         self._template = Environment(
             autoescape=False,
             trim_blocks=True,
@@ -84,7 +87,7 @@ class ReportPromptTemplate:
         )
 
 
-def render_report_enhancement_prompt(
+def render_ml_results_explanation_prompt(
     markdown_report: str,
     *,
     model_family: str = "foundation model fine-tuning",
@@ -93,7 +96,7 @@ def render_report_enhancement_prompt(
     rules: tuple[str, ...] | None = None,
     focus_areas: tuple[str, ...] | None = None,
 ) -> str:
-    """Render the default report enhancement prompt."""
+    """Render the default prompt for explaining ML/DL results."""
 
     base = ReportPromptContext(
         markdown_report=markdown_report,
@@ -110,3 +113,24 @@ def render_report_enhancement_prompt(
         focus_areas=focus_areas or base.focus_areas,
     )
     return ReportPromptTemplate().render(context)
+
+
+def render_report_enhancement_prompt(
+    markdown_report: str,
+    *,
+    model_family: str = "foundation model fine-tuning",
+    audience: str = "ML engineers debugging notebook training runs",
+    tone: str = "concise, technical, and careful",
+    rules: tuple[str, ...] | None = None,
+    focus_areas: tuple[str, ...] | None = None,
+) -> str:
+    """Backward-compatible alias for older integrations."""
+
+    return render_ml_results_explanation_prompt(
+        markdown_report,
+        model_family=model_family,
+        audience=audience,
+        tone=tone,
+        rules=rules,
+        focus_areas=focus_areas,
+    )
