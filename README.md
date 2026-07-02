@@ -1,8 +1,8 @@
 # TrainLens
 
-TrainLens lets you explain training results without leaving the Jupyter
-notebook you are running. It uses the context already in memory: model, dataset,
-metrics, logs, traces, hyperparameters, and notes.
+TrainLens lets you generate LLM-written training reports without leaving the
+Jupyter notebook you are running. It uses the context already in memory: model,
+dataset, metrics, logs, traces, hyperparameters, and notes.
 
 [![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
@@ -11,9 +11,10 @@ metrics, logs, traces, hyperparameters, and notes.
 
 Maintained by Eduardo J. Barrios.
 
-It sends notebook training context to an OpenAI-compatible LLM and displays a
-Markdown diagnosis in-place. A local heuristic report is still available for
-debugging, but the main workflow is LLM-generated.
+It sends sanitized notebook training context to an OpenAI-compatible LLM and
+displays a Markdown diagnosis in-place. A local heuristic report is still
+available for debugging, but the main workflow is LLM-generated and requires a
+configured provider.
 
 ## Install
 
@@ -38,6 +39,9 @@ python -m pip install -e ".[dev]"
 ```
 
 ## Quickstart
+
+Set your provider details in the notebook or in the environment before calling
+TrainLens:
 
 ```python
 import os
@@ -90,7 +94,7 @@ settings, trainable parameter ratios, multimodal hints, and eval metrics.
 
 ## Notebook Usage
 
-Use the LLM helper or magic:
+Use the LLM helper or magic for the main workflow:
 
 ```python
 from trainlens.notebook import display_llm_report
@@ -101,6 +105,9 @@ display_llm_report(globals())
 %explain_training --llm
 %compare_runs
 ```
+
+For local debugging without a provider, use `display_live_report(globals())`.
+That path is deterministic and heuristic-based; it is not the main LLM report.
 
 ## How It Works
 
