@@ -78,16 +78,6 @@ settings, trainable parameter ratios, multimodal hints, and eval metrics.
 
 ## Notebook Usage
 
-Load from a clone:
-
-```python
-from pathlib import Path
-import sys
-
-TRAINLENS_REPO = Path("/path/to/trainlens").resolve()
-sys.path.insert(0, str(TRAINLENS_REPO / "src"))
-```
-
 Use the helper or magics:
 
 ```python
