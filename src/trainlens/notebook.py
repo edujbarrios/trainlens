@@ -11,6 +11,7 @@ from typing import Any
 from IPython import get_ipython
 from IPython.display import Markdown, display
 
+from trainlens.llm.context import build_llm_notebook_context
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.models.analysis import AnalysisResult
 from trainlens.pipeline import explain_namespace
@@ -45,12 +46,13 @@ def display_live_report(namespace: Mapping[str, Any] | None = None) -> LiveRepor
 
 
 def build_llm_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
-    """Build an LLM-explained training report from a notebook namespace."""
+    """Build an LLM-generated training report from notebook context."""
 
-    report = build_live_report(namespace)
+    report_namespace = _current_user_namespace() if namespace is None else namespace
+    context = build_llm_notebook_context(report_namespace)
     return LiveReport(
-        result=report.result,
-        markdown=explain_with_llm(report.markdown),
+        result=AnalysisResult(metrics=context.metrics),
+        markdown=explain_with_llm(context.markdown, require_provider=True),
     )
 
 
