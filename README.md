@@ -17,30 +17,36 @@ that same report with an OpenAI-compatible LLM provider in-place.
 ## Quickstart
 
 ```python
-import os
-
-from IPython.display import Markdown, display
-from trainlens.llm.enhancer import maybe_enhance
 from trainlens.notebook import display_live_report
 
+dataset_name = "ag_news"
+dataset_notes = "120k news titles; 4 classes; validation is balanced."
+model_name = "distilbert-base-uncased"
+training_params = {
+    "epochs": 3,
+    "batch_size": 32,
+    "learning_rate": 5e-5,
+    "max_length": 128,
+}
+history = {
+    "train_loss": [0.62, 0.31, 0.18],
+    "eval_loss": [0.48, 0.44, 0.57],
+    "accuracy": [0.78, 0.91, 0.96],
+    "val_accuracy": [0.84, 0.86, 0.85],
+}
 
-history = {"train_loss": [2.4, 1.9, 1.6], "eval_loss": [2.5, 2.0, 1.8]}
-dataset_name = "customer-support-instructions"
-dataset_notes = "Small validation split; long answers are underrepresented."
-model_name = "mistral-lora-support-bot"
-learning_rate = 2e-5
-
-report = display_live_report(globals())
-
-os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.example.com/v1"
-os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
-os.environ["TRAINLENS_LLM_MODEL"] = "your-model-name"
-
-display(Markdown(maybe_enhance(report.markdown)))
+display_live_report(globals())
 ```
 
-The local report works without an API key. The LLM call is only used for the
-enhanced explanation.
+TrainLens explains that training loss keeps falling while validation loss rises
+after epoch 2. For this `ag_news` run, that points to overfitting: the model is
+memorizing training headlines faster than it improves generalization. The report
+then suggests next experiments such as stopping after epoch 2, lowering the
+learning rate, or adding regularization.
+
+The local report works without an API key. `maybe_enhance` only calls an
+OpenAI-compatible provider when `TRAINLENS_LLM_BASE_URL`,
+`TRAINLENS_LLM_API_KEY`, and `TRAINLENS_LLM_MODEL` are configured.
 
 ## What It Answers
 
