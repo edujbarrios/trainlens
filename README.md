@@ -14,6 +14,23 @@ Maintained by Eduardo J. Barrios.
 It produces a local Markdown diagnosis in the notebook output, and can enhance
 that same report with an OpenAI-compatible LLM provider in-place.
 
+## Install From Source
+
+TrainLens is not published to PyPI yet. For now, clone the repository and install
+it in editable mode:
+
+```bash
+git clone https://github.com/edujbarrios/trainlens.git
+cd trainlens
+python -m pip install -e .
+```
+
+For development tools and tests, install the `dev` extras:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
 ## Quickstart
 
 ```python
