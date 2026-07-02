@@ -11,7 +11,7 @@ metrics, logs, traces, hyperparameters, and notes.
 
 Maintained by Eduardo J. Barrios.
 
-It produces a local Markdown diagnosis in the notebook output, and can enhance
+It produces a local Markdown diagnosis in the notebook output, and can explain
 that same report with an OpenAI-compatible LLM provider in-place.
 
 ## Install From Source
@@ -34,6 +34,9 @@ python -m pip install -e ".[dev]"
 ## Quickstart
 
 ```python
+from IPython.display import Markdown, display
+
+from trainlens.llm.enhancer import explain_with_llm
 from trainlens.notebook import display_live_report
 
 dataset_name = "ag_news"
@@ -52,16 +55,18 @@ history = {
     "val_accuracy": [0.84, 0.86, 0.85],
 }
 
-display_live_report(globals())
+report = display_live_report(globals())
+display(Markdown(explain_with_llm(report.markdown)))
 ```
 
-TrainLens explains that training loss keeps falling while validation loss rises
-after epoch 2. For this `ag_news` run, that points to overfitting: the model is
-memorizing training headlines faster than it improves generalization. The report
-then suggests next experiments such as stopping after epoch 2, lowering the
-learning rate, or adding regularization.
+TrainLens first builds a local evidence report, then the LLM-enhanced pass can
+explain why training loss keeps falling while validation loss rises after epoch
+2. For this `ag_news` run, that points to overfitting: the model is memorizing
+training headlines faster than it improves generalization. The report then
+suggests next experiments such as stopping after epoch 2, lowering the learning
+rate, or adding regularization.
 
-The local report works without an API key. `maybe_enhance` only calls an
+The local report works without an API key. `explain_with_llm` only calls an
 OpenAI-compatible provider when `TRAINLENS_LLM_BASE_URL`,
 `TRAINLENS_LLM_API_KEY`, and `TRAINLENS_LLM_MODEL` are configured.
 
@@ -98,7 +103,7 @@ notebook variables
   -> model, dataset, metric, and trace extraction
   -> training heuristics
   -> Markdown report
-  -> optional LLM enhancement
+  -> optional LLM explanation
 ```
 
 Core modules: `introspection`, `analyzers`, `heuristics`, `models`, `llm`,
