@@ -11,6 +11,7 @@ from typing import Any
 from IPython import get_ipython
 from IPython.display import Markdown, display
 
+from trainlens.llm.enhancer import explain_with_llm
 from trainlens.models.analysis import AnalysisResult
 from trainlens.pipeline import explain_namespace
 from trainlens.renderers.markdown import MarkdownRenderer
@@ -39,6 +40,24 @@ def display_live_report(namespace: Mapping[str, Any] | None = None) -> LiveRepor
     """Display a Markdown training-result report in a notebook."""
 
     report = build_live_report(namespace)
+    display(Markdown(report.markdown))
+    return report
+
+
+def build_llm_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
+    """Build an LLM-explained training report from a notebook namespace."""
+
+    report = build_live_report(namespace)
+    return LiveReport(
+        result=report.result,
+        markdown=explain_with_llm(report.markdown),
+    )
+
+
+def display_llm_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
+    """Display an LLM-explained training report in a notebook."""
+
+    report = build_llm_report(namespace)
     display(Markdown(report.markdown))
     return report
 

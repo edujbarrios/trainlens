@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
 ]
 dependencies = [
   "ipython>=8.12",
@@ -41,6 +42,8 @@ llm = []
 Homepage = "https://github.com/edujbarrios/trainlens"
 Repository = "https://github.com/edujbarrios/trainlens"
 Issues = "https://github.com/edujbarrios/trainlens/issues"
+Changelog = "https://github.com/edujbarrios/trainlens/blob/main/CHANGELOG.md"
+Security = "https://github.com/edujbarrios/trainlens/security"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/trainlens"]

@@ -7,17 +7,22 @@ metrics, logs, traces, hyperparameters, and notes.
 [![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
-[![PyPI release](https://img.shields.io/badge/PyPI-planned%20after%20minor%20fixes-orange)](https://pypi.org/project/trainlens/)
+[![PyPI](https://img.shields.io/pypi/v/trainlens.svg)](https://pypi.org/project/trainlens/)
 
 Maintained by Eduardo J. Barrios.
 
 It produces a local Markdown diagnosis in the notebook output, and can explain
 that same report with an OpenAI-compatible LLM provider in-place.
 
-## Install From Source
+## Install
 
-TrainLens is not published to PyPI yet. For now, clone the repository and install
-it in editable mode:
+Install the package from PyPI:
+
+```bash
+python -m pip install trainlens
+```
+
+For development, clone the repository and install it in editable mode:
 
 ```bash
 git clone https://github.com/edujbarrios/trainlens.git
@@ -34,10 +39,13 @@ python -m pip install -e ".[dev]"
 ## Quickstart
 
 ```python
-from IPython.display import Markdown, display
+import os
 
-from trainlens.llm.enhancer import explain_with_llm
-from trainlens.notebook import display_live_report
+from trainlens.notebook import display_llm_report
+
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
+os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
 
 dataset_name = "ag_news"
 dataset_notes = "120k news titles; 4 classes; validation is balanced."
@@ -55,20 +63,18 @@ history = {
     "val_accuracy": [0.84, 0.86, 0.85],
 }
 
-report = display_live_report(globals())
-display(Markdown(explain_with_llm(report.markdown)))
+display_llm_report(globals())
 ```
 
-TrainLens first builds a local evidence report, then the LLM-enhanced pass can
-explain why training loss keeps falling while validation loss rises after epoch
-2. For this `ag_news` run, that points to overfitting: the model is memorizing
-training headlines faster than it improves generalization. The report then
-suggests next experiments such as stopping after epoch 2, lowering the learning
-rate, or adding regularization.
+TrainLens sends the local training context to the configured OpenAI-compatible
+LLM. For this `ag_news` run, the explanation should connect the falling training
+loss and rising validation loss after epoch 2 with likely overfitting: the model
+is memorizing training headlines faster than it improves generalization. The
+report then suggests next experiments such as stopping after epoch 2, lowering
+the learning rate, or adding regularization.
 
-The local report works without an API key. `explain_with_llm` only calls an
-OpenAI-compatible provider when `TRAINLENS_LLM_BASE_URL`,
-`TRAINLENS_LLM_API_KEY`, and `TRAINLENS_LLM_MODEL` are configured.
+Use any OpenAI-compatible provider by changing `TRAINLENS_LLM_BASE_URL`,
+`TRAINLENS_LLM_API_KEY`, and `TRAINLENS_LLM_MODEL`.
 
 ## What It Answers
 
@@ -83,15 +89,15 @@ settings, trainable parameter ratios, multimodal hints, and eval metrics.
 
 ## Notebook Usage
 
-Use the helper or magics:
+Use the LLM helper or magic:
 
 ```python
-from trainlens.notebook import display_live_report
+from trainlens.notebook import display_llm_report
 
-display_live_report(globals())
+display_llm_report(globals())
 
 %load_ext trainlens.magic.extension
-%explain_training
+%explain_training --llm
 %compare_runs
 ```
 
