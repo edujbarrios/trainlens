@@ -11,8 +11,9 @@ metrics, logs, traces, hyperparameters, and notes.
 
 Maintained by Eduardo J. Barrios.
 
-It produces a local Markdown diagnosis in the notebook output, and can explain
-that same report with an OpenAI-compatible LLM provider in-place.
+It sends notebook training context to an OpenAI-compatible LLM and displays a
+Markdown diagnosis in-place. A local heuristic report is still available for
+debugging, but the main workflow is LLM-generated.
 
 ## Install
 
@@ -66,12 +67,12 @@ history = {
 display_llm_report(globals())
 ```
 
-TrainLens sends the local training context to the configured OpenAI-compatible
-LLM. For this `ag_news` run, the explanation should connect the falling training
-loss and rising validation loss after epoch 2 with likely overfitting: the model
-is memorizing training headlines faster than it improves generalization. The
-report then suggests next experiments such as stopping after epoch 2, lowering
-the learning rate, or adding regularization.
+TrainLens sends structured notebook context to the configured OpenAI-compatible
+LLM. For this `ag_news` run, the generated report should connect the falling
+training loss and rising validation loss after epoch 2 with likely overfitting:
+the model is memorizing training headlines faster than it improves
+generalization. The report then suggests next experiments such as stopping after
+epoch 2, lowering the learning rate, or adding regularization.
 
 Use any OpenAI-compatible provider by changing `TRAINLENS_LLM_BASE_URL`,
 `TRAINLENS_LLM_API_KEY`, and `TRAINLENS_LLM_MODEL`.
@@ -106,10 +107,9 @@ display_llm_report(globals())
 ```text
 notebook variables
   -> namespace snapshot
-  -> model, dataset, metric, and trace extraction
-  -> training heuristics
+  -> sanitized notebook context
+  -> LLM report prompt
   -> Markdown report
-  -> optional LLM explanation
 ```
 
 Core modules: `introspection`, `analyzers`, `heuristics`, `models`, `llm`,

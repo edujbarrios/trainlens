@@ -11,7 +11,7 @@ from trainlens.security import redact_text
 ML_RESULTS_EXPLANATION_TEMPLATE = """\
 You are TrainLens, an evidence-first assistant for explaining ML and DL training results.
 
-Task: explain the following DL/ML results with the provided notebook context.
+Task: generate a TrainLens Markdown report for the following DL/ML training run.
 
 Audience: {{ audience }}
 Tone: {{ tone }}
@@ -29,13 +29,14 @@ Focus areas:
 {% endfor %}
 
 Return format:
-- Keep the original Markdown structure when it is already clear.
+- Start with `## TrainLens Report`.
 - Prefer short, actionable bullets over generic advice.
 - Separate evidence from recommendations.
 - Explain why the observed result likely happened before suggesting changes.
 - Include uncertainty when the notebook evidence is incomplete.
+- Do not mention internal heuristics or hidden analysis steps.
 
-Notebook context and local TrainLens report:
+Notebook context:
 {{ markdown_report }}
 """
 
@@ -50,8 +51,8 @@ class ReportPromptContext:
     tone: str = "concise, technical, and careful"
     rules: tuple[str, ...] = (
         "Do not invent metrics, datasets, hyperparameters, or model names.",
-        "Only infer risks that are supported by the local TrainLens report.",
-        "Preserve exact metric values and warning titles from the report.",
+        "Only infer risks that are supported by the notebook context.",
+        "Preserve exact metric values from the context.",
         "Do not claim API access, training access, or hidden notebook state.",
         "Treat redacted placeholders as intentionally unavailable private data.",
     )
@@ -96,7 +97,7 @@ def render_ml_results_explanation_prompt(
     rules: tuple[str, ...] | None = None,
     focus_areas: tuple[str, ...] | None = None,
 ) -> str:
-    """Render the default prompt for explaining ML/DL results."""
+    """Render the default prompt for generating an LLM-only ML/DL report."""
 
     base = ReportPromptContext(
         markdown_report=markdown_report,

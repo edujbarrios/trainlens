@@ -37,9 +37,9 @@ def test_report_prompt_template_redacts_secrets_before_llm_prompt():
 
 def test_ml_results_prompt_asks_llm_to_explain_with_context():
     prompt = render_ml_results_explanation_prompt(
-        "## TrainLens Report\n\n- train_loss=0.18\n- eval_loss=0.57"
+        "# TrainLens Notebook Context\n\n- train_loss=0.18\n- eval_loss=0.57"
     )
 
-    assert "explain the following DL/ML results" in prompt
-    assert "Notebook context and local TrainLens report" in prompt
+    assert "generate a TrainLens Markdown report" in prompt
+    assert "Notebook context" in prompt
     assert "Explain why the observed result likely happened" in prompt
