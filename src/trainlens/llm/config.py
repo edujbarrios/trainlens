@@ -14,9 +14,9 @@ class LLMConfig:
 
     @classmethod
     def from_env(cls) -> LLMConfig | None:
-        base_url = getenv("TRAINLENS_LLM_BASE_URL")
-        api_key = getenv("TRAINLENS_LLM_API_KEY")
-        model = getenv("TRAINLENS_LLM_MODEL", "auto")
+        base_url = getenv("TRAINLENS_LLM_BASE_URL", "").strip()
+        api_key = getenv("TRAINLENS_LLM_API_KEY", "").strip()
+        model = getenv("TRAINLENS_LLM_MODEL", "auto").strip() or "auto"
         if not base_url or not api_key:
             return None
         return cls(base_url=base_url.rstrip("/"), api_key=api_key, model=model)
