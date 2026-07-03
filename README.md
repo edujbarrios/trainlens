@@ -4,10 +4,12 @@ TrainLens generates LLM-written training reports inside the Jupyter notebook you
 are already using. It reads context from memory: model, dataset, metrics, logs,
 traces, hyperparameters, and notes.
 
-[![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
-[![PyPI](https://img.shields.io/pypi/v/trainlens.svg)](https://pypi.org/project/trainlens/)
+<p align="center">
+  <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://pypi.org/project/trainlens/"><img alt="PyPI" src="https://img.shields.io/pypi/v/trainlens?label=PyPI&logo=pypi"></a>
+  <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
+  <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
+</p>
 
 <p align="center"><strong><em>Maintained by Eduardo J. Barrios.</em></strong></p>
 
