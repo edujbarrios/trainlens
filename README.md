@@ -16,7 +16,8 @@ consistent explanations of results, datasets, and hyperparameters.
 
 ## How It Works
 
-TrainLens is a small notebook pipeline:
+TrainLens is a small notebook pipeline. Conceptually, `%explain_training` does
+this:
 
 ```python
 %explain_training
