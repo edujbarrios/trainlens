@@ -107,15 +107,22 @@ parameter ratios, multimodal hints, and eval metrics.
 ```python
 from trainlens.notebook import display_llm_report
 
-display_llm_report(globals())
+dataset_name = "cifar10"
+dataset_notes = "50k train images, 10 classes, CPU smoke-test subset."
+hardware_notes = "Trained on CPU from a small in-memory DataLoader subset."
+pytorch_loop_metrics = [
+    {"epoch": 1, "train_loss": 1.42, "val_loss": 1.20, "val_accuracy": 0.58},
+    {"epoch": 2, "train_loss": 0.94, "val_loss": 0.88, "val_accuracy": 0.69},
+]
 
-%load_ext trainlens.magic.extension
-%explain_training --llm
-%compare_runs
+display_llm_report(globals())
 ```
 
-For local debugging without a provider, use `display_live_report(globals())`.
-That path is deterministic and heuristic-based; it is not the main LLM report.
+```python
+%load_ext trainlens.magic.extension
+%explain_training
+%compare_runs
+```
 
 ## Examples And Docs
 
