@@ -68,8 +68,7 @@ history = {
 
 ## Example Output
 
-TrainLens asks the provider for the same structured Markdown shape each time:
-summary, evidence, interpretation, risks, next steps, and bottom line.
+For the Quickstart run above, TrainLens returns a structured report like this:
 
 ```markdown
 ## TrainLens Report
