@@ -113,30 +113,6 @@ For the Quickstart run above, TrainLens returns a structured report like this:
   **epoch 2**, not epoch 3.
 ```
 
-## Usage
-
-TrainLens reads common notebook artifacts such as Keras histories, Hugging Face
-`log_history`, PyTorch loop metrics, dataset notes, LoRA settings, trainable
-parameter ratios, multimodal hints, and eval metrics.
-
-```python
-# PyTorch-style loop metrics kept in notebook memory.
-dataset_name = "cifar10"
-dataset_notes = "50k train images, 10 classes, CPU smoke-test subset."
-hardware_notes = "Trained on CPU from a small in-memory DataLoader subset."
-pytorch_loop_metrics = [
-    {"epoch": 1, "train_loss": 1.42, "val_loss": 1.20, "val_accuracy": 0.58},
-    {"epoch": 2, "train_loss": 0.94, "val_loss": 0.88, "val_accuracy": 0.69},
-]
-
-# Then ask TrainLens to explain the current notebook state with the LLM.
-%load_ext trainlens.magic.extension
-%explain_training
-
-# After several runs in the same notebook, compare captured metric snapshots.
-%compare_runs
-```
-
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
