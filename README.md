@@ -51,6 +51,7 @@ from trainlens.notebook import display_llm_report
 os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
 os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
 os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
+os.environ["TRAINLENS_LLM_TIMEOUT_SECONDS"] = "120"
 
 dataset_name = "ag_news"
 dataset_notes = "120k news titles; 4 classes; validation is balanced."
@@ -79,7 +80,8 @@ generalization. The report then suggests next experiments such as stopping after
 epoch 2, lowering the learning rate, or adding regularization.
 
 Use any OpenAI-compatible provider by changing `TRAINLENS_LLM_BASE_URL`,
-`TRAINLENS_LLM_API_KEY`, and `TRAINLENS_LLM_MODEL`.
+`TRAINLENS_LLM_API_KEY`, `TRAINLENS_LLM_MODEL`, and optionally
+`TRAINLENS_LLM_TIMEOUT_SECONDS` for slower models.
 
 ## What It Answers
 
