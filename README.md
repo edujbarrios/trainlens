@@ -17,8 +17,11 @@ consistent explanations of results, datasets, and hyperparameters.
 ## How It Works
 
 TrainLens reads the active notebook memory, extracts training context, redacts
-likely secrets, and sends the structured evidence to your configured
-OpenAI-compatible LLM. The model returns a Markdown report with the same shape
+likely secrets, and sends structured evidence to your configured
+OpenAI-compatible LLM.
+
+The LLM receives a TrainLens prompt that asks it to explain only what the
+notebook evidence supports. It returns a Markdown report with the same shape
 each time: summary, evidence, interpretation, risks, next steps, and bottom
 line.
 
