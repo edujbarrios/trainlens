@@ -40,23 +40,11 @@ os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
 ## 4. Render The Notebook Report
 
 ```python
-from trainlens.notebook import display_llm_report
-
-
-report = display_llm_report(globals())
-```
-
-`report.result` keeps the extracted metric values, while `report.markdown`
-keeps the LLM-generated notebook report.
-
-## 5. Use Magic Commands
-
-```python
 %load_ext trainlens.magic.extension
 %explain_training
 %compare_runs
 ```
 
-The helper and magic read the active notebook namespace, so they work after your
-training cell has created `model`, `history`, `train_losses`, `val_losses`,
-`epoch_logs`, `training_trace`, or similar variables.
+The magic reads the active notebook namespace, so it works after your training
+cell has created `model`, `history`, `train_losses`, `val_losses`, `epoch_logs`,
+`training_trace`, or similar variables.

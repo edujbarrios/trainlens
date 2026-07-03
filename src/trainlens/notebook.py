@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from IPython import get_ipython
-from IPython.display import Markdown, display
 
 from trainlens.llm.context import build_llm_notebook_context
 from trainlens.llm.enhancer import explain_with_llm
@@ -33,14 +32,6 @@ def build_llm_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
         result=AnalysisResult(metrics=context.metrics),
         markdown=explain_with_llm(context.markdown, require_provider=True),
     )
-
-
-def display_llm_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
-    """Display an LLM-explained training report in a notebook."""
-
-    report = build_llm_report(namespace)
-    display(Markdown(report.markdown))
-    return report
 
 
 def _current_user_namespace() -> Mapping[str, Any]:
