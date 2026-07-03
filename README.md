@@ -136,6 +136,18 @@ For the Quickstart run above, TrainLens returns a structured report like this:
   **epoch 2**, not epoch 3.
 ```
 
+## Documentation
+
+Full documentation lives in [documentation](documentation/README.md), including:
+
+- why TrainLens exists
+- notebook workflow
+- supported evidence
+- LLM provider configuration
+- report interpretation
+- troubleshooting
+- API reference
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
