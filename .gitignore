@@ -12,4 +12,3 @@ build/
 .env
 .ipynb_checkpoints/
 .trainlens/
-examples/generated/
