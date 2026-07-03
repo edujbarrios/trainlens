@@ -39,7 +39,7 @@ class OpenAICompatibleProvider:
             },
             method="POST",
         )
-        with request.urlopen(req, timeout=20) as response:  # noqa: S310
+        with request.urlopen(req, timeout=self.config.timeout_seconds) as response:  # noqa: S310
             data = json.loads(response.read().decode("utf-8"))
         content = data["choices"][0]["message"]["content"]
         return str(content)
