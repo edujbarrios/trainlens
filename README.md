@@ -72,20 +72,11 @@ history = {
 display_llm_report(globals())
 ```
 
-TrainLens sends structured notebook context to the configured OpenAI-compatible
-LLM. For this `ag_news` run, the generated report should connect the falling
-training loss and rising validation loss after epoch 2 with likely overfitting:
-the model is memorizing training headlines faster than it improves
-generalization. The report then suggests next experiments such as stopping after
-epoch 2, lowering the learning rate, or adding regularization.
-
-Use any OpenAI-compatible provider by changing `TRAINLENS_LLM_BASE_URL`,
-`TRAINLENS_LLM_API_KEY`, `TRAINLENS_LLM_MODEL`, and optionally
-`TRAINLENS_LLM_TIMEOUT_SECONDS` for slower models.
-
 ## Example Output
 
-For the Quickstart run above, TrainLens produces a Markdown report like this:
+TrainLens asks the provider for the same structured Markdown shape each time:
+run summary, evidence, interpretation, risks, next steps, and bottom line. For
+the Quickstart run above, the output looks like this:
 
 ```markdown
 ## TrainLens Report
