@@ -9,7 +9,7 @@ traces, hyperparameters, and notes.
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![PyPI](https://img.shields.io/pypi/v/trainlens.svg)](https://pypi.org/project/trainlens/)
 
-Maintained by Eduardo J. Barrios.
+<p align="center"><strong><em>Maintained by Eduardo J. Barrios.</em></strong></p>
 
 It is built for research workflows with many training jobs, where you need
 consistent explanations of results, datasets, and hyperparameters.
