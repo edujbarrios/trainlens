@@ -16,14 +16,20 @@ consistent explanations of results, datasets, and hyperparameters.
 
 ## How It Works
 
-TrainLens reads the active notebook memory, extracts training context, redacts
-likely secrets, and sends structured evidence to your configured
-OpenAI-compatible LLM.
+TrainLens is a small notebook pipeline:
 
-The LLM receives a TrainLens prompt that asks it to explain only what the
-notebook evidence supports. It returns a Markdown report with the same shape
-each time: summary, evidence, interpretation, risks, next steps, and bottom
-line.
+1. `%explain_training` reads the active IPython namespace.
+2. `introspection` snapshots visible variables such as model names, histories,
+   metric logs, dataset notes, training parameters, traces, and PEFT metadata.
+3. `security` redacts likely secrets before anything is sent to the provider.
+4. `llm.context` converts the notebook state into compact Markdown evidence.
+5. `llm.prompts` wraps that evidence in an internal prompt that asks the LLM to
+   explain only what the notebook supports.
+6. `llm.openai_compatible` sends the prompt to the configured chat-completions
+   endpoint and displays the returned Markdown report in the notebook.
+
+The report keeps a stable shape: summary, evidence, interpretation, risks, next
+steps, and bottom line.
 
 ## Install
 
