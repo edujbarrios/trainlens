@@ -131,16 +131,6 @@ pytorch_loop_metrics = [
 %compare_runs
 ```
 
-## Examples And Docs
-
-- [notebooks/](notebooks/)
-- [docs/live-notebook-cells.md](docs/live-notebook-cells.md)
-- [docs/report-sections.md](docs/report-sections.md)
-
-```bash
-python examples/pytorch_loop_metrics.py
-```
-
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
