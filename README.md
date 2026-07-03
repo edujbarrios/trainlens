@@ -1,8 +1,8 @@
 # TrainLens
 
-TrainLens lets you generate LLM-written training reports without leaving the
-Jupyter notebook you are running. It uses the context already in memory: model,
-dataset, metrics, logs, traces, hyperparameters, and notes.
+TrainLens generates LLM-written training reports inside the Jupyter notebook you
+are already using. It reads context from memory: model, dataset, metrics, logs,
+traces, hyperparameters, and notes.
 
 [![CI](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-yellow.svg)](LICENSE)
@@ -11,41 +11,24 @@ dataset, metrics, logs, traces, hyperparameters, and notes.
 
 Maintained by Eduardo J. Barrios.
 
-It sends sanitized notebook training context to an OpenAI-compatible LLM and
-displays a Markdown diagnosis in-place. A local heuristic report is still
-available for debugging, but the main workflow is LLM-generated and requires a
-configured provider.
-
-TrainLens is intended for research workflows where you run many training jobs,
-compare runs, and need concise explanations of the resulting metrics, datasets,
-and hyperparameters.
+It is built for research workflows with many training jobs, where you need
+consistent explanations of results, datasets, and hyperparameters.
 
 ## Install
-
-Install the package from PyPI:
 
 ```bash
 python -m pip install trainlens
 ```
 
-For development, clone the repository and install it in editable mode:
+Development install:
 
 ```bash
 git clone https://github.com/edujbarrios/trainlens.git
 cd trainlens
-python -m pip install -e .
-```
-
-For development tools and tests, install the `dev` extras:
-
-```bash
 python -m pip install -e ".[dev]"
 ```
 
 ## Quickstart
-
-Set your provider details in the notebook or in the environment before calling
-TrainLens:
 
 ```python
 import os
@@ -79,84 +62,47 @@ display_llm_report(globals())
 ## Example Output
 
 TrainLens asks the provider for the same structured Markdown shape each time:
-run summary, evidence, interpretation, risks, next steps, and bottom line. For
-the Quickstart run above, the output looks like this:
+summary, evidence, interpretation, risks, next steps, and bottom line.
 
 ```markdown
 ## TrainLens Report
 
 ### Run summary
 - Dataset context: `ag_news`
-  - Notes: `120k news titles; 4 classes; validation is balanced.`
 - Model context: `distilbert-base-uncased`
-- Training params:
-  - `epochs`: `3`
-  - `batch_size`: `32`
-  - `learning_rate`: `5e-05`
-  - `max_length`: `128`
+- Training params: `epochs=3`, `batch_size=32`, `learning_rate=5e-05`
 
 ### Evidence
-- Training loss decreases monotonically:
-  - `0.62 -> 0.31 -> 0.18`
-- Training accuracy increases monotonically:
-  - `0.78 -> 0.91 -> 0.96`
-- Validation loss improves, then worsens:
-  - `0.48 -> 0.44 -> 0.57`
-- Validation accuracy improves slightly, then slips:
-  - `0.84 -> 0.86 -> 0.85`
+- Training loss decreases: `0.62 -> 0.31 -> 0.18`
+- Training accuracy increases: `0.78 -> 0.91 -> 0.96`
+- Validation loss improves, then worsens: `0.48 -> 0.44 -> 0.57`
+- Validation accuracy improves slightly, then slips: `0.84 -> 0.86 -> 0.85`
 
 ### Interpretation
-- The optimization on the training set is working cleanly.
-- Generalization peaks around epoch 2:
-  - Best observed `validation_loss` is `0.44`.
-  - Best observed `validation_accuracy` is `0.86`.
-- Epoch 3 shows validation drift consistent with overfitting:
-  - `train_loss` continues down from `0.31` to `0.18`.
-  - `validation_loss` rises from `0.44` to `0.57`.
-- With a balanced 4-class validation set, the widening train/validation gap is
-  more consistent with memorization of training-specific patterns than with
-  class imbalance effects.
+- Optimization is working on the training set.
+- Generalization peaks around epoch 2.
+- Epoch 3 shows validation drift consistent with overfitting.
 
 ### Risks and caveats
 - **Overfitting risk is supported by the metrics.**
-- **Calibration/confidence drift is possible.**
-  - Validation loss rises sharply while validation accuracy changes only
-    slightly.
-- Foundation-model fine-tuning configuration risk is unclear from the notebook:
-  no model object, frozen-module details, adapter settings, or trainable
-  parameter ratio were provided.
+- **Calibration/confidence drift is possible** because validation loss rises
+  while validation accuracy changes only slightly.
 
 ### What to do next in the notebook
-- **Select epoch 2 as the current best checkpoint.**
-- **Add early stopping on validation loss.**
-- **Test a shorter training schedule.**
-  - Run `2` epochs instead of `3`.
-- **Sweep lower learning rates.**
-  - Try below `5e-05`.
-- **Compare checkpoint selection by `validation_loss` vs `validation_accuracy`.**
-- **Inspect per-class errors if available.**
+- Select epoch 2 as the current best checkpoint.
+- Add early stopping on validation loss.
+- Test 2 epochs and a slightly lower learning rate.
 
 ### Bottom line
 - The run trained successfully, but the best generalization was reached at
   **epoch 2**, not epoch 3.
-- The most evidence-supported next step is: **use early stopping or stop at
-  2 epochs, then test a slightly lower learning rate.**
 ```
 
-## What It Answers
-
-- What did this notebook train?
-- Which dataset and training context shaped the result?
-- Are the metrics improving, plateauing, overfitting, or missing evidence?
-- What should I try next in this notebook?
+## Usage
 
 TrainLens reads common notebook artifacts such as Keras histories, Hugging Face
-`log_history`, PyTorch loop metrics, execution traces, dataset notes, LoRA
-settings, trainable parameter ratios, multimodal hints, and eval metrics.
-
-## Notebook Usage
-
-Use the LLM helper or magic for the main workflow:
+`log_history`, PyTorch loop metrics, dataset notes, LoRA settings, trainable
+parameter ratios, multimodal hints, and eval metrics.
 
 ```python
 from trainlens.notebook import display_llm_report
@@ -170,19 +116,6 @@ display_llm_report(globals())
 
 For local debugging without a provider, use `display_live_report(globals())`.
 That path is deterministic and heuristic-based; it is not the main LLM report.
-
-## How It Works
-
-```text
-notebook variables
-  -> namespace snapshot
-  -> sanitized notebook context
-  -> LLM report prompt
-  -> Markdown report
-```
-
-Core modules: `introspection`, `analyzers`, `heuristics`, `models`, `llm`,
-`magic`, `renderers`, and `storage`.
 
 ## Examples And Docs
 
