@@ -83,6 +83,71 @@ Use any OpenAI-compatible provider by changing `TRAINLENS_LLM_BASE_URL`,
 `TRAINLENS_LLM_API_KEY`, `TRAINLENS_LLM_MODEL`, and optionally
 `TRAINLENS_LLM_TIMEOUT_SECONDS` for slower models.
 
+## Example Output
+
+For the Quickstart run above, TrainLens produces a Markdown report like this:
+
+```markdown
+## TrainLens Report
+
+### Run summary
+- Dataset context: `ag_news`
+  - Notes: `120k news titles; 4 classes; validation is balanced.`
+- Model context: `distilbert-base-uncased`
+- Training params:
+  - `epochs`: `3`
+  - `batch_size`: `32`
+  - `learning_rate`: `5e-05`
+  - `max_length`: `128`
+
+### Evidence
+- Training loss decreases monotonically:
+  - `0.62 -> 0.31 -> 0.18`
+- Training accuracy increases monotonically:
+  - `0.78 -> 0.91 -> 0.96`
+- Validation loss improves, then worsens:
+  - `0.48 -> 0.44 -> 0.57`
+- Validation accuracy improves slightly, then slips:
+  - `0.84 -> 0.86 -> 0.85`
+
+### Interpretation
+- The optimization on the training set is working cleanly.
+- Generalization peaks around epoch 2:
+  - Best observed `validation_loss` is `0.44`.
+  - Best observed `validation_accuracy` is `0.86`.
+- Epoch 3 shows validation drift consistent with overfitting:
+  - `train_loss` continues down from `0.31` to `0.18`.
+  - `validation_loss` rises from `0.44` to `0.57`.
+- With a balanced 4-class validation set, the widening train/validation gap is
+  more consistent with memorization of training-specific patterns than with
+  class imbalance effects.
+
+### Risks and caveats
+- **Overfitting risk is supported by the metrics.**
+- **Calibration/confidence drift is possible.**
+  - Validation loss rises sharply while validation accuracy changes only
+    slightly.
+- Foundation-model fine-tuning configuration risk is unclear from the notebook:
+  no model object, frozen-module details, adapter settings, or trainable
+  parameter ratio were provided.
+
+### What to do next in the notebook
+- **Select epoch 2 as the current best checkpoint.**
+- **Add early stopping on validation loss.**
+- **Test a shorter training schedule.**
+  - Run `2` epochs instead of `3`.
+- **Sweep lower learning rates.**
+  - Try below `5e-05`.
+- **Compare checkpoint selection by `validation_loss` vs `validation_accuracy`.**
+- **Inspect per-class errors if available.**
+
+### Bottom line
+- The run trained successfully, but the best generalization was reached at
+  **epoch 2**, not epoch 3.
+- The most evidence-supported next step is: **use early stopping or stop at
+  2 epochs, then test a slightly lower learning rate.**
+```
+
 ## What It Answers
 
 - What did this notebook train?
