@@ -17,9 +17,9 @@ class LLMConfig:
     def from_env(cls) -> LLMConfig | None:
         base_url = getenv("TRAINLENS_LLM_BASE_URL", "").strip()
         api_key = getenv("TRAINLENS_LLM_API_KEY", "").strip()
-        model = getenv("TRAINLENS_LLM_MODEL", "auto").strip() or "auto"
+        model = getenv("TRAINLENS_LLM_MODEL", "").strip()
         timeout_seconds = _timeout_from_env(getenv("TRAINLENS_LLM_TIMEOUT_SECONDS", "120"))
-        if not base_url or not api_key:
+        if not base_url or not api_key or not model:
             return None
         return cls(
             base_url=base_url.rstrip("/"),
