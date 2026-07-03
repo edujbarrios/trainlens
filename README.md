@@ -33,8 +33,6 @@ python -m pip install -e ".[dev]"
 ```python
 import os
 
-from trainlens.notebook import display_llm_report
-
 os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
 os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
 os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
@@ -56,7 +54,8 @@ history = {
     "val_accuracy": [0.84, 0.86, 0.85],
 }
 
-display_llm_report(globals())
+%load_ext trainlens.magic.extension
+%explain_training
 ```
 
 ## Example Output
@@ -105,8 +104,7 @@ TrainLens reads common notebook artifacts such as Keras histories, Hugging Face
 parameter ratios, multimodal hints, and eval metrics.
 
 ```python
-from trainlens.notebook import display_llm_report
-
+# PyTorch-style loop metrics kept in notebook memory.
 dataset_name = "cifar10"
 dataset_notes = "50k train images, 10 classes, CPU smoke-test subset."
 hardware_notes = "Trained on CPU from a small in-memory DataLoader subset."
@@ -115,12 +113,11 @@ pytorch_loop_metrics = [
     {"epoch": 2, "train_loss": 0.94, "val_loss": 0.88, "val_accuracy": 0.69},
 ]
 
-display_llm_report(globals())
-```
-
-```python
+# Then ask TrainLens to explain the current notebook state with the LLM.
 %load_ext trainlens.magic.extension
 %explain_training
+
+# After several runs in the same notebook, compare captured metric snapshots.
 %compare_runs
 ```
 
