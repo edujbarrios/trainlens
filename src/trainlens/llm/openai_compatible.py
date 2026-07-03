@@ -43,8 +43,3 @@ class OpenAICompatibleProvider:
             data = json.loads(response.read().decode("utf-8"))
         content = data["choices"][0]["message"]["content"]
         return str(content)
-
-    def enhance(self, markdown_report: str) -> str:
-        """Backward-compatible alias for older provider integrations."""
-
-        return self.explain(markdown_report)

@@ -114,24 +114,3 @@ def render_ml_results_explanation_prompt(
         focus_areas=focus_areas or base.focus_areas,
     )
     return ReportPromptTemplate().render(context)
-
-
-def render_report_enhancement_prompt(
-    markdown_report: str,
-    *,
-    model_family: str = "foundation model fine-tuning",
-    audience: str = "ML engineers debugging notebook training runs",
-    tone: str = "concise, technical, and careful",
-    rules: tuple[str, ...] | None = None,
-    focus_areas: tuple[str, ...] | None = None,
-) -> str:
-    """Backward-compatible alias for older integrations."""
-
-    return render_ml_results_explanation_prompt(
-        markdown_report,
-        model_family=model_family,
-        audience=audience,
-        tone=tone,
-        rules=rules,
-        focus_areas=focus_areas,
-    )
