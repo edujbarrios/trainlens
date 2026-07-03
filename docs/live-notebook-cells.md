@@ -1,6 +1,7 @@
-# Live Notebook Cells
+# LLM Notebook Cells
 
-These cells show the shortest path from training-loop variables to a live TrainLens report.
+These cells show the shortest path from training-loop variables to a TrainLens
+LLM report.
 
 ## 1. Load TrainLens From A Clone
 
@@ -26,28 +27,36 @@ epoch_logs = [
 ]
 ```
 
-## 3. Render The Notebook Report
+## 3. Configure The LLM Provider
 
 ```python
-from trainlens.notebook import display_live_report
+import os
 
-
-live_report = display_live_report(globals())
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
+os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
 ```
 
-`live_report.result` keeps the structured analysis object, while
-`live_report.markdown` keeps the rendered notebook report.
+## 4. Render The Notebook Report
 
-## 4. Use Magic Commands
+```python
+from trainlens.notebook import display_llm_report
+
+
+report = display_llm_report(globals())
+```
+
+`report.result` keeps the extracted metric values, while `report.markdown`
+keeps the LLM-generated notebook report.
+
+## 5. Use Magic Commands
 
 ```python
 %load_ext trainlens.magic.extension
 %explain_training
-%training_summary
-%why_bad_model
 %compare_runs
 ```
 
-The magic commands read the active notebook namespace, so they work after your
+The helper and magic read the active notebook namespace, so they work after your
 training cell has created `model`, `history`, `train_losses`, `val_losses`,
 `epoch_logs`, `training_trace`, or similar variables.

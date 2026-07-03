@@ -8,8 +8,15 @@ class DemoShell:
     }
 
 
-def test_explain_training_magic_captures_run():
+def test_explain_training_magic_captures_run(monkeypatch):
     magics = TrainLensMagics(DemoShell())
+
+    def fake_explain(markdown: str, *, require_provider: bool = False) -> str:
+        assert require_provider is True
+        assert "TrainLens Notebook Context" in markdown
+        return "## TrainLens Report\n\nLLM magic report."
+
+    monkeypatch.setattr("trainlens.magic.commands.explain_with_llm", fake_explain)
 
     magics.explain_training("")
 

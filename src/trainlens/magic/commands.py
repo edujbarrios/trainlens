@@ -9,9 +9,9 @@ from typing import Any, cast
 from IPython.core.magic import Magics, line_magic, magics_class
 from IPython.display import Markdown, display
 
+from trainlens.llm.context import build_llm_notebook_context
 from trainlens.llm.enhancer import explain_with_llm
-from trainlens.pipeline import explain_namespace
-from trainlens.renderers.markdown import MarkdownRenderer
+from trainlens.models.analysis import AnalysisResult
 from trainlens.storage.memory import InMemoryRunStore
 
 
@@ -21,34 +21,16 @@ class TrainLensMagics(Magics):
 
     def __init__(self, shell: Any = None) -> None:
         super().__init__(shell)
-        self.renderer = MarkdownRenderer()
         self.store = InMemoryRunStore()
 
     @line_magic
     def explain_training(self, line: str = "") -> None:
         shell = cast(Any, self.shell)
-        result = explain_namespace(shell.user_ns)
-        markdown = self.renderer.render(result)
-        if "--llm" in line.split():
-            markdown = explain_with_llm(markdown)
+        context = build_llm_notebook_context(shell.user_ns)
+        result = AnalysisResult(metrics=context.metrics)
+        markdown = explain_with_llm(context.markdown, require_provider=True)
         self.store.capture(result)
         display(Markdown(markdown))
-
-    @line_magic
-    def training_summary(self, line: str = "") -> None:
-        shell = cast(Any, self.shell)
-        result = explain_namespace(shell.user_ns)
-        display(Markdown(self.renderer.render(result)))
-
-    @line_magic
-    def why_bad_model(self, line: str = "") -> None:
-        shell = cast(Any, self.shell)
-        result = explain_namespace(shell.user_ns)
-        result.summary.insert(
-            0,
-            "Focused diagnosis mode: prioritizing risks and next debugging steps.",
-        )
-        display(Markdown(self.renderer.render(result)))
 
     @line_magic
     def compare_runs(self, line: str = "") -> None:
