@@ -14,6 +14,14 @@ traces, hyperparameters, and notes.
 It is built for research workflows with many training jobs, where you need
 consistent explanations of results, datasets, and hyperparameters.
 
+## How It Works
+
+TrainLens reads the active notebook memory, extracts training context, redacts
+likely secrets, and sends the structured evidence to your configured
+OpenAI-compatible LLM. The model returns a Markdown report with the same shape
+each time: summary, evidence, interpretation, risks, next steps, and bottom
+line.
+
 ## Install
 
 ```bash
