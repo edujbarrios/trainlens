@@ -55,7 +55,7 @@ risks, next steps, and bottom line.
 ## Install
 
 ```bash
-python -m pip install trainlens
+pip install trainlens
 ```
 
 Development install:
