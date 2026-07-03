@@ -69,6 +69,8 @@ python -m pip install -e ".[dev]"
 ```python
 import os
 
+import trainlens
+
 os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
 os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
 os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
