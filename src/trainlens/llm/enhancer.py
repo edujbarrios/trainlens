@@ -28,9 +28,3 @@ def explain_with_llm(markdown_report: str, *, require_provider: bool = False) ->
             msg = f"LLM explanation failed: {exc}"
             raise RuntimeError(msg) from exc
         return markdown_report + f"\n> LLM explanation failed: {exc}\n"
-
-
-def maybe_enhance(markdown_report: str) -> str:
-    """Backward-compatible alias for older notebooks."""
-
-    return explain_with_llm(markdown_report)

@@ -1,4 +1,4 @@
-from trainlens.llm.enhancer import explain_with_llm, maybe_enhance
+from trainlens.llm.enhancer import explain_with_llm
 
 
 def test_explain_with_llm_skips_when_provider_config_is_missing(monkeypatch):
@@ -45,10 +45,3 @@ def test_explain_with_llm_strict_mode_raises_on_provider_error(monkeypatch):
         assert "provider unavailable" in str(exc)
     else:
         raise AssertionError("Expected strict provider errors to raise")
-
-
-def test_maybe_enhance_remains_backward_compatible(monkeypatch):
-    monkeypatch.delenv("TRAINLENS_LLM_BASE_URL", raising=False)
-    monkeypatch.delenv("TRAINLENS_LLM_API_KEY", raising=False)
-
-    assert maybe_enhance("report") == explain_with_llm("report")
