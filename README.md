@@ -16,6 +16,10 @@ displays a Markdown diagnosis in-place. A local heuristic report is still
 available for debugging, but the main workflow is LLM-generated and requires a
 configured provider.
 
+TrainLens is intended for research workflows where you run many training jobs,
+compare runs, and need concise explanations of the resulting metrics, datasets,
+and hyperparameters.
+
 ## Install
 
 Install the package from PyPI:

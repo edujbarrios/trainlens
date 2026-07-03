@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use TrainLens in research, please cite it using this metadata."
+type: software
+title: "TrainLens"
+version: "0.1.0"
+date-released: "2026-07-02"
+abstract: "TrainLens generates structured LLM-written reports for machine-learning training runs directly inside Jupyter notebooks."
+authors:
+  - family-names: "Barrios"
+    given-names: "Eduardo J."
+repository-code: "https://github.com/edujbarrios/trainlens"
+url: "https://github.com/edujbarrios/trainlens"
+license: "Apache-2.0"
+keywords:
+  - "machine learning"
+  - "Jupyter"
+  - "training reports"
+  - "LLM"
+  - "research tooling"
