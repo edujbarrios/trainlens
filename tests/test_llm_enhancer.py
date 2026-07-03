@@ -36,6 +36,7 @@ def test_explain_with_llm_strict_mode_raises_on_provider_error(monkeypatch):
 
     monkeypatch.setenv("TRAINLENS_LLM_BASE_URL", "https://api.example.com/v1")
     monkeypatch.setenv("TRAINLENS_LLM_API_KEY", "secret-key")
+    monkeypatch.setenv("TRAINLENS_LLM_MODEL", "trainlens-test-model")
     monkeypatch.setattr("trainlens.llm.enhancer.OpenAICompatibleProvider", FailingProvider)
 
     try:
