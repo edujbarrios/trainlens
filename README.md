@@ -18,18 +18,36 @@ consistent explanations of results, datasets, and hyperparameters.
 
 TrainLens is a small notebook pipeline:
 
-1. `%explain_training` reads the active IPython namespace.
-2. `introspection` snapshots visible variables such as model names, histories,
-   metric logs, dataset notes, training parameters, traces, and PEFT metadata.
-3. `security` redacts likely secrets before anything is sent to the provider.
-4. `llm.context` converts the notebook state into compact Markdown evidence.
-5. `llm.prompts` wraps that evidence in an internal prompt that asks the LLM to
-   explain only what the notebook supports.
-6. `llm.openai_compatible` sends the prompt to the configured chat-completions
-   endpoint and displays the returned Markdown report in the notebook.
+```python
+%explain_training
 
-The report keeps a stable shape: summary, evidence, interpretation, risks, next
-steps, and bottom line.
+# trainlens.magic.commands
+# Reads the active IPython namespace from the current notebook.
+namespace = get_ipython().user_ns
+
+# trainlens.llm.context + trainlens.introspection
+# Finds visible training context: model names, histories, metric logs, dataset
+# notes, hyperparameters, traces, and PEFT metadata.
+context = build_llm_notebook_context(namespace)
+
+# trainlens.security
+# Redacts likely secrets while values are summarized and before prompt rendering.
+safe_evidence = context.markdown
+
+# trainlens.llm.prompts
+# Wraps the evidence in TrainLens' internal report-generation prompt. The prompt
+# tells the LLM to explain only what the notebook supports.
+prompt = render_ml_results_explanation_prompt(safe_evidence)
+
+# trainlens.llm.openai_compatible
+# Sends the evidence to the configured chat-completions endpoint; the provider
+# renders the prompt and returns Markdown for display in the notebook.
+report = OpenAICompatibleProvider(config).explain(safe_evidence)
+display(Markdown(report))
+```
+
+The generated report keeps a stable shape: summary, evidence, interpretation,
+risks, next steps, and bottom line.
 
 ## Install
 
