@@ -102,40 +102,61 @@ history = {
 
 ## Example Output
 
-For the Quickstart run above, TrainLens returns a structured report like this:
+For the Quickstart run above, `%explain_training` returns a scientific-style
+report like this:
 
 ```markdown
-## TrainLens Report
+## TrainLens Scientific Report
 
-### Run summary
+### LLM provenance
+- Drafted with `gpt-4.1-mini` through an OpenAI-compatible provider.
+
+### Abstract
+The run successfully optimized the training objective, with training loss
+falling from `0.62` to `0.18`. Validation evidence is weaker: validation loss
+improved through epoch 2 and then worsened at epoch 3.
+
+### Methods Context
 - Dataset context: `ag_news`
 - Model context: `distilbert-base-uncased`
 - Training params: `epochs=3`, `batch_size=32`, `learning_rate=5e-05`
 
-### Evidence
+### Results
 - Training loss decreases: `0.62 -> 0.31 -> 0.18`
 - Training accuracy increases: `0.78 -> 0.91 -> 0.96`
 - Validation loss improves, then worsens: `0.48 -> 0.44 -> 0.57`
 - Validation accuracy improves slightly, then slips: `0.84 -> 0.86 -> 0.85`
 
-### Interpretation
-- Optimization is working on the training set.
-- Generalization peaks around epoch 2.
-- Epoch 3 shows validation drift consistent with overfitting.
+### Discussion
+The metrics suggest that optimization continued on the training set after the
+best validation-loss point. The epoch-3 validation-loss increase is consistent
+with overfitting or calibration drift, especially because validation accuracy
+does not improve alongside the lower training loss.
 
-### Risks and caveats
-- **Overfitting risk is supported by the metrics.**
-- **Calibration/confidence drift is possible** because validation loss rises
-  while validation accuracy changes only slightly.
+### Possible Conclusions
+The best generalization evidence appears around epoch 2 rather than epoch 3.
+The run is useful, but the final checkpoint should not be assumed to be the best
+checkpoint without further validation.
 
-### What to do next in the notebook
-- Select epoch 2 as the current best checkpoint.
-- Add early stopping on validation loss.
-- Test 2 epochs and a slightly lower learning rate.
+### Limitations
+The report only uses notebook evidence. It cannot verify held-out test
+performance, dataset leakage, or class-level behavior unless those values are
+available in memory.
+```
 
-### Bottom line
-- The run trained successfully, but the best generalization was reached at
-  **epoch 2**, not epoch 3.
+`%suggest_improvements` produces a separate improvement plan:
+
+```markdown
+## TrainLens Improvement Ideas
+
+### Evidence Snapshot
+- Validation loss worsens after epoch 2.
+- Validation accuracy is nearly flat between epochs 2 and 3.
+
+### Prioritized Experiments
+1. Select the epoch-2 checkpoint and compare it against the final checkpoint.
+2. Add early stopping on validation loss.
+3. Try a slightly lower learning rate or fewer epochs.
 ```
 
 ## Documentation
@@ -149,6 +170,7 @@ Full documentation lives in [documentation](documentation/README.md), including:
 - report interpretation
 - troubleshooting
 - API reference
+- release process
 
 ## License
 
