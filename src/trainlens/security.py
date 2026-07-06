@@ -26,7 +26,15 @@ _SENSITIVE_NAME_PARTS = (
 _SECRET_PATTERNS = (
     re.compile(r"\bsk-[A-Za-z0-9_-]{12,}\b"),
     re.compile(r"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
-    re.compile(r"\b(?:api[_-]?key|token|secret|password)\s*[:=]\s*['\"]?[^'\"\s,;]+", re.I),
+    re.compile(
+        r"([?&](?:api[_-]?key|access[_-]?token|token|secret|password)=)[^&#\s]+",
+        re.I,
+    ),
+    re.compile(r"([a-z][a-z0-9+.-]*://)[^/\s:@]+:[^/\s@]+@", re.I),
+    re.compile(
+        r"(?<![?&])\b(?:api[_-]?key|token|secret|password)\s*[:=]\s*['\"]?[^'\"\s,;]+",
+        re.I,
+    ),
     re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]{12,}\b", re.I),
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----", re.S),
 )
@@ -44,8 +52,19 @@ def redact_text(text: str) -> str:
 
     redacted = text
     for pattern in _SECRET_PATTERNS:
-        redacted = pattern.sub(REDACTED_VALUE, redacted)
+        if pattern.groups:
+            redacted = pattern.sub(
+                lambda match: _redact_grouped_secret(match.group(0), match.group(1)),
+                redacted,
+            )
+        else:
+            redacted = pattern.sub(REDACTED_VALUE, redacted)
     return redacted
+
+
+def _redact_grouped_secret(match_text: str, prefix: str) -> str:
+    suffix = "@" if match_text.endswith("@") else ""
+    return f"{prefix}{REDACTED_VALUE}{suffix}"
 
 
 def sanitize_value(name: str, value: Any) -> Any:
