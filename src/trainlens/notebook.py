@@ -12,6 +12,7 @@ from IPython import get_ipython
 
 from trainlens.llm.context import build_llm_notebook_context
 from trainlens.llm.enhancer import explain_with_llm
+from trainlens.llm.prompts import ReportMode
 from trainlens.models.analysis import AnalysisResult
 
 
@@ -26,11 +27,29 @@ class LiveReport:
 def build_llm_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
     """Build an LLM-generated training report from notebook context."""
 
+    return build_paper_report(namespace)
+
+
+def build_paper_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
+    """Build a scientific paper-style training report from notebook context."""
+
+    return _build_report(namespace, mode="paper_report")
+
+
+def build_improvement_ideas(namespace: Mapping[str, Any] | None = None) -> LiveReport:
+    """Build an evidence-backed improvement plan from notebook context."""
+
+    return _build_report(namespace, mode="improvement_ideas")
+
+
+def _build_report(namespace: Mapping[str, Any] | None, *, mode: ReportMode) -> LiveReport:
+    """Build one of the supported LLM-generated report modes."""
+
     report_namespace = _current_user_namespace() if namespace is None else namespace
     context = build_llm_notebook_context(report_namespace)
     return LiveReport(
         result=AnalysisResult(metrics=context.metrics),
-        markdown=explain_with_llm(context.markdown, require_provider=True),
+        markdown=explain_with_llm(context.markdown, mode=mode, require_provider=True),
     )
 
 

@@ -28,8 +28,23 @@ class TrainLensMagics(Magics):
         shell = cast(Any, self.shell)
         context = build_llm_notebook_context(shell.user_ns)
         result = AnalysisResult(metrics=context.metrics)
-        markdown = explain_with_llm(context.markdown, require_provider=True)
+        markdown = explain_with_llm(
+            context.markdown,
+            mode="paper_report",
+            require_provider=True,
+        )
         self.store.capture(result)
+        display(Markdown(markdown))
+
+    @line_magic
+    def suggest_improvements(self, line: str = "") -> None:
+        shell = cast(Any, self.shell)
+        context = build_llm_notebook_context(shell.user_ns)
+        markdown = explain_with_llm(
+            context.markdown,
+            mode="improvement_ideas",
+            require_provider=True,
+        )
         display(Markdown(markdown))
 
     @line_magic

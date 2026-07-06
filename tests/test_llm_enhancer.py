@@ -31,7 +31,7 @@ def test_explain_with_llm_strict_mode_raises_on_provider_error(monkeypatch):
         def __init__(self, _config: object) -> None:
             pass
 
-        def explain(self, _markdown_report: str) -> str:
+        def explain(self, _markdown_report: str, *, mode: str = "paper_report") -> str:
             raise ValueError("provider unavailable")
 
     monkeypatch.setenv("TRAINLENS_LLM_BASE_URL", "https://api.example.com/v1")
