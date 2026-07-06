@@ -7,6 +7,12 @@ from collections.abc import Mapping
 from typing import Any
 
 REDACTED_VALUE = "[REDACTED]"
+TRUNCATED_VALUE = "[TRUNCATED]"
+OMITTED_VALUE = "[OMITTED]"
+
+_MAX_COLLECTION_ITEMS = 20
+_MAX_NESTING_DEPTH = 4
+_MAX_TEXT_CHARS = 2_000
 
 _SENSITIVE_NAME_PARTS = (
     "api_key",
@@ -67,22 +73,95 @@ def _redact_grouped_secret(match_text: str, prefix: str) -> str:
     return f"{prefix}{REDACTED_VALUE}{suffix}"
 
 
-def sanitize_value(name: str, value: Any) -> Any:
+def sanitize_value(
+    name: str,
+    value: Any,
+    *,
+    max_collection_items: int = _MAX_COLLECTION_ITEMS,
+    max_depth: int = _MAX_NESTING_DEPTH,
+    max_text_chars: int = _MAX_TEXT_CHARS,
+) -> Any:
     """Return a copy of small notebook values with sensitive content redacted."""
 
+    return _sanitize_value(
+        name,
+        value,
+        max_collection_items=max_collection_items,
+        max_depth=max_depth,
+        max_text_chars=max_text_chars,
+    )
+
+
+def _sanitize_value(
+    name: str,
+    value: Any,
+    *,
+    max_collection_items: int,
+    max_depth: int,
+    max_text_chars: int,
+) -> Any:
     if is_sensitive_name(name):
         return REDACTED_VALUE
     if isinstance(value, str):
-        return redact_text(value)
+        return _truncate_text(redact_text(value), max_text_chars)
+    if max_depth <= 0:
+        return OMITTED_VALUE
     if isinstance(value, Mapping):
+        if len(value) > max_collection_items:
+            return OMITTED_VALUE
         return {
-            key: sanitize_value(str(key), nested_value)
+            key: _sanitize_value(
+                str(key),
+                nested_value,
+                max_collection_items=max_collection_items,
+                max_depth=max_depth - 1,
+                max_text_chars=max_text_chars,
+            )
             for key, nested_value in value.items()
         }
     if isinstance(value, tuple):
-        return tuple(sanitize_value(name, item) for item in value)
+        if len(value) > max_collection_items:
+            return OMITTED_VALUE
+        return tuple(
+            _sanitize_value(
+                name,
+                item,
+                max_collection_items=max_collection_items,
+                max_depth=max_depth - 1,
+                max_text_chars=max_text_chars,
+            )
+            for item in value
+        )
     if isinstance(value, list):
-        return [sanitize_value(name, item) for item in value]
+        if len(value) > max_collection_items:
+            return OMITTED_VALUE
+        return [
+            _sanitize_value(
+                name,
+                item,
+                max_collection_items=max_collection_items,
+                max_depth=max_depth - 1,
+                max_text_chars=max_text_chars,
+            )
+            for item in value
+        ]
     if isinstance(value, set):
-        return {sanitize_value(name, item) for item in value}
+        if len(value) > max_collection_items:
+            return OMITTED_VALUE
+        return {
+            _sanitize_value(
+                name,
+                item,
+                max_collection_items=max_collection_items,
+                max_depth=max_depth - 1,
+                max_text_chars=max_text_chars,
+            )
+            for item in value
+        }
     return value
+
+
+def _truncate_text(text: str, max_text_chars: int) -> str:
+    if len(text) <= max_text_chars:
+        return text
+    return text[:max_text_chars].rstrip() + f" {TRUNCATED_VALUE}"

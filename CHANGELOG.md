@@ -7,6 +7,7 @@ All notable changes to TrainLens will be documented here.
 - simplify README setup and local Ollama configuration guidance
 - remove committed example notebook history after accidental credential exposure
 - remove the `examples/` tree from repository history
+- bound nested notebook literal redaction to avoid oversized LLM contexts
 - refresh package and citation metadata for the 0.3.0 release
 
 ## 0.2.0 - 2026-07-06

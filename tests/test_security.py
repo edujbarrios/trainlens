@@ -1,4 +1,10 @@
-from trainlens.security import REDACTED_VALUE, redact_text, sanitize_value
+from trainlens.security import (
+    OMITTED_VALUE,
+    REDACTED_VALUE,
+    TRUNCATED_VALUE,
+    redact_text,
+    sanitize_value,
+)
 
 
 def test_redact_text_removes_common_secret_shapes():
@@ -41,3 +47,20 @@ def test_sanitize_value_redacts_sensitive_nested_names():
     assert sanitized["dataset"] == "mnist"
     assert sanitized["token"] == REDACTED_VALUE
     assert sanitized["nested"]["client_secret"] == REDACTED_VALUE
+
+
+def test_sanitize_value_omits_large_nested_collections():
+    value = {"history": list(range(100)), "batch_size": 8}
+
+    sanitized = sanitize_value("config", value)
+
+    assert sanitized == {"history": OMITTED_VALUE, "batch_size": 8}
+
+
+def test_sanitize_value_truncates_long_text_after_redaction():
+    value = "prefix api_key=sk-test1234567890 " + ("x" * 100)
+
+    sanitized = sanitize_value("notes", value, max_text_chars=32)
+
+    assert "sk-test1234567890" not in sanitized
+    assert sanitized.endswith(TRUNCATED_VALUE)
