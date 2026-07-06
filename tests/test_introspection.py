@@ -58,3 +58,13 @@ def test_inspector_redacts_sensitive_small_literals():
         "password": "[REDACTED]",
         "batch_size": 8,
     }
+
+
+def test_inspector_handles_dynamic_or_symbolic_shape_parts():
+    class TensorLike:
+        shape = (None, "batch", 128)
+
+    inspector = NotebookInspector()
+    snapshot = inspector.snapshot({"features": TensorLike()})
+
+    assert snapshot.by_name("features").shape == (None, None, 128)
