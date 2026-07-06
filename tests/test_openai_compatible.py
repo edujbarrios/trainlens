@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import pytest
 
@@ -45,8 +46,8 @@ def test_openai_provider_passes_model_and_mode_to_prompt(monkeypatch):
     payload = json.dumps({"choices": [{"message": {"content": "## TrainLens Improvement Ideas"}}]})
     captured: dict[str, object] = {}
 
-    def fake_urlopen(req: object, **_kwargs: object) -> FakeResponse:
-        data = getattr(req, "data").decode("utf-8")
+    def fake_urlopen(req: Any, **_kwargs: object) -> FakeResponse:
+        data = req.data.decode("utf-8")
         captured["payload"] = json.loads(data)
         return FakeResponse(payload)
 
