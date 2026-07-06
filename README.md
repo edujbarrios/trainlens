@@ -80,6 +80,96 @@ history = {
 %suggest_improvements
 ```
 
+## Reproducible CPU Example
+
+The notebook in `examples/cpu_training_with_trainlens.ipynb` runs a tiny
+CPU-only logistic-regression smoke test with pure Python. With the fixed seed
+from that notebook, the run trains on 180 synthetic samples, validates on 60,
+and produces the following final metrics:
+
+```text
+train_loss: 0.6095 -> 0.2459
+eval_loss:  0.6164 -> 0.2808
+accuracy:   0.8889 -> 0.9222
+val_accuracy: 0.8167 -> 0.9167
+```
+
+Here is the minimal notebook shape:
+
+```python
+import math
+import os
+import random
+
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
+os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
+
+random.seed(7)
+
+dataset_name = "synthetic_cpu_binary_classification"
+dataset_notes = (
+    "240 synthetic 2D samples; binary labels; validation split is balanced; "
+    "intended as a CPU-only smoke test."
+)
+model_name = "pure-python-logistic-regression"
+training_params = {
+    "epochs": 30,
+    "learning_rate": 0.45,
+    "train_samples": 180,
+    "validation_samples": 60,
+    "optimizer": "manual gradient descent",
+}
+
+history = {
+    "train_loss": [0.6095, 0.5474, 0.5005, 0.4641, 0.4351, 0.4115, 0.3919,
+                   0.3754, 0.3612, 0.3489, 0.3381, 0.3285, 0.32, 0.3123,
+                   0.3053, 0.299, 0.2932, 0.2879, 0.2829, 0.2784, 0.2741,
+                   0.2702, 0.2665, 0.263, 0.2597, 0.2566, 0.2537, 0.251,
+                   0.2484, 0.2459],
+    "eval_loss": [0.6164, 0.5593, 0.516, 0.4824, 0.4557, 0.4339, 0.4158,
+                  0.4005, 0.3874, 0.376, 0.366, 0.3572, 0.3493, 0.3422,
+                  0.3357, 0.3299, 0.3245, 0.3195, 0.315, 0.3108, 0.3068,
+                  0.3032, 0.2998, 0.2965, 0.2935, 0.2907, 0.288, 0.2855,
+                  0.2831, 0.2808],
+    "accuracy": [0.8889, 0.9, 0.9056, 0.9167, 0.9167, 0.9167, 0.9167, 0.9167,
+                 0.9167, 0.9167, 0.9167, 0.9167, 0.9167, 0.9111, 0.9111,
+                 0.9111, 0.9111, 0.9111, 0.9111, 0.9111, 0.9111, 0.9111,
+                 0.9111, 0.9111, 0.9111, 0.9111, 0.9111, 0.9111, 0.9167,
+                 0.9222],
+    "val_accuracy": [0.8167, 0.8333, 0.8333, 0.8333, 0.8333, 0.8333, 0.8333,
+                     0.85, 0.85, 0.8667, 0.8833, 0.8833, 0.8833, 0.9, 0.9,
+                     0.9, 0.9, 0.9, 0.9, 0.9, 0.8833, 0.8833, 0.8833,
+                     0.8833, 0.8833, 0.9, 0.9, 0.9, 0.9167, 0.9167],
+}
+
+final_metrics = {
+    "train_loss": history["train_loss"][-1],
+    "validation_loss": history["eval_loss"][-1],
+    "train_accuracy": history["accuracy"][-1],
+    "validation_accuracy": history["val_accuracy"][-1],
+}
+
+trace_log = [
+    {
+        "epoch": epoch,
+        "train_loss": history["train_loss"][epoch - 1],
+        "eval_loss": history["eval_loss"][epoch - 1],
+        "accuracy": history["accuracy"][epoch - 1],
+        "val_accuracy": history["val_accuracy"][epoch - 1],
+    }
+    for epoch in range(1, training_params["epochs"] + 1)
+]
+
+%load_ext trainlens.magic.extension
+%explain_training
+%suggest_improvements
+```
+
+TrainLens turns that notebook state into a report noting that both training and
+validation loss decrease monotonically, the final train/validation gap is small,
+and there is no visible validation drift in the 30-epoch window.
+
 ## How It Works
 
 When a notebook magic runs, TrainLens:
