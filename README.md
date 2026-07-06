@@ -128,12 +128,6 @@ improved through epoch 2 and then worsened at epoch 3.
 3. Try a slightly lower learning rate or fewer epochs.
 ```
 
-## Documentation
-
-Full documentation lives in [documentation](documentation/README.md), including
-usage, configuration, supported evidence, provider setup, API reference, and the
-release process.
-
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
