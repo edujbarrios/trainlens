@@ -2,6 +2,13 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.3.0 - 2026-07-06
+
+- simplify README setup and local Ollama configuration guidance
+- remove committed example notebook history after accidental credential exposure
+- remove the `examples/` tree from repository history
+- refresh package and citation metadata for the 0.3.0 release
+
 ## 0.2.0 - 2026-07-06
 
 - add scientific paper-style LLM report mode with LLM provenance
@@ -11,7 +18,6 @@ All notable changes to TrainLens will be documented here.
 - harden secret redaction for URL credentials and query parameters
 - validate OpenAI-compatible provider responses with clearer errors
 - handle dynamic or symbolic notebook shape values during introspection
-- add public-package smoke notebook under ignored local `notebooks/`
 
 ## 0.1.0 - 2026-07-02
 

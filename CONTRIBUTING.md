@@ -6,7 +6,7 @@ Thanks for considering a contribution. TrainLens is designed to be contributor-f
 
 - add analyzers for new training patterns
 - improve notebook magic UX
-- write example notebooks
+- improve README examples without committing executed notebooks or secrets
 - expand heuristic coverage
 - document edge cases
 - add provider adapters
