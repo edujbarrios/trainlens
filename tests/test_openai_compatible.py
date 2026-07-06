@@ -41,6 +41,24 @@ def test_openai_provider_returns_message_content(monkeypatch):
     assert _provider().explain("local evidence") == "## TrainLens Report"
 
 
+def test_openai_provider_passes_model_and_mode_to_prompt(monkeypatch):
+    payload = json.dumps({"choices": [{"message": {"content": "## TrainLens Improvement Ideas"}}]})
+    captured: dict[str, object] = {}
+
+    def fake_urlopen(req: object, **_kwargs: object) -> FakeResponse:
+        data = getattr(req, "data").decode("utf-8")
+        captured["payload"] = json.loads(data)
+        return FakeResponse(payload)
+
+    monkeypatch.setattr("trainlens.llm.openai_compatible.request.urlopen", fake_urlopen)
+
+    assert _provider().explain("local evidence", mode="improvement_ideas")
+
+    messages = captured["payload"]["messages"]
+    assert "## TrainLens Improvement Ideas" in messages[0]["content"]
+    assert "LLM model used for this report: test-model" in messages[0]["content"]
+
+
 def test_openai_provider_rejects_invalid_json(monkeypatch):
     monkeypatch.setattr(
         "trainlens.llm.openai_compatible.request.urlopen",

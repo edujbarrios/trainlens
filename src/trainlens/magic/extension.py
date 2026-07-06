@@ -15,4 +15,5 @@ def load_ipython_extension(ipython: InteractiveShell) -> None:
 
 def unload_ipython_extension(ipython: InteractiveShell) -> None:
     ipython.magics_manager.magics["line"].pop("explain_training", None)
+    ipython.magics_manager.magics["line"].pop("suggest_improvements", None)
     ipython.magics_manager.magics["line"].pop("compare_runs", None)
