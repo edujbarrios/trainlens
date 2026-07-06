@@ -49,8 +49,9 @@ report = OpenAICompatibleProvider(config).explain(safe_evidence)
 display(Markdown(report))
 ```
 
-The generated report keeps a stable shape: summary, evidence, interpretation,
-risks, next steps, and bottom line.
+The generated report is prompted as a scientific-style Markdown report with
+results, interpretation, possible conclusions, limitations, and LLM provenance.
+You can also run a separate improvement-ideas mode for follow-up experiments.
 
 ## Install
 
@@ -96,6 +97,7 @@ history = {
 
 %load_ext trainlens.magic.extension
 %explain_training
+%suggest_improvements
 ```
 
 ## Example Output
