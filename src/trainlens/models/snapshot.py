@@ -13,7 +13,7 @@ class VariableInfo:
     name: str
     type_name: str
     module: str | None = None
-    shape: tuple[int, ...] | None = None
+    shape: tuple[int | None, ...] | None = None
     length: int | None = None
     value: Any | None = None
 
