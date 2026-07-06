@@ -170,6 +170,30 @@ TrainLens turns that notebook state into a report noting that both training and
 validation loss decrease monotonically, the final train/validation gap is small,
 and there is no visible validation drift in the 30-epoch window.
 
+## API And Token Usage
+
+TrainLens is intended to work with OpenAI-compatible APIs: you point
+`TRAINLENS_LLM_BASE_URL`, `TRAINLENS_LLM_API_KEY`, and `TRAINLENS_LLM_MODEL` at
+your provider, and the notebook magics send the summarized training context to
+that endpoint. API calls may incur token costs depending on your provider,
+model, context size, and generated report length.
+
+The CPU notebook above produced two LLM calls, one for `%explain_training` and
+one for `%suggest_improvements`. The table below is an estimate from the saved
+notebook context and generated Markdown, not a provider billing record.
+
+| Notebook call | Approx. input tokens | Approx. output tokens | Approx. total tokens |
+| --- | ---: | ---: | ---: |
+| `%explain_training` | 1,000-2,000 | 2,500-3,500 | 3,500-5,500 |
+| `%suggest_improvements` | 1,000-2,000 | 2,000-3,000 | 3,000-5,000 |
+| Full CPU notebook example | 2,000-4,000 | 4,500-6,500 | 6,500-10,500 |
+
+You can avoid external API token expenses by running a local model behind an
+OpenAI-compatible endpoint, for example with a local inference server such as
+Ollama, LM Studio, vLLM, or llama.cpp server. In that setup, set
+`TRAINLENS_LLM_BASE_URL` to the local server URL and use the local model name in
+`TRAINLENS_LLM_MODEL`.
+
 ## How It Works
 
 When a notebook magic runs, TrainLens:
