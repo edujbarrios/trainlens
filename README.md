@@ -13,50 +13,20 @@ traces, hyperparameters, and notes.
 
 <p align="center"><strong><em>Maintained by Eduardo J. Barrios.</em></strong></p>
 
-It is built for research workflows with many training jobs, where you need
-consistent explanations of results, datasets, and hyperparameters.
-
-## How It Works
-
-TrainLens is a small notebook pipeline. Conceptually, `%explain_training` does
-this:
-
-```python
-%explain_training
-
-# trainlens.magic.commands
-# Reads the active IPython namespace from the current notebook.
-namespace = get_ipython().user_ns
-
-# trainlens.llm.context + trainlens.introspection
-# Finds visible training context: model names, histories, metric logs, dataset
-# notes, hyperparameters, traces, and PEFT metadata.
-context = build_llm_notebook_context(namespace)
-
-# trainlens.security
-# Redacts likely secrets while values are summarized and before prompt rendering.
-safe_evidence = context.markdown
-
-# trainlens.llm.prompts
-# Wraps the evidence in TrainLens' internal report-generation prompt. The prompt
-# tells the LLM to explain only what the notebook supports.
-prompt = render_ml_results_explanation_prompt(safe_evidence)
-
-# trainlens.llm.openai_compatible
-# Sends the evidence to the configured chat-completions endpoint; the provider
-# renders the prompt and returns Markdown for display in the notebook.
-report = OpenAICompatibleProvider(config).explain(safe_evidence)
-display(Markdown(report))
-```
-
-The generated report is prompted as a scientific-style Markdown report with
-results, interpretation, possible conclusions, limitations, and LLM provenance.
-You can also run a separate improvement-ideas mode for follow-up experiments.
+TrainLens is built for research workflows with many training jobs, where you
+need consistent explanations of results, datasets, and hyperparameters without
+copying notebook state into a separate prompt by hand.
 
 ## Install
 
 ```bash
 pip install trainlens
+```
+
+Upgrade to the latest public version:
+
+```bash
+python -m pip install --upgrade trainlens
 ```
 
 Development install:
@@ -67,27 +37,37 @@ cd trainlens
 python -m pip install -e ".[dev]"
 ```
 
+## Report Modes
+
+TrainLens has two LLM-backed notebook modes:
+
+- `%explain_training` creates a scientific paper-style report with results,
+  discussion, possible conclusions, limitations, and LLM provenance.
+- `%suggest_improvements` creates a separate improvement plan with prioritized
+  follow-up experiments.
+
+Python helpers expose the same flows:
+
+```python
+from trainlens import build_improvement_ideas, build_paper_report
+
+paper = build_paper_report(globals())
+ideas = build_improvement_ideas(globals())
+```
+
 ## Quickstart
 
 ```python
 import os
 
-import trainlens
-
 os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
 os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
 os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
-os.environ["TRAINLENS_LLM_TIMEOUT_SECONDS"] = "120"
 
 dataset_name = "ag_news"
 dataset_notes = "120k news titles; 4 classes; validation is balanced."
 model_name = "distilbert-base-uncased"
-training_params = {
-    "epochs": 3,
-    "batch_size": 32,
-    "learning_rate": 5e-5,
-    "max_length": 128,
-}
+training_params = {"epochs": 3, "batch_size": 32, "learning_rate": 5e-5}
 history = {
     "train_loss": [0.62, 0.31, 0.18],
     "eval_loss": [0.48, 0.44, 0.57],
@@ -100,10 +80,22 @@ history = {
 %suggest_improvements
 ```
 
+## How It Works
+
+When a notebook magic runs, TrainLens:
+
+1. reads the active IPython namespace
+2. summarizes visible training context
+3. redacts likely secrets
+4. sends evidence to an OpenAI-compatible chat completions endpoint
+5. displays Markdown in the notebook
+
+The prompt tells the LLM to use only supplied notebook evidence and to name the
+configured LLM model in the report provenance section.
+
 ## Example Output
 
-For the Quickstart run above, `%explain_training` returns a scientific-style
-report like this:
+`%explain_training` starts like this:
 
 ```markdown
 ## TrainLens Scientific Report
@@ -116,35 +108,12 @@ The run successfully optimized the training objective, with training loss
 falling from `0.62` to `0.18`. Validation evidence is weaker: validation loss
 improved through epoch 2 and then worsened at epoch 3.
 
-### Methods Context
-- Dataset context: `ag_news`
-- Model context: `distilbert-base-uncased`
-- Training params: `epochs=3`, `batch_size=32`, `learning_rate=5e-05`
-
 ### Results
 - Training loss decreases: `0.62 -> 0.31 -> 0.18`
-- Training accuracy increases: `0.78 -> 0.91 -> 0.96`
 - Validation loss improves, then worsens: `0.48 -> 0.44 -> 0.57`
-- Validation accuracy improves slightly, then slips: `0.84 -> 0.86 -> 0.85`
-
-### Discussion
-The metrics suggest that optimization continued on the training set after the
-best validation-loss point. The epoch-3 validation-loss increase is consistent
-with overfitting or calibration drift, especially because validation accuracy
-does not improve alongside the lower training loss.
-
-### Possible Conclusions
-The best generalization evidence appears around epoch 2 rather than epoch 3.
-The run is useful, but the final checkpoint should not be assumed to be the best
-checkpoint without further validation.
-
-### Limitations
-The report only uses notebook evidence. It cannot verify held-out test
-performance, dataset leakage, or class-level behavior unless those values are
-available in memory.
 ```
 
-`%suggest_improvements` produces a separate improvement plan:
+`%suggest_improvements` starts like this:
 
 ```markdown
 ## TrainLens Improvement Ideas
@@ -161,16 +130,9 @@ available in memory.
 
 ## Documentation
 
-Full documentation lives in [documentation](documentation/README.md), including:
-
-- why TrainLens exists
-- notebook workflow
-- supported evidence
-- LLM provider configuration
-- report interpretation
-- troubleshooting
-- API reference
-- release process
+Full documentation lives in [documentation](documentation/README.md), including
+usage, configuration, supported evidence, provider setup, API reference, and the
+release process.
 
 ## License
 
