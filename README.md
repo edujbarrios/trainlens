@@ -12,18 +12,16 @@ sends a compact summary to an OpenAI-compatible chat completions endpoint.
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
 
+<p align="center">
+  <strong>Actively maintained by Eduardo J. Barrios.</strong><br>
+  For improvements or issues, open a pull request or email
+  <a href="mailto:edujbarrios@outlook.com">edujbarrios@outlook.com</a>.
+</p>
+
 ## Install
 
 ```bash
 pip install trainlens
-```
-
-For local development:
-
-```bash
-git clone https://github.com/edujbarrios/trainlens.git
-cd trainlens
-python -m pip install -e ".[dev]"
 ```
 
 ## Configure An LLM
@@ -40,9 +38,25 @@ os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
 ```
 
 To avoid external API token costs, run a local model behind an
-OpenAI-compatible server such as Ollama, LM Studio, vLLM, or llama.cpp server,
-then point `TRAINLENS_LLM_BASE_URL` and `TRAINLENS_LLM_MODEL` at that local
-endpoint.
+OpenAI-compatible server. For example, with Ollama:
+
+```bash
+ollama pull llama3.1
+ollama serve
+```
+
+Then point TrainLens at Ollama's local OpenAI-compatible endpoint:
+
+```python
+import os
+
+os.environ["TRAINLENS_LLM_BASE_URL"] = "http://localhost:11434/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "ollama"
+os.environ["TRAINLENS_LLM_MODEL"] = "llama3.1"
+```
+
+The same pattern works with other local servers such as LM Studio, vLLM, or
+llama.cpp server.
 
 ## Notebook Example
 
@@ -93,9 +107,6 @@ billing record.
 | `%explain_training` | 1,000-2,000 | 2,500-3,500 | 3,500-5,500 |
 | `%suggest_improvements` | 1,000-2,000 | 2,000-3,000 | 3,000-5,000 |
 | Both calls | 2,000-4,000 | 4,500-6,500 | 6,500-10,500 |
-
-Use a local OpenAI-compatible model if you want the same workflow without API
-token expenses.
 
 ## Python API
 
