@@ -87,7 +87,11 @@ Then ask TrainLens for a paper-style report and improvement ideas:
 
 ```python
 %load_ext trainlens.magic.extension
+
+# Scientific paper-style training report
 %explain_training
+
+# Evidence-backed experiment plan
 %suggest_improvements
 ```
 
@@ -110,8 +114,8 @@ billing record.
 | Call | Estimated Input Tokens | Estimated Output Tokens | Estimated Total |
 | --- | ---: | ---: | ---: |
 | `%explain_training` paper-style report | 1,000-2,000 | 2,500-3,500 | 3,500-5,500 |
-| `%suggest_improvements` | 1,000-2,000 | 2,000-3,000 | 3,000-5,000 |
-| Both calls | 2,000-4,000 | 4,500-6,500 | 6,500-10,500 |
+| `%suggest_improvements` experiment plan | 1,000-2,000 | 2,000-3,000 | 3,000-5,000 |
+| Paper report + experiment plan | 2,000-4,000 | 4,500-6,500 | 6,500-10,500 |
 
 Provider pricing changes over time. The table below is a rough USD estimate
 using public prices checked on 2026-07-07 and a simple 50% input / 50% output
