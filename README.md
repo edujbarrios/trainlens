@@ -3,19 +3,22 @@
 **Turn AI training runs into research-grade notebook reports.**
 
 TrainLens is a Jupyter-first support package for AI model training and research
-workflows. It reads the training state already present in your notebook,
-redacts likely secrets, and asks an OpenAI-compatible LLM to draft:
+workflows. Its main value is that you can turn the training state already
+present in your notebook into structured analysis without leaving Jupyter,
+opening a separate chat, or copying experiment context by hand.
+
+It redacts likely secrets and asks an OpenAI-compatible LLM to draft:
 
 - a scientific paper-style training report
 - an evidence-backed improvement plan
 
 It is useful when you run many experiments and want consistent explanations of
-metrics, datasets, hyperparameters, limitations, and next steps without
-copying notebook state into a separate prompt by hand.
+metrics, datasets, hyperparameters, limitations, and next steps directly inside
+the notebook where the work is happening.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/"><img alt="PyPI" src="https://img.shields.io/pypi/v/trainlens?label=PyPI&logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.3.0" src="https://img.shields.io/badge/trainlens-0.3.0-blue?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
