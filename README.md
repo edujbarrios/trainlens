@@ -113,6 +113,21 @@ billing record.
 | `%suggest_improvements` | 1,000-2,000 | 2,000-3,000 | 3,000-5,000 |
 | Both calls | 2,000-4,000 | 4,500-6,500 | 6,500-10,500 |
 
+Provider pricing changes over time. The table below is a rough USD estimate
+using public prices checked on 2026-07-07 and a simple 50% input / 50% output
+token mix. Real costs depend on your exact model, cached-input usage, regional
+pricing, batch pricing, and provider billing rules.
+
+| Provider / model | 100 tokens | 1K tokens | 10K tokens | 100K tokens | 1M tokens | 10M tokens |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| OpenAI `gpt-5.4-mini` | $0.0003 | $0.0026 | $0.0263 | $0.2625 | $2.6250 | $26.2500 |
+| Anthropic Claude Haiku 4.5 | $0.0003 | $0.0030 | $0.0300 | $0.3000 | $3.0000 | $30.0000 |
+| Google Gemini 2.5 Flash-Lite | $0.00003 | $0.0003 | $0.0025 | $0.0250 | $0.2500 | $2.5000 |
+| Local Ollama / LM Studio | $0 API cost | $0 API cost | $0 API cost | $0 API cost | $0 API cost | $0 API cost |
+
+Formula: `(input_tokens * input_price_per_1M + output_tokens * output_price_per_1M) / 1_000_000`.
+For the table, input and output tokens are each estimated as half of the total.
+
 ## Python API
 
 The notebook magics are wrappers around Python helpers:
