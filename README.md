@@ -131,7 +131,14 @@ checked on 2026-07-07:
 | Google Gemini 2.5 Flash-Lite | $0.0003 | $0.0250 | $0.2500 | $2.5000 |
 | Local Ollama / LM Studio | $0 API cost | $0 API cost | $0 API cost | $0 API cost |
 
-Formula: `(input_tokens * input_price_per_1M + output_tokens * output_price_per_1M) / 1_000_000`.
+Cost formula:
+
+$$
+\frac{
+  \text{input tokens} \times \text{input price per 1M}
+  + \text{output tokens} \times \text{output price per 1M}
+}{1{,}000{,}000}
+$$
 
 ## Privacy
 
