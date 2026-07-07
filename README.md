@@ -83,7 +83,7 @@ final_metrics = {
 }
 ```
 
-Then ask TrainLens for a report and improvement ideas:
+Then ask TrainLens for a paper-style report and improvement ideas:
 
 ```python
 %load_ext trainlens.magic.extension
@@ -91,9 +91,14 @@ Then ask TrainLens for a report and improvement ideas:
 %suggest_improvements
 ```
 
-The CPU example above gives TrainLens enough evidence to report that both
-training and validation loss decreased, final validation accuracy reached
-`0.9167`, and no obvious validation drift appeared in the recorded run.
+`%explain_training` produces a scientific paper-style report with results,
+discussion, limitations, and LLM provenance. `%suggest_improvements` produces a
+separate experiment plan grounded in the same notebook evidence.
+
+The CPU example above gives TrainLens enough evidence for the paper-style report
+to explain that both training and validation loss decreased, final validation
+accuracy reached `0.9167`, and no obvious validation drift appeared in the
+recorded run.
 
 ## Token Usage
 
@@ -104,7 +109,7 @@ billing record.
 
 | Call | Estimated Input Tokens | Estimated Output Tokens | Estimated Total |
 | --- | ---: | ---: | ---: |
-| `%explain_training` | 1,000-2,000 | 2,500-3,500 | 3,500-5,500 |
+| `%explain_training` paper-style report | 1,000-2,000 | 2,500-3,500 | 3,500-5,500 |
 | `%suggest_improvements` | 1,000-2,000 | 2,000-3,000 | 3,000-5,000 |
 | Both calls | 2,000-4,000 | 4,500-6,500 | 6,500-10,500 |
 
@@ -115,9 +120,12 @@ The notebook magics are wrappers around Python helpers:
 ```python
 from trainlens import build_improvement_ideas, build_paper_report
 
-paper = build_paper_report(globals())
-ideas = build_improvement_ideas(globals())
+paper = build_paper_report()
+ideas = build_improvement_ideas()
 ```
+
+Inside Jupyter, the helpers read the active notebook namespace automatically.
+Outside IPython, pass an explicit dictionary-like namespace.
 
 ## What TrainLens Sends
 
