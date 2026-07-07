@@ -136,12 +136,13 @@ checked on 2026-07-07:
 
 Cost formula:
 
-$$
+```math
+\text{estimated cost} =
 \frac{
-  \text{input tokens} \times \text{input price per 1M}
-  + \text{output tokens} \times \text{output price per 1M}
+\text{input tokens} \times \text{input price per 1M}
++ \text{output tokens} \times \text{output price per 1M}
 }{1{,}000{,}000}
-$$
+```
 
 ## Privacy
 
