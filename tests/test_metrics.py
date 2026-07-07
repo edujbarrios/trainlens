@@ -130,3 +130,22 @@ def test_normalizes_music_generation_metric_aliases():
     assert series["frechet_audio_distance"].last == 3.8
     assert series["validation_clap_score"].split == "validation"
     assert series["validation_stft_loss"].last == 0.61
+
+
+def test_normalizes_slash_and_dash_metric_names():
+    series = extract_metric_series(
+        {
+            "history": {
+                "train/accuracy": [0.7, 0.8],
+                "eval-accuracy": [0.68, 0.74],
+            }
+        }
+    )
+
+    train, validation = paired_metric(series, "accuracy")
+
+    assert train is not None
+    assert validation is not None
+    assert train.name == "train_accuracy"
+    assert validation.name == "validation_accuracy"
+    assert validation.last == 0.74

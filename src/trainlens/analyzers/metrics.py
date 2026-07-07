@@ -221,6 +221,7 @@ def _normalize_name(name: str) -> tuple[str, str | None]:
         if aliased.startswith("validation_"):
             return aliased, "validation"
         return aliased, None
+    lower = lower.replace("/", "_").replace("-", "_")
     for prefix in _TRAIN_PREFIXES:
         if lower.startswith(prefix):
             return f"train_{lower.removeprefix(prefix)}", "train"
