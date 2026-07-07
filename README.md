@@ -1,9 +1,17 @@
 # TrainLens
 
-TrainLens turns notebook training state into LLM-written reports inside
-Jupyter. It reads variables already in memory, such as `history`,
-`training_params`, `model_name`, dataset notes, metrics, and trace logs, then
-sends a compact redacted context to an OpenAI-compatible chat endpoint.
+**Turn AI training runs into research-grade notebook reports.**
+
+TrainLens is a Jupyter-first support package for AI model training and research
+workflows. It reads the training state already present in your notebook,
+redacts likely secrets, and asks an OpenAI-compatible LLM to draft:
+
+- a scientific paper-style training report
+- an evidence-backed improvement plan
+
+It is useful when you run many experiments and want consistent explanations of
+metrics, datasets, hyperparameters, limitations, and next steps without
+copying notebook state into a separate prompt by hand.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
@@ -18,15 +26,15 @@ sends a compact redacted context to an OpenAI-compatible chat endpoint.
   <a href="mailto:edujbarrios@outlook.com">edujbarrios@outlook.com</a>.
 </p>
 
-## Install
+## Quickstart
+
+Install TrainLens:
 
 ```bash
 pip install trainlens
 ```
 
-## Configure
-
-TrainLens works with OpenAI-compatible APIs:
+Configure an OpenAI-compatible LLM provider:
 
 ```python
 import os
@@ -35,26 +43,6 @@ os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
 os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
 os.environ["TRAINLENS_LLM_MODEL"] = "gpt-5.4-mini"
 ```
-
-Local models work too. For Ollama:
-
-```bash
-ollama pull llama3.1
-ollama serve
-```
-
-```python
-import os
-
-os.environ["TRAINLENS_LLM_BASE_URL"] = "http://localhost:11434/v1"
-os.environ["TRAINLENS_LLM_API_KEY"] = "ollama"
-os.environ["TRAINLENS_LLM_MODEL"] = "llama3.1"
-```
-
-The same pattern works with LM Studio, vLLM, llama.cpp server, and other
-OpenAI-compatible local servers.
-
-## Notebook Quickstart
 
 Keep useful experiment state in ordinary notebook variables:
 
@@ -72,7 +60,7 @@ history = {
 }
 ```
 
-Then run:
+Run the notebook magics:
 
 ```python
 %load_ext trainlens.magic.extension
@@ -86,8 +74,29 @@ Then run:
 
 | Magic | Output |
 | --- | --- |
-| `%explain_training` | Scientific paper-style report with results, discussion, limitations, and LLM provenance. |
+| `%explain_training` | Paper-style report with results, discussion, limitations, and LLM provenance. |
 | `%suggest_improvements` | Follow-up experiment plan grounded in the same notebook evidence. |
+
+## Local Models
+
+TrainLens can avoid external API token costs by using a local OpenAI-compatible
+server. Example with Ollama:
+
+```bash
+ollama pull llama3.1
+ollama serve
+```
+
+```python
+import os
+
+os.environ["TRAINLENS_LLM_BASE_URL"] = "http://localhost:11434/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "ollama"
+os.environ["TRAINLENS_LLM_MODEL"] = "llama3.1"
+```
+
+The same pattern works with LM Studio, vLLM, llama.cpp server, and similar
+local servers.
 
 ## Python API
 
