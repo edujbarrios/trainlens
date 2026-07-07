@@ -97,7 +97,6 @@ def detect_contrastive_misalignment(series: Mapping[str, MetricSeries]) -> Signa
         series,
         "validation_contrastive_loss",
         "contrastive_loss",
-        "validation_loss",
     )
     if retrieval and retrieval.last is not None and retrieval.last < 0.2:
         return Signal(

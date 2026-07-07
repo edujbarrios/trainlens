@@ -1,6 +1,7 @@
 from trainlens.analyzers.metrics import extract_metric_series
 from trainlens.heuristics.foundation import (
     detect_adapter_pressure,
+    detect_contrastive_misalignment,
     detect_foundation_architecture,
     detect_loss_plateau,
 )
@@ -48,6 +49,21 @@ def test_detects_loss_plateau_and_small_adapter_rank():
 
     assert detect_loss_plateau(series["validation_loss"]) is not None
     assert detect_adapter_pressure({"lora_rank": 4}) is not None
+
+
+def test_contrastive_misalignment_ignores_generic_validation_loss():
+    series = extract_metric_series({"history": {"eval_loss": [1.0, 1.2]}})
+
+    assert detect_contrastive_misalignment(series) is None
+
+
+def test_contrastive_misalignment_detects_explicit_contrastive_loss_regression():
+    series = extract_metric_series({"history": {"clip_loss": [1.0, 1.2]}})
+
+    signal = detect_contrastive_misalignment(series)
+
+    assert signal is not None
+    assert signal.title == "Contrastive loss is regressing"
 
 
 def test_pipeline_recommends_vlm_validation_workflow():

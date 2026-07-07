@@ -10,6 +10,7 @@ All notable changes to TrainLens will be documented here.
 - bound nested notebook literal redaction to avoid oversized LLM contexts
 - normalize slash and dash metric names such as `train/accuracy` and `eval-accuracy`
 - align README, `.env.example`, and standalone helper LLM configuration
+- avoid contrastive-loss warnings for generic validation-loss regressions
 - refresh package and citation metadata for the 0.3.0 release
 
 ## 0.2.0 - 2026-07-06
