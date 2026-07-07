@@ -26,11 +26,15 @@ def main() -> int:
     args = parser.parse_args()
 
     report = Path(args.report).read_text(encoding="utf-8") if args.report else sys.stdin.read()
-    base_url = os.getenv("TRAINLENS_LLM_BASE_URL", "https://api.example.com/v1").rstrip("/")
+    base_url = os.getenv("TRAINLENS_LLM_BASE_URL", "").strip().rstrip("/")
     api_key = os.getenv("TRAINLENS_LLM_API_KEY")
-    model = os.getenv("TRAINLENS_LLM_MODEL", "auto")
-    if not api_key:
-        print("TRAINLENS_LLM_API_KEY is required.", file=sys.stderr)
+    model = os.getenv("TRAINLENS_LLM_MODEL", "").strip()
+    if not base_url or not api_key or not model:
+        print(
+            "TRAINLENS_LLM_BASE_URL, TRAINLENS_LLM_API_KEY, and "
+            "TRAINLENS_LLM_MODEL are required.",
+            file=sys.stderr,
+        )
         return 2
 
     payload = {

@@ -34,7 +34,7 @@ import os
 
 os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
 os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
-os.environ["TRAINLENS_LLM_MODEL"] = "gpt-4.1-mini"
+os.environ["TRAINLENS_LLM_MODEL"] = "gpt-5.4-mini"
 ```
 
 To avoid external API token costs, run a local model behind an
