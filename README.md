@@ -18,7 +18,7 @@ the notebook where the work is happening.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.3.0" src="https://img.shields.io/badge/trainlens-0.3.0-blue?logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.4.0" src="https://img.shields.io/badge/trainlens-0.4.0-blue?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
@@ -104,14 +104,44 @@ local servers.
 ## Python API
 
 ```python
-from trainlens import build_improvement_ideas, build_paper_report
+from trainlens import build_improvement_ideas, build_paper_report, write_report
 
 paper = build_paper_report()
 ideas = build_improvement_ideas()
+
+write_report(paper, "trainlens-report.md")
+write_report(paper, "trainlens-report.html")
+write_report(paper, "trainlens-report.json")
 ```
 
 Inside Jupyter, helpers read the active notebook namespace automatically.
 Outside IPython, pass an explicit dictionary-like namespace.
+
+## Report Export
+
+TrainLens reports can be exported as Markdown, HTML, JSON, and optionally PDF:
+
+```python
+from trainlens import render_report, write_report
+
+markdown = render_report(paper, format="markdown")
+html = render_report(paper, format="html")
+json_payload = render_report(paper, format="json")
+
+write_report(paper, "report.md")
+write_report(paper, "report.html")
+write_report(paper, "report.json")
+```
+
+PDF export uses an optional dependency:
+
+```bash
+pip install "trainlens[pdf]"
+```
+
+```python
+write_report(paper, "report.pdf")
+```
 
 ## Token Usage
 

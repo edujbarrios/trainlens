@@ -2,6 +2,12 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.4.0 - 2026-07-09
+
+- add `render_report` and `write_report` helpers for Markdown, HTML, JSON, and optional PDF export
+- expose report export helpers from the public `trainlens` API
+- document report export usage and the optional `trainlens[pdf]` extra
+
 ## 0.3.0 - 2026-07-06
 
 - simplify README setup and local Ollama configuration guidance
