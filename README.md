@@ -134,6 +134,62 @@ These adapters use duck typing, so the heavy ML frameworks remain optional.
 When one of these objects is found, `%explain_training` merges its metrics into
 the normal TrainLens report automatically.
 
+### Keras / TensorFlow
+
+```python
+history = model.fit(
+    x_train,
+    y_train,
+    validation_data=(x_val, y_val),
+    epochs=8,
+)
+
+%explain_training
+```
+
+TrainLens reads `history.history`, including keys such as `loss`, `accuracy`,
+`val_loss`, and `val_accuracy`.
+
+### Hugging Face Trainer
+
+```python
+trainer.train()
+
+# trainer.state.log_history is inspected automatically
+%explain_training
+```
+
+TrainLens looks for `Trainer`-style logs such as `loss`, `eval_loss`,
+`eval_accuracy`, `epoch`, and `global_step`. If the trainer exposes a model,
+TrainLens also uses that model class as framework evidence.
+
+### PyTorch Lightning
+
+```python
+trainer.fit(module, datamodule=datamodule)
+
+# callback_metrics, logged_metrics, and progress_bar_metrics are supported
+%explain_training
+```
+
+Tensor-like scalar values are converted through `.item()` when available, so
+common Lightning metric objects can be read without importing PyTorch directly.
+
+### Manual Metrics Still Work
+
+You can always provide simple dictionaries or lists:
+
+```python
+history = {
+    "train_loss": [0.82, 0.61, 0.49],
+    "validation_loss": [0.88, 0.69, 0.57],
+    "train_accuracy": [0.71, 0.79, 0.84],
+    "validation_accuracy": [0.68, 0.74, 0.8],
+}
+
+%explain_training
+```
+
 ## Python API
 
 ```python
