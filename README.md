@@ -18,7 +18,7 @@ the notebook where the work is happening.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.4.0" src="https://img.shields.io/badge/trainlens-0.4.0-blue?logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.5.0" src="https://img.shields.io/badge/trainlens-0.5.0-blue?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
@@ -100,6 +100,18 @@ os.environ["TRAINLENS_LLM_MODEL"] = "llama3.1"
 
 The same pattern works with LM Studio, vLLM, llama.cpp server, and similar
 local servers.
+
+## Framework Adapters
+
+TrainLens can read common training objects already present in a notebook:
+
+- Keras / TensorFlow `History` objects from `model.fit(...)`
+- Hugging Face `Trainer` objects with `state.log_history`
+- PyTorch Lightning `Trainer` objects with callback or logged metrics
+
+These adapters use duck typing, so the heavy ML frameworks remain optional.
+When one of these objects is found, `%explain_training` merges its metrics into
+the normal TrainLens report automatically.
 
 ## Python API
 

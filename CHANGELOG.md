@@ -2,6 +2,12 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.5.0 - 2026-07-10
+
+- add lightweight framework adapters for Keras History objects, Hugging Face Trainer logs, and PyTorch Lightning Trainer metrics
+- merge adapted framework metrics into the existing analysis pipeline without requiring TensorFlow, Transformers, PyTorch, or Lightning as dependencies
+- report adapted framework evidence in notebook summaries and improve metric discovery for adapter-generated metric mappings
+
 ## 0.4.0 - 2026-07-09
 
 - add `render_report` and `write_report` helpers for Markdown, HTML, JSON, and optional PDF export
