@@ -16,6 +16,27 @@ It is useful when you run many experiments and want consistent explanations of
 metrics, datasets, hyperparameters, limitations, and next steps directly inside
 the notebook where the work is happening.
 
+## What TrainLens Gives You
+
+TrainLens turns notebook state into evidence-backed reports for model training.
+It is designed for research notebooks, fine-tuning experiments, small lab
+projects, and practical ML debugging where the important context already lives
+in Python variables.
+
+| Need | TrainLens support |
+| --- | --- |
+| Explain a training run | Notebook magics and Python helpers generate structured reports. |
+| Avoid copying context into chat | TrainLens inspects visible notebook variables and builds compact evidence. |
+| Keep reports reproducible | Export Markdown, HTML, JSON, and optional PDF artifacts. |
+| Compare experiments | `compare_runs` classifies metric improvements, regressions, and missing metrics. |
+| Use common training frameworks | Lightweight adapters read Keras, Hugging Face, and Lightning objects. |
+| Protect sensitive context | Likely secrets are redacted before LLM prompts are created. |
+
+TrainLens can be useful with or without an LLM. The deterministic analysis
+extracts metrics, framework evidence, and local heuristic signals. When an
+OpenAI-compatible provider is configured, TrainLens can also ask the model to
+draft a paper-style report or an improvement plan grounded in the same evidence.
+
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.6.0" src="https://img.shields.io/badge/trainlens-0.6.0-blue?logo=pypi"></a>
