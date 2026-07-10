@@ -13,7 +13,7 @@ KNOWN_FRAMEWORK_PREFIXES: dict[str, str] = {
     "lightgbm.": "lightgbm",
     "torch.": "pytorch",
     "tensorflow.": "tensorflow",
-    "keras.": "tensorflow",
+    "keras.": "keras",
 }
 
 

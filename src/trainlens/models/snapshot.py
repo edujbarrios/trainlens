@@ -19,10 +19,27 @@ class VariableInfo:
 
 
 @dataclass(frozen=True)
+class FrameworkArtifact:
+    """Structured training evidence extracted from a known framework object."""
+
+    variable_name: str
+    framework: str
+    type_name: str
+    history: dict[str, tuple[float, ...]]
+    log_history: tuple[dict[str, float | int], ...] = ()
+    latest_metrics: dict[str, float] | None = None
+    model_name: str | None = None
+    model_ref: Any | None = None
+    confidence: float = 0.75
+    reasons: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class NotebookSnapshot:
     """Serializable-ish view of notebook globals relevant to training analysis."""
 
     variables: tuple[VariableInfo, ...] = ()
+    framework_artifacts: tuple[FrameworkArtifact, ...] = ()
     raw_namespace: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
     def by_name(self, name: str) -> VariableInfo | None:

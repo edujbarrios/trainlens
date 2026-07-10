@@ -82,6 +82,7 @@ def _looks_like_history_name(name: str) -> bool:
         "history" in lower
         or "log" in lower
         or lower in {"metrics", "losses", "accuracies", "callback_metrics", "logged_metrics"}
+        or lower.endswith("_metrics")
         or lower.endswith(("_loss", "_losses", "_accuracy", "_accuracies"))
     )
 

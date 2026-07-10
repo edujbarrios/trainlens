@@ -33,13 +33,15 @@ class TrainingSessionAnalyzer(Analyzer):
     name = "training_session"
 
     def analyze(self, snapshot: NotebookSnapshot, model: ModelCandidate | None) -> AnalysisResult:
-        namespace = snapshot.raw_namespace
+        namespace = _namespace_with_framework_artifacts(snapshot)
         metric_series = extract_metric_series(namespace)
         train_acc, validation_acc = paired_metric(metric_series, "accuracy")
         train_loss, validation_loss = paired_metric(metric_series, "loss")
+        framework = model.framework if model else _first_artifact_framework(snapshot)
+        model_name = model.display_name if model else _first_artifact_model_name(snapshot)
         result = AnalysisResult(
-            model_name=model.display_name if model else None,
-            framework=model.framework if model else None,
+            model_name=model_name,
+            framework=framework,
         )
         families = detect_foundation_architecture(model.object_ref if model else None, namespace)
 
@@ -47,8 +49,18 @@ class TrainingSessionAnalyzer(Analyzer):
             result.summary.append(f"Detected {model.display_name} from `{model.variable_name}`.")
             if model.framework:
                 result.summary.append(f"Framework appears to be {model.framework}.")
+        elif snapshot.framework_artifacts:
+            artifact = snapshot.framework_artifacts[0]
+            result.summary.append(
+                f"Detected {artifact.framework} training evidence from `{artifact.variable_name}`."
+            )
         else:
             result.summary.append("No trained model object was confidently detected.")
+
+        for artifact in snapshot.framework_artifacts:
+            result.summary.append(
+                f"Adapted {artifact.framework} metrics from `{artifact.variable_name}`."
+            )
 
         if train_acc and train_acc.delta is not None:
             result.summary.append(
@@ -135,4 +147,30 @@ def _first_present(namespace: dict[str, object], *names: str) -> Iterable[Any] |
         value = namespace.get(name)
         if isinstance(value, Iterable):
             return value
+    return None
+
+
+def _namespace_with_framework_artifacts(snapshot: NotebookSnapshot) -> dict[str, Any]:
+    namespace = dict(snapshot.raw_namespace)
+    for artifact in snapshot.framework_artifacts:
+        prefix = f"{artifact.variable_name}_{artifact.framework}"
+        if artifact.history:
+            namespace[f"{prefix}_history"] = artifact.history
+        if artifact.log_history:
+            namespace[f"{prefix}_log_history"] = list(artifact.log_history)
+        if artifact.latest_metrics:
+            namespace[f"{prefix}_metrics"] = artifact.latest_metrics
+    return namespace
+
+
+def _first_artifact_framework(snapshot: NotebookSnapshot) -> str | None:
+    if not snapshot.framework_artifacts:
+        return None
+    return snapshot.framework_artifacts[0].framework
+
+
+def _first_artifact_model_name(snapshot: NotebookSnapshot) -> str | None:
+    for artifact in snapshot.framework_artifacts:
+        if artifact.model_name:
+            return artifact.model_name
     return None

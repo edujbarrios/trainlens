@@ -6,9 +6,10 @@ import inspect
 from collections.abc import Mapping
 from typing import Any
 
+from trainlens.introspection.adapters import extract_framework_artifact
 from trainlens.introspection.frameworks import detect_framework, looks_like_model
 from trainlens.introspection.models import ModelCandidate
-from trainlens.models.snapshot import NotebookSnapshot, VariableInfo
+from trainlens.models.snapshot import FrameworkArtifact, NotebookSnapshot, VariableInfo
 from trainlens.security import sanitize_value
 
 _IGNORED_NAMES = {"In", "Out", "get_ipython", "exit", "quit"}
@@ -19,13 +20,21 @@ class NotebookInspector:
 
     def snapshot(self, namespace: Mapping[str, Any]) -> NotebookSnapshot:
         variables: list[VariableInfo] = []
+        framework_artifacts: list[FrameworkArtifact] = []
         raw: dict[str, Any] = {}
         for name, value in namespace.items():
             if self._ignore(name, value):
                 continue
             variables.append(self._describe(name, value))
+            artifact = extract_framework_artifact(name, value)
+            if artifact:
+                framework_artifacts.append(artifact)
             raw[name] = value
-        return NotebookSnapshot(variables=tuple(variables), raw_namespace=raw)
+        return NotebookSnapshot(
+            variables=tuple(variables),
+            framework_artifacts=tuple(framework_artifacts),
+            raw_namespace=raw,
+        )
 
     def find_models(self, snapshot: NotebookSnapshot) -> list[ModelCandidate]:
         candidates: list[ModelCandidate] = []
@@ -49,7 +58,28 @@ class NotebookInspector:
                     reasons=reasons,
                 )
             )
+        candidates.extend(self._framework_model_candidates(snapshot))
         return sorted(candidates, key=lambda item: item.confidence, reverse=True)
+
+    def _framework_model_candidates(self, snapshot: NotebookSnapshot) -> list[ModelCandidate]:
+        candidates: list[ModelCandidate] = []
+        for artifact in snapshot.framework_artifacts:
+            if artifact.model_ref is None and artifact.model_name is None:
+                continue
+            model_ref = artifact.model_ref or snapshot.raw_namespace.get(artifact.variable_name)
+            type_name = artifact.model_name or artifact.type_name
+            candidates.append(
+                ModelCandidate(
+                    variable_name=artifact.variable_name,
+                    object_ref=model_ref,
+                    type_name=type_name,
+                    module=getattr(model_ref.__class__, "__module__", None),
+                    framework=artifact.framework,
+                    confidence=min(artifact.confidence + 0.05, 0.95),
+                    reasons=artifact.reasons,
+                )
+            )
+        return candidates
 
     def _ignore(self, name: str, value: object) -> bool:
         return (
