@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Protocol
+from typing import Any, Protocol, cast, runtime_checkable
 
 from trainlens.models.snapshot import FrameworkArtifact
 
@@ -18,6 +18,14 @@ class FrameworkAdapter(Protocol):
 
     def extract(self, variable_name: str, value: object) -> FrameworkArtifact | None:
         """Extract normalized training evidence from the value."""
+
+
+@runtime_checkable
+class ItemScalar(Protocol):
+    """Scalar tensor-like object that can return a Python value."""
+
+    def item(self) -> object:
+        """Return the scalar value."""
 
 
 class KerasHistoryAdapter:
@@ -193,10 +201,9 @@ def _history_mapping(value: object) -> dict[str, tuple[float, ...]]:
 def _log_history(value: object) -> tuple[dict[str, float | int], ...]:
     if not _looks_like_log_history(value):
         return ()
+    log_entries = cast(Sequence[Mapping[Any, Any]], value)
     entries: list[dict[str, float | int]] = []
-    for entry in value:
-        if not isinstance(entry, Mapping):
-            continue
+    for entry in log_entries:
         normalized: dict[str, float | int] = {}
         for key, raw_value in entry.items():
             if str(key) in {"step", "global_step", "epoch"}:
@@ -262,20 +269,39 @@ def _coerce_float_tuple(values: Sequence[object]) -> tuple[float, ...]:
 def _coerce_float(value: object) -> float | None:
     if isinstance(value, bool):
         return None
-    if hasattr(value, "item"):
+    if isinstance(value, ItemScalar):
         try:
-            value = value.item()  # type: ignore[assignment]
+            value = value.item()
         except (AttributeError, TypeError, ValueError):
             return None
+    if isinstance(value, int | float | str | bytes | bytearray):
+        try:
+            return float(value)
+        except ValueError:
+            return None
     try:
-        return float(value)  # type: ignore[arg-type]
+        return float(cast(Any, value))
     except (TypeError, ValueError):
         return None
 
 
 def _coerce_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, ItemScalar):
+        try:
+            value = value.item()
+        except (AttributeError, TypeError, ValueError):
+            return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float | str | bytes | bytearray):
+        try:
+            return int(value)
+        except ValueError:
+            return None
     try:
-        return int(value)  # type: ignore[arg-type]
+        return int(cast(Any, value))
     except (TypeError, ValueError):
         return None
 
