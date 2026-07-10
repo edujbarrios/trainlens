@@ -221,6 +221,36 @@ comparison = compare_runs(
 print(render_run_comparison(comparison))
 ```
 
+Example output:
+
+```markdown
+## TrainLens Run Comparison
+
+**Baseline:** baseline
+**Experiment:** lower learning rate
+
+### Summary
+- Material improvement detected in validation_loss.
+```
+
+Use `AnalysisResult` objects when you already have TrainLens reports:
+
+```python
+from trainlens import compare_runs, explain_namespace, write_report
+
+baseline = explain_namespace({"history": baseline_history})
+experiment = explain_namespace({"history": experiment_history})
+
+comparison = compare_runs(baseline, experiment)
+write_report(comparison, "run-comparison.html")
+write_report(comparison, "run-comparison.json")
+```
+
+Metric direction is inferred from common names. Loss-like metrics are better
+when they go down; accuracy, F1, recall, precision, AUC, and score-like metrics
+are better when they go up. Unknown metrics are still shown with deltas, but
+TrainLens does not claim whether they improved or regressed.
+
 ## Report Export
 
 TrainLens reports can be exported as Markdown, HTML, JSON, and optionally PDF:
@@ -246,6 +276,17 @@ pip install "trainlens[pdf]"
 ```python
 write_report(paper, "report.pdf")
 ```
+
+Comparison objects use the same export path:
+
+```python
+write_report(comparison, "comparison.md")
+write_report(comparison, "comparison.html")
+write_report(comparison, "comparison.json")
+```
+
+This makes it easy to attach TrainLens outputs to experiment folders, pull
+requests, lab notes, or model cards.
 
 ## Token Usage
 
