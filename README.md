@@ -101,6 +101,21 @@ Run the notebook magics:
 | `%explain_training` | Paper-style report with results, discussion, limitations, and LLM provenance. |
 | `%suggest_improvements` | Follow-up experiment plan grounded in the same notebook evidence. |
 
+## What TrainLens Inspects
+
+TrainLens looks for lightweight evidence in the active namespace:
+
+- metric histories in dictionaries, lists, and framework logs
+- model-like objects with `fit`, `predict`, `score`, `state_dict`, or transformer config
+- dataset labels such as `y_train`, `labels`, or `target`
+- trace-like training events with steps, epochs, losses, and evaluation metrics
+- small literals and metadata such as dataset notes, model names, and training parameters
+
+The inspector avoids importing heavy ML packages just to detect objects. It uses
+duck typing and module names, then normalizes metric aliases such as
+`eval_loss`, `val_loss`, `validation_loss`, `train/accuracy`, and
+`eval-accuracy`.
+
 ## Local Models
 
 TrainLens can avoid external API token costs by using a local OpenAI-compatible
@@ -324,6 +339,33 @@ Cost formula:
 TrainLens summarizes visible notebook state, redacts likely secrets, truncates
 large literals, and sends only the resulting context to the configured endpoint.
 Do not store real API keys in notebooks or committed files.
+
+By default, TrainLens does not contact an external LLM unless you call an LLM
+report helper or notebook magic that requires a configured provider. Local
+heuristic extraction, metric normalization, run comparison, and export helpers
+run in Python without sending data anywhere.
+
+## Development
+
+Install in editable mode:
+
+```bash
+pip install -e ".[dev]"
+```
+
+Run the local quality gate:
+
+```bash
+python -m pytest
+python -m ruff check .
+mypy src/trainlens
+python -m build --no-isolation
+python -m twine check dist/trainlens-0.6.0*
+```
+
+TrainLens intentionally keeps framework support optional. New adapters should
+use fake test objects or duck typing tests instead of adding TensorFlow,
+PyTorch, Transformers, or Lightning as required dependencies.
 
 ## License
 
