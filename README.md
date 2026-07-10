@@ -1,41 +1,16 @@
 # TrainLens
 
-**Turn AI training runs into research-grade notebook reports.**
+**Research-grade reports for AI training runs, directly from your notebook.**
 
-TrainLens is a Jupyter-first support package for AI model training and research
-workflows. Its main value is that you can turn the training state already
-present in your notebook into structured analysis without leaving Jupyter,
-opening a separate chat, or copying experiment context by hand.
+TrainLens is a lightweight Python library for turning model-training state into
+structured, reproducible analysis. It inspects the variables already present in
+a Jupyter notebook, normalizes common training metrics, detects useful evidence,
+redacts likely secrets, and can draft a scientific report or experiment plan
+with any OpenAI-compatible LLM provider.
 
-It redacts likely secrets and asks an OpenAI-compatible LLM to draft:
-
-- a scientific paper-style training report
-- an evidence-backed improvement plan
-
-It is useful when you run many experiments and want consistent explanations of
-metrics, datasets, hyperparameters, limitations, and next steps directly inside
-the notebook where the work is happening.
-
-## What TrainLens Gives You
-
-TrainLens turns notebook state into evidence-backed reports for model training.
-It is designed for research notebooks, fine-tuning experiments, small lab
-projects, and practical ML debugging where the important context already lives
-in Python variables.
-
-| Need | TrainLens support |
-| --- | --- |
-| Explain a training run | Notebook magics and Python helpers generate structured reports. |
-| Avoid copying context into chat | TrainLens inspects visible notebook variables and builds compact evidence. |
-| Keep reports reproducible | Export Markdown, HTML, JSON, and optional PDF artifacts. |
-| Compare experiments | `compare_runs` classifies metric improvements, regressions, and missing metrics. |
-| Use common training frameworks | Lightweight adapters read Keras, Hugging Face, and Lightning objects. |
-| Protect sensitive context | Likely secrets are redacted before LLM prompts are created. |
-
-TrainLens can be useful with or without an LLM. The deterministic analysis
-extracts metrics, framework evidence, and local heuristic signals. When an
-OpenAI-compatible provider is configured, TrainLens can also ask the model to
-draft a paper-style report or an improvement plan grounded in the same evidence.
+It is built for practical research workflows: fine-tuning runs, model debugging,
+small lab experiments, and repeated comparisons where the important context is
+already in Python.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
@@ -44,36 +19,43 @@ draft a paper-style report or an improvement plan grounded in the same evidence.
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
 
-<p align="center">
-  <strong>Actively maintained by Eduardo J. Barrios.</strong><br>
-  For issues or improvements, open a pull request or email
-  <a href="mailto:edujbarrios@outlook.com">edujbarrios@outlook.com</a>.
-</p>
+## Why TrainLens
 
-## Quickstart
+TrainLens helps when you want to understand, document, or compare experiments
+without manually copying notebook context into a chat window.
 
-Install TrainLens:
+| Task | What TrainLens does |
+| --- | --- |
+| Explain a run | Builds evidence-backed notebook reports from metrics and model state. |
+| Suggest next experiments | Generates grounded improvement plans with LLM provenance. |
+| Compare runs | Classifies metric movement as improved, regressed, unchanged, new, or removed. |
+| Export artifacts | Writes Markdown, HTML, JSON, and optional PDF reports. |
+| Keep frameworks optional | Reads Keras, Hugging Face, and Lightning objects by duck typing. |
+| Protect context | Redacts likely secrets before creating LLM prompts. |
+
+TrainLens works in two layers. The deterministic layer extracts metrics,
+framework evidence, and heuristic signals locally. The optional LLM layer uses
+that compact evidence to write a paper-style report or improvement plan.
+
+## Install
 
 ```bash
 pip install trainlens
 ```
 
-Configure an OpenAI-compatible LLM provider:
+For PDF export:
 
-```python
-import os
-
-os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
-os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
-os.environ["TRAINLENS_LLM_MODEL"] = "gpt-5.4-mini"
+```bash
+pip install "trainlens[pdf]"
 ```
 
-Keep useful experiment state in ordinary notebook variables:
+## Quickstart
+
+Keep ordinary experiment state in your notebook:
 
 ```python
 dataset_name = "synthetic_cpu_binary_classification"
-dataset_notes = "240 synthetic 2D samples; balanced validation split."
-model_name = "pure-python-logistic-regression"
+model_name = "logistic-regression-baseline"
 training_params = {"epochs": 30, "learning_rate": 0.45}
 
 history = {
@@ -84,70 +66,46 @@ history = {
 }
 ```
 
-Run the notebook magics:
-
-```python
-%load_ext trainlens.magic.extension
-
-# Scientific paper-style training report
-%explain_training
-
-# Evidence-backed experiment plan
-%suggest_improvements
-```
-
-| Magic | Output |
-| --- | --- |
-| `%explain_training` | Paper-style report with results, discussion, limitations, and LLM provenance. |
-| `%suggest_improvements` | Follow-up experiment plan grounded in the same notebook evidence. |
-
-## What TrainLens Inspects
-
-TrainLens looks for lightweight evidence in the active namespace:
-
-- metric histories in dictionaries, lists, and framework logs
-- model-like objects with `fit`, `predict`, `score`, `state_dict`, or transformer config
-- dataset labels such as `y_train`, `labels`, or `target`
-- trace-like training events with steps, epochs, losses, and evaluation metrics
-- small literals and metadata such as dataset notes, model names, and training parameters
-
-The inspector avoids importing heavy ML packages just to detect objects. It uses
-duck typing and module names, then normalizes metric aliases such as
-`eval_loss`, `val_loss`, `validation_loss`, `train/accuracy`, and
-`eval-accuracy`.
-
-## Local Models
-
-TrainLens can avoid external API token costs by using a local OpenAI-compatible
-server. Example with Ollama:
-
-```bash
-ollama pull llama3.1
-ollama serve
-```
+Configure an OpenAI-compatible provider:
 
 ```python
 import os
 
-os.environ["TRAINLENS_LLM_BASE_URL"] = "http://localhost:11434/v1"
-os.environ["TRAINLENS_LLM_API_KEY"] = "ollama"
-os.environ["TRAINLENS_LLM_MODEL"] = "llama3.1"
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "your-api-key"
+os.environ["TRAINLENS_LLM_MODEL"] = "gpt-5.4-mini"
 ```
 
-The same pattern works with LM Studio, vLLM, llama.cpp server, and similar
-local servers.
+Use the notebook magics:
+
+```python
+%load_ext trainlens.magic.extension
+
+%explain_training
+%suggest_improvements
+%compare_runs
+```
+
+`%explain_training` captures a run in the notebook-local store. Once at least
+two runs are captured, `%compare_runs` compares the latest run against the
+previous one.
+
+## What Gets Inspected
+
+TrainLens looks for lightweight evidence in the active namespace:
+
+- metric histories in dictionaries, lists, framework logs, and trace-like events
+- model-like objects with `fit`, `predict`, `score`, `state_dict`, or transformer config
+- dataset labels such as `y_train`, `labels`, or `target`
+- metadata such as model names, dataset notes, and training parameters
+
+Metric names are normalized across common aliases, including `eval_loss`,
+`val_loss`, `validation_loss`, `train/accuracy`, and `eval-accuracy`.
 
 ## Framework Adapters
 
-TrainLens can read common training objects already present in a notebook:
-
-- Keras / TensorFlow `History` objects from `model.fit(...)`
-- Hugging Face `Trainer` objects with `state.log_history`
-- PyTorch Lightning `Trainer` objects with callback or logged metrics
-
-These adapters use duck typing, so the heavy ML frameworks remain optional.
-When one of these objects is found, `%explain_training` merges its metrics into
-the normal TrainLens report automatically.
+TrainLens can read common training objects without requiring their frameworks as
+dependencies.
 
 ### Keras / TensorFlow
 
@@ -170,42 +128,27 @@ TrainLens reads `history.history`, including keys such as `loss`, `accuracy`,
 ```python
 trainer.train()
 
-# trainer.state.log_history is inspected automatically
 %explain_training
 ```
 
-TrainLens looks for `Trainer`-style logs such as `loss`, `eval_loss`,
-`eval_accuracy`, `epoch`, and `global_step`. If the trainer exposes a model,
-TrainLens also uses that model class as framework evidence.
+TrainLens reads `trainer.state.log_history` and extracts values such as `loss`,
+`eval_loss`, `eval_accuracy`, `epoch`, and `global_step`.
 
 ### PyTorch Lightning
 
 ```python
 trainer.fit(module, datamodule=datamodule)
 
-# callback_metrics, logged_metrics, and progress_bar_metrics are supported
 %explain_training
 ```
 
-Tensor-like scalar values are converted through `.item()` when available, so
-common Lightning metric objects can be read without importing PyTorch directly.
-
-### Manual Metrics Still Work
-
-You can always provide simple dictionaries or lists:
-
-```python
-history = {
-    "train_loss": [0.82, 0.61, 0.49],
-    "validation_loss": [0.88, 0.69, 0.57],
-    "train_accuracy": [0.71, 0.79, 0.84],
-    "validation_accuracy": [0.68, 0.74, 0.8],
-}
-
-%explain_training
-```
+TrainLens reads `callback_metrics`, `logged_metrics`, and
+`progress_bar_metrics`. Tensor-like scalar values are converted through
+`.item()` when available.
 
 ## Python API
+
+Build notebook reports:
 
 ```python
 from trainlens import build_improvement_ideas, build_paper_report, write_report
@@ -218,10 +161,7 @@ write_report(paper, "trainlens-report.html")
 write_report(paper, "trainlens-report.json")
 ```
 
-Inside Jupyter, helpers read the active notebook namespace automatically.
-Outside IPython, pass an explicit dictionary-like namespace.
-
-Compare two runs:
+Compare runs:
 
 ```python
 from trainlens import compare_runs, render_run_comparison
@@ -236,22 +176,11 @@ comparison = compare_runs(
 print(render_run_comparison(comparison))
 ```
 
-Example output:
-
-```markdown
-## TrainLens Run Comparison
-
-**Baseline:** baseline
-**Experiment:** lower learning rate
-
-### Summary
-- Material improvement detected in validation_loss.
-```
-
-Use `AnalysisResult` objects when you already have TrainLens reports:
+Use TrainLens results directly:
 
 ```python
-from trainlens import compare_runs, explain_namespace, write_report
+from trainlens import compare_runs, write_report
+from trainlens.pipeline import explain_namespace
 
 baseline = explain_namespace({"history": baseline_history})
 experiment = explain_namespace({"history": experiment_history})
@@ -266,9 +195,9 @@ when they go down; accuracy, F1, recall, precision, AUC, and score-like metrics
 are better when they go up. Unknown metrics are still shown with deltas, but
 TrainLens does not claim whether they improved or regressed.
 
-## Report Export
+## Export
 
-TrainLens reports can be exported as Markdown, HTML, JSON, and optionally PDF:
+Reports and comparisons use the same export helpers:
 
 ```python
 from trainlens import render_report, write_report
@@ -280,82 +209,48 @@ json_payload = render_report(paper, format="json")
 write_report(paper, "report.md")
 write_report(paper, "report.html")
 write_report(paper, "report.json")
+write_report(comparison, "comparison.html")
 ```
 
-PDF export uses an optional dependency:
-
-```bash
-pip install "trainlens[pdf]"
-```
+PDF export is optional:
 
 ```python
 write_report(paper, "report.pdf")
 ```
 
-Comparison objects use the same export path:
+## Local Models
 
-```python
-write_report(comparison, "comparison.md")
-write_report(comparison, "comparison.html")
-write_report(comparison, "comparison.json")
+TrainLens works with local OpenAI-compatible servers such as Ollama, LM Studio,
+vLLM, and llama.cpp server.
+
+Example with Ollama:
+
+```bash
+ollama pull llama3.1
+ollama serve
 ```
 
-This makes it easy to attach TrainLens outputs to experiment folders, pull
-requests, lab notes, or model cards.
+```python
+import os
 
-## Token Usage
-
-Costs depend on provider, model, tokenizer, prompt size, and output length.
-These are rough estimates, not billing records.
-
-| Call | Input Tokens | Output Tokens | Total |
-| --- | ---: | ---: | ---: |
-| `%explain_training` paper report | 1K-2K | 2.5K-3.5K | 3.5K-5.5K |
-| `%suggest_improvements` plan | 1K-2K | 2K-3K | 3K-5K |
-| Both calls | 2K-4K | 4.5K-6.5K | 6.5K-10.5K |
-
-Approximate USD cost for a 50% input / 50% output token mix, using public prices
-checked on 2026-07-07:
-
-| Provider / model | 1K tokens | 100K tokens | 1M tokens | 10M tokens |
-| --- | ---: | ---: | ---: | ---: |
-| OpenAI `gpt-5.4-mini` | $0.0026 | $0.2625 | $2.6250 | $26.2500 |
-| Anthropic Claude Haiku 4.5 | $0.0030 | $0.3000 | $3.0000 | $30.0000 |
-| Google Gemini 2.5 Flash-Lite | $0.0003 | $0.0250 | $0.2500 | $2.5000 |
-| Local Ollama / LM Studio | $0 API cost | $0 API cost | $0 API cost | $0 API cost |
-
-Cost formula:
-
-```math
-\text{estimated cost} =
-\frac{
-\text{input tokens} \times \text{input price per 1M}
-+ \text{output tokens} \times \text{output price per 1M}
-}{1{,}000{,}000}
+os.environ["TRAINLENS_LLM_BASE_URL"] = "http://localhost:11434/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = "ollama"
+os.environ["TRAINLENS_LLM_MODEL"] = "llama3.1"
 ```
 
 ## Privacy
 
 TrainLens summarizes visible notebook state, redacts likely secrets, truncates
-large literals, and sends only the resulting context to the configured endpoint.
-Do not store real API keys in notebooks or committed files.
+large literals, and sends only the resulting compact context to the configured
+LLM endpoint. Local metric extraction, framework adapters, run comparison, and
+export helpers run without contacting an external service.
 
-By default, TrainLens does not contact an external LLM unless you call an LLM
-report helper or notebook magic that requires a configured provider. Local
-heuristic extraction, metric normalization, run comparison, and export helpers
-run in Python without sending data anywhere.
+Do not store real API keys in notebooks or committed files.
 
 ## Development
 
-Install in editable mode:
-
 ```bash
 pip install -e ".[dev]"
-```
-
-Run the local quality gate:
-
-```bash
 python -m pytest
 python -m ruff check .
 mypy src/trainlens
