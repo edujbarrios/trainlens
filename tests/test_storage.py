@@ -27,3 +27,16 @@ def test_run_store_respects_max_runs():
     store.capture(AnalysisResult(model_name="Third"))
 
     assert [run.model_name for run in store.runs] == ["Second", "Third"]
+
+
+def test_run_store_renders_latest_pair_comparison():
+    store = InMemoryRunStore()
+    store.capture(AnalysisResult(model_name="Baseline", metrics={"validation_loss": 0.5}))
+    store.capture(AnalysisResult(model_name="Experiment", metrics={"validation_loss": 0.4}))
+
+    markdown = store.render_comparison()
+
+    assert "**Baseline:** previous run" in markdown
+    assert "**Experiment:** latest run" in markdown
+    assert "validation_loss" in markdown
+    assert "improved" in markdown

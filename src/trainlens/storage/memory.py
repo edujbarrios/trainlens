@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from trainlens.comparison import compare_runs, render_run_comparison
 from trainlens.models.analysis import AnalysisResult
 
 
@@ -36,8 +37,18 @@ class InMemoryRunStore:
                 "## TrainLens Run Comparison\n\n"
                 "No runs captured yet. Use `%explain_training` first.\n"
             )
+        if len(self._runs) >= 2:
+            comparison = compare_runs(
+                self._runs[-2],
+                self._runs[-1],
+                baseline_name="previous run",
+                experiment_name="latest run",
+            )
+            return render_run_comparison(comparison)
         lines = [
             "## TrainLens Run Comparison",
+            "",
+            "Capture at least two runs to compare metric changes.",
             "",
             "| Run | Model | Metrics | Signals |",
             "| --- | --- | --- | --- |",
