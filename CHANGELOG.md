@@ -2,6 +2,13 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.6.0 - 2026-07-10
+
+- add public `compare_runs(baseline, experiment)` API for comparing training metrics across runs
+- classify metric changes as improvements, regressions, unchanged, new, removed, or unknown
+- render run comparisons as Markdown, HTML, and JSON through the existing export helpers
+- use structured run comparison output in the notebook run store when at least two runs are captured
+
 ## 0.5.0 - 2026-07-10
 
 - add lightweight framework adapters for Keras History objects, Hugging Face Trainer logs, and PyTorch Lightning Trainer metrics

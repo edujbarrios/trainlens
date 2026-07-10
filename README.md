@@ -18,7 +18,7 @@ the notebook where the work is happening.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.5.0" src="https://img.shields.io/badge/trainlens-0.5.0-blue?logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.6.0" src="https://img.shields.io/badge/trainlens-0.6.0-blue?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
@@ -128,6 +128,21 @@ write_report(paper, "trainlens-report.json")
 
 Inside Jupyter, helpers read the active notebook namespace automatically.
 Outside IPython, pass an explicit dictionary-like namespace.
+
+Compare two runs:
+
+```python
+from trainlens import compare_runs, render_run_comparison
+
+comparison = compare_runs(
+    {"validation_loss": 0.52, "validation_accuracy": 0.84},
+    {"validation_loss": 0.47, "validation_accuracy": 0.87},
+    baseline_name="baseline",
+    experiment_name="lower learning rate",
+)
+
+print(render_run_comparison(comparison))
+```
 
 ## Report Export
 
