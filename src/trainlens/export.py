@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import textwrap
 from collections.abc import Mapping
 from dataclasses import asdict
@@ -103,6 +104,7 @@ def _markdown_to_html(markdown: str) -> str:
 def _markdown_lines_to_html(lines: list[str]) -> list[str]:
     rendered: list[str] = []
     in_list = False
+    in_ordered_list = False
     in_table = False
     for line in lines:
         if in_table and not line.startswith("|"):
@@ -111,6 +113,9 @@ def _markdown_lines_to_html(lines: list[str]) -> list[str]:
         if in_list and not line.startswith("- "):
             rendered.append("</ul>")
             in_list = False
+        if in_ordered_list and not _ordered_list_item(line):
+            rendered.append("</ol>")
+            in_ordered_list = False
         if not line.strip():
             continue
         if line.startswith("### "):
@@ -124,6 +129,11 @@ def _markdown_lines_to_html(lines: list[str]) -> list[str]:
                 rendered.append("<ul>")
                 in_list = True
             rendered.append(f"<li>{_inline_html(line[2:])}</li>")
+        elif item := _ordered_list_item(line):
+            if not in_ordered_list:
+                rendered.append("<ol>")
+                in_ordered_list = True
+            rendered.append(f"<li>{_inline_html(item)}</li>")
         elif line.startswith("|"):
             if "---" in line:
                 continue
@@ -137,6 +147,8 @@ def _markdown_lines_to_html(lines: list[str]) -> list[str]:
             rendered.append(f"<p>{_inline_html(line)}</p>")
     if in_list:
         rendered.append("</ul>")
+    if in_ordered_list:
+        rendered.append("</ol>")
     if in_table:
         rendered.append("</tbody></table>")
     return rendered
@@ -144,8 +156,25 @@ def _markdown_lines_to_html(lines: list[str]) -> list[str]:
 
 def _inline_html(text: str) -> str:
     escaped = html.escape(text)
-    escaped = escaped.replace("`", "")
-    return escaped.replace("**", "")
+    parts = escaped.split("`")
+    for index, part in enumerate(parts):
+        if index % 2:
+            parts[index] = f"<code>{part}</code>"
+        else:
+            parts[index] = _emphasis_html(part)
+    return "".join(parts)
+
+
+def _emphasis_html(text: str) -> str:
+    text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+    return re.sub(r"(?<!\w)_([^_\n]+)_(?!\w)", r"<em>\1</em>", text)
+
+
+def _ordered_list_item(line: str) -> str | None:
+    match = re.match(r"\d+\.\s+(.+)", line)
+    if match is None:
+        return None
+    return match.group(1)
 
 
 def _markdown_to_pdf(markdown: str) -> bytes:

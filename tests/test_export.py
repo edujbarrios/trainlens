@@ -34,6 +34,15 @@ def test_render_report_exports_markdown_html_and_json() -> None:
     assert payload["recommendations"][0]["action"] == "Inspect validation errors."
 
 
+def test_html_export_renders_markdown_inline_styles_and_ordered_lists() -> None:
+    html = str(render_report(_result(), format="html"))
+
+    assert "<strong>Model detected:</strong>" in html
+    assert "<em>Find failure modes.</em>" in html
+    assert "<ol>" in html
+    assert "<li>Inspect validation errors. Confidence: 50%. Why: Find failure modes.</li>" in html
+
+
 def test_render_report_exports_live_report_json() -> None:
     report = LiveReport(result=_result(), markdown="## Custom LLM Report\n")
 
