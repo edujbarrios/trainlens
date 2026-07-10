@@ -22,3 +22,5 @@ jobs:
       - run: ruff check .
       - run: mypy src/trainlens
       - run: pytest --cov=trainlens --cov-report=term-missing
+      - run: python -m build
+      - run: python -m twine check dist/*

@@ -13,3 +13,6 @@ build/
 .ipynb_checkpoints/
 .trainlens/
 notebooks/
+demo-*.html
+trainlens-report.*
+report.*

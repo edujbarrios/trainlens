@@ -19,6 +19,8 @@ pip install -e ".[dev]"
 pytest
 ruff check .
 mypy src/trainlens
+python -m build
+python -m twine check dist/*
 ```
 
 ## Design principles

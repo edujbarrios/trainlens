@@ -31,9 +31,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "build>=1.2",
   "pytest>=8.0",
   "pytest-cov>=5.0",
   "ruff>=0.5",
+  "twine>=5.1",
   "mypy>=1.10",
 ]
 llm = []
@@ -50,6 +52,17 @@ Security = "https://github.com/edujbarrios/trainlens/security"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/trainlens"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.trainlens",
+  "/build",
+  "/dist",
+  "/htmlcov",
+  "/demo-*.html",
+  "/report.*",
+  "/trainlens-report.*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
