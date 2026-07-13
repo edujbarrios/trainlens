@@ -7,6 +7,13 @@ from trainlens.security import (
 )
 
 
+def test_sensitive_name_matching_does_not_redact_incidental_substrings() -> None:
+    assert sanitize_value("author", "Ada Lovelace") == "Ada Lovelace"
+    assert sanitize_value("tokenizer", "bert-base") == "bert-base"
+    assert sanitize_value("api_key", "secret-value") == REDACTED_VALUE
+    assert sanitize_value("database_password_hash", "secret-value") == REDACTED_VALUE
+
+
 def test_redact_text_removes_common_secret_shapes():
     text = (
         "Use api_key=sk-test1234567890 and "
