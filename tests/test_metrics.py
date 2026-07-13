@@ -149,3 +149,23 @@ def test_normalizes_slash_and_dash_metric_names():
     assert train.name == "train_accuracy"
     assert validation.name == "validation_accuracy"
     assert validation.last == 0.74
+
+
+def test_ignores_non_finite_metric_values():
+    series = extract_metric_series(
+        {
+            "metrics": {"loss": float("nan"), "accuracy": float("inf")},
+            "history": {"val_loss": [2.0, float("nan")]},
+            "training_log": [
+                {"step": 1, "train_loss": 2.1},
+                {"step": 2, "train_loss": float("inf")},
+                {"step": 3, "train_loss": 1.7},
+            ],
+        }
+    )
+
+    assert "loss" not in series
+    assert "accuracy" not in series
+    assert "validation_loss" not in series
+    assert series["train_loss"].values == (2.1, 1.7)
+    assert series["train_loss"].steps == (1, 3)

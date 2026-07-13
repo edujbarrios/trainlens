@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from math import isfinite
 from typing import Any
 
 from trainlens.models.metric import MetricSeries
@@ -208,9 +209,10 @@ def _coerce_float(value: Any) -> float | None:
         except (AttributeError, TypeError, ValueError):
             return None
     try:
-        return float(value)
+        numeric_value = float(value)
     except (TypeError, ValueError):
         return None
+    return numeric_value if isfinite(numeric_value) else None
 
 
 def _normalize_name(name: str) -> tuple[str, str | None]:
