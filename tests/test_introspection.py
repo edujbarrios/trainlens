@@ -9,6 +9,15 @@ class DemoModel:
         return [0 for _ in x]
 
 
+class BrokenMetadata:
+    @property
+    def shape(self):
+        raise RuntimeError("shape is unavailable")
+
+    def __len__(self):
+        raise RuntimeError("length is unavailable")
+
+
 def test_inspector_detects_model_like_object():
     inspector = NotebookInspector()
     snapshot = inspector.snapshot({"model": DemoModel(), "_private": 1})
@@ -68,3 +77,14 @@ def test_inspector_handles_dynamic_or_symbolic_shape_parts():
     snapshot = inspector.snapshot({"features": TensorLike()})
 
     assert snapshot.by_name("features").shape == (None, None, 128)
+
+
+def test_inspector_ignores_broken_object_metadata():
+    inspector = NotebookInspector()
+
+    snapshot = inspector.snapshot({"artifact": BrokenMetadata()})
+
+    artifact = snapshot.by_name("artifact")
+    assert artifact is not None
+    assert artifact.shape is None
+    assert artifact.length is None

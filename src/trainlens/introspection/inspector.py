@@ -93,7 +93,7 @@ class NotebookInspector:
         )
 
     def _describe(self, name: str, value: Any) -> VariableInfo:
-        shape = getattr(value, "shape", None)
+        shape = self._safe_attribute(value, "shape")
         normalized_shape = self._normalize_shape(shape)
         length = self._safe_len(value)
         module = getattr(value.__class__, "__module__", None)
@@ -109,7 +109,13 @@ class NotebookInspector:
     def _safe_len(self, value: object) -> int | None:
         try:
             return len(value)  # type: ignore[arg-type]
-        except TypeError:
+        except Exception:
+            return None
+
+    def _safe_attribute(self, value: object, name: str) -> object | None:
+        try:
+            return getattr(value, name, None)
+        except Exception:
             return None
 
     def _normalize_shape(self, shape: Any) -> tuple[int | None, ...] | None:
@@ -117,7 +123,7 @@ class NotebookInspector:
             return None
         try:
             return tuple(self._normalize_shape_part(part) for part in shape)
-        except TypeError:
+        except Exception:
             return None
 
     def _normalize_shape_part(self, part: Any) -> int | None:
