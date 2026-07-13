@@ -36,7 +36,7 @@ class OpenAICompatibleProvider:
         }
         body = json.dumps(payload).encode("utf-8")
         req = request.Request(
-            f"{self.config.base_url}/chat/completions",
+            f"{self.config.base_url.rstrip('/')}/chat/completions",
             data=body,
             headers={
                 "Authorization": f"Bearer {self.config.api_key}",

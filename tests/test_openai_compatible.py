@@ -60,6 +60,28 @@ def test_openai_provider_passes_model_and_mode_to_prompt(monkeypatch):
     assert "LLM model used for this report: test-model" in messages[0]["content"]
 
 
+def test_openai_provider_normalizes_trailing_slash(monkeypatch):
+    payload = json.dumps({"choices": [{"message": {"content": "report"}}]})
+    captured: dict[str, str] = {}
+    provider = OpenAICompatibleProvider(
+        LLMConfig(
+            base_url="https://api.example.com/v1/",
+            api_key="test-key",
+            model="test-model",
+        )
+    )
+
+    def fake_urlopen(req: Any, **_kwargs: object) -> FakeResponse:
+        captured["url"] = req.full_url
+        return FakeResponse(payload)
+
+    monkeypatch.setattr("trainlens.llm.openai_compatible.request.urlopen", fake_urlopen)
+
+    provider.explain("local evidence")
+
+    assert captured["url"] == "https://api.example.com/v1/chat/completions"
+
+
 def test_openai_provider_rejects_invalid_json(monkeypatch):
     monkeypatch.setattr(
         "trainlens.llm.openai_compatible.request.urlopen",
