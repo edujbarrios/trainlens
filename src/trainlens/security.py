@@ -29,6 +29,10 @@ _SENSITIVE_NAME_PARTS = (
     "token",
 )
 
+_SENSITIVE_NAME_PATTERN = re.compile(
+    rf"(?:^|_)(?:{'|'.join(map(re.escape, _SENSITIVE_NAME_PARTS))})(?:_|$)"
+)
+
 _SECRET_PATTERNS = (
     re.compile(r"\bsk-[A-Za-z0-9_-]{12,}\b"),
     re.compile(r"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
@@ -50,7 +54,7 @@ def is_sensitive_name(name: str) -> bool:
     """Return true when a variable or field name is likely to contain credentials."""
 
     normalized = name.lower().replace("-", "_")
-    return any(part in normalized for part in _SENSITIVE_NAME_PARTS)
+    return _SENSITIVE_NAME_PATTERN.search(normalized) is not None
 
 
 def redact_text(text: str) -> str:
