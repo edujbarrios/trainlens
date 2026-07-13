@@ -1,3 +1,5 @@
+import pytest
+
 from trainlens.llm.config import LLMConfig
 
 
@@ -38,6 +40,19 @@ def test_llm_config_defaults_invalid_timeout(monkeypatch):
     monkeypatch.setenv("TRAINLENS_LLM_API_KEY", "secret-key")
     monkeypatch.setenv("TRAINLENS_LLM_MODEL", "trainlens-test-model")
     monkeypatch.setenv("TRAINLENS_LLM_TIMEOUT_SECONDS", "-1")
+
+    config = LLMConfig.from_env()
+
+    assert config is not None
+    assert config.timeout_seconds == 120.0
+
+
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf"])
+def test_llm_config_rejects_non_finite_timeouts(monkeypatch, value: str) -> None:
+    monkeypatch.setenv("TRAINLENS_LLM_BASE_URL", "https://api.example.com/v1")
+    monkeypatch.setenv("TRAINLENS_LLM_API_KEY", "secret-key")
+    monkeypatch.setenv("TRAINLENS_LLM_MODEL", "trainlens-test-model")
+    monkeypatch.setenv("TRAINLENS_LLM_TIMEOUT_SECONDS", value)
 
     config = LLMConfig.from_env()
 

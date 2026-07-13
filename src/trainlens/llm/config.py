@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 from os import getenv
 
 
@@ -34,6 +35,6 @@ def _timeout_from_env(raw_value: str) -> float:
         timeout = float(raw_value.strip())
     except ValueError:
         return 120.0
-    if timeout <= 0:
+    if not isfinite(timeout) or timeout <= 0:
         return 120.0
     return timeout
