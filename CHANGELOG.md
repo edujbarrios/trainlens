@@ -2,6 +2,11 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.7.0 - 2026-07-14
+
+- ignore non-finite metrics in run comparisons to prevent invalid deltas and JSON values
+- match complete metric-name tokens when inferring whether higher or lower values are better
+
 ## 0.6.0 - 2026-07-10
 
 - add public `compare_runs(baseline, experiment)` API for comparing training metrics across runs
