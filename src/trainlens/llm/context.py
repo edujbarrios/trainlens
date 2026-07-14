@@ -20,8 +20,16 @@ class LLMNotebookContext:
     metrics: dict[str, float]
 
 
-def build_llm_notebook_context(namespace: Mapping[str, Any]) -> LLMNotebookContext:
+def build_llm_notebook_context(
+    namespace: Mapping[str, Any],
+    *,
+    max_metric_points: int = _MAX_METRIC_POINTS,
+) -> LLMNotebookContext:
     """Render notebook state as evidence, without heuristic findings."""
+
+    if max_metric_points < 2:
+        msg = "max_metric_points must be at least 2 to preserve metric endpoints."
+        raise ValueError(msg)
 
     inspector = NotebookInspector()
     snapshot = inspector.snapshot(namespace)
@@ -59,7 +67,9 @@ def build_llm_notebook_context(namespace: Mapping[str, Any]) -> LLMNotebookConte
     if metric_series:
         lines.extend(["## Metric Series", ""])
         for name, series in sorted(metric_series.items()):
-            lines.append(f"- `{name}`: {_render_metric_values(series.values)}")
+            lines.append(
+                f"- `{name}`: {_render_metric_values(series.values, max_metric_points)}"
+            )
         lines.append("")
     candidates = inspector.find_models(snapshot)
     if candidates:
@@ -83,11 +93,11 @@ def build_llm_notebook_context(namespace: Mapping[str, Any]) -> LLMNotebookConte
     return LLMNotebookContext(markdown="\n".join(lines).strip() + "\n", metrics=metrics)
 
 
-def _render_metric_values(values: tuple[float, ...]) -> str:
-    if len(values) <= _MAX_METRIC_POINTS:
+def _render_metric_values(values: tuple[float, ...], max_metric_points: int) -> str:
+    if len(values) <= max_metric_points:
         rendered = ", ".join(f"{value:.6g}" for value in values)
         return f"[{rendered}]"
-    sampled = _sample_metric_values(values, _MAX_METRIC_POINTS)
+    sampled = _sample_metric_values(values, max_metric_points)
     rendered_sample = ", ".join(f"{value:.6g}" for value in sampled)
     return (
         f"observations={len(values)}, first={values[0]:.6g}, last={values[-1]:.6g}, "
