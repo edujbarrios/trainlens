@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from math import isfinite
 from typing import TypeAlias
@@ -157,10 +158,10 @@ def _compare_metric(
 def _direction(name: str, delta: float, magnitude: ChangeMagnitude) -> ComparisonDirection:
     if magnitude == "none":
         return "unchanged"
-    lower = name.lower()
-    if any(token in lower for token in _LOWER_IS_BETTER):
+    tokens = set(re.findall(r"[a-z0-9]+", name.lower()))
+    if tokens.intersection(_LOWER_IS_BETTER):
         return "improved" if delta < 0 else "regressed"
-    if any(token in lower for token in _HIGHER_IS_BETTER):
+    if tokens.intersection(_HIGHER_IS_BETTER):
         return "improved" if delta > 0 else "regressed"
     return "unknown"
 
