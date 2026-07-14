@@ -6,6 +6,9 @@ All notable changes to TrainLens will be documented here.
 
 - ignore non-finite metrics in run comparisons to prevent invalid deltas and JSON values
 - match complete metric-name tokens when inferring whether higher or lower values are better
+- compact long metric histories while preserving endpoints, extrema, counts, and ordered samples
+- avoid repeating metric-container literals in LLM notebook context
+- allow LLM report callers to tune curve detail with `max_metric_points`
 
 ## 0.6.0 - 2026-07-10
 
