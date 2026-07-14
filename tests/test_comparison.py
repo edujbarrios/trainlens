@@ -61,6 +61,20 @@ def test_compare_runs_accepts_training_run_metric_series() -> None:
     assert comparison.metrics[0].delta == pytest.approx(-0.08)
 
 
+def test_compare_runs_ignores_non_finite_metrics() -> None:
+    comparison = compare_runs(
+        {"loss": 1.0, "accuracy": float("nan")},
+        {"loss": float("inf"), "accuracy": 0.8},
+    )
+
+    by_name = {item.name: item for item in comparison.metrics}
+    assert by_name["loss"].direction == "removed"
+    assert by_name["accuracy"].direction == "new"
+    assert all(item.delta is None for item in comparison.metrics)
+    assert "NaN" not in str(render_report(comparison, format="json"))
+    assert "Infinity" not in str(render_report(comparison, format="json"))
+
+
 def test_render_run_comparison_outputs_markdown_table() -> None:
     comparison = compare_runs(
         {"validation_loss": 0.5},
