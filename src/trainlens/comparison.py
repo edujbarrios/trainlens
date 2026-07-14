@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from math import isfinite
 from typing import TypeAlias
 
 from trainlens.models.analysis import AnalysisResult
@@ -219,10 +220,21 @@ def _notes(comparisons: tuple[MetricComparison, ...]) -> tuple[str, ...]:
 
 def _metrics_from_run(run: RunLike) -> dict[str, float]:
     if isinstance(run, AnalysisResult):
-        return dict(run.metrics)
+        return _finite_metrics(run.metrics)
     if isinstance(run, TrainingRun):
-        return {metric.name: metric.last for metric in run.metrics if metric.last is not None}
-    return {str(key): float(value) for key, value in run.items()}
+        return _finite_metrics(
+            {metric.name: metric.last for metric in run.metrics if metric.last is not None}
+        )
+    return _finite_metrics(run)
+
+
+def _finite_metrics(metrics: Mapping[str, float]) -> dict[str, float]:
+    finite: dict[str, float] = {}
+    for key, value in metrics.items():
+        numeric_value = float(value)
+        if isfinite(numeric_value):
+            finite[str(key)] = numeric_value
+    return finite
 
 
 def _run_name(run: RunLike, *, fallback: str) -> str:
