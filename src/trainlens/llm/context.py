@@ -9,6 +9,8 @@ from typing import Any
 from trainlens.analyzers.metrics import extract_metric_series
 from trainlens.introspection import NotebookInspector
 
+_MAX_METRIC_POINTS = 12
+
 
 @dataclass(frozen=True)
 class LLMNotebookContext:
@@ -52,8 +54,7 @@ def build_llm_notebook_context(namespace: Mapping[str, Any]) -> LLMNotebookConte
     if metric_series:
         lines.extend(["## Metric Series", ""])
         for name, series in sorted(metric_series.items()):
-            values = ", ".join(f"{value:.6g}" for value in series.values)
-            lines.append(f"- `{name}`: [{values}]")
+            lines.append(f"- `{name}`: {_render_metric_values(series.values)}")
         lines.append("")
     candidates = inspector.find_models(snapshot)
     if candidates:
@@ -75,3 +76,22 @@ def build_llm_notebook_context(namespace: Mapping[str, Any]) -> LLMNotebookConte
             ]
         )
     return LLMNotebookContext(markdown="\n".join(lines).strip() + "\n", metrics=metrics)
+
+
+def _render_metric_values(values: tuple[float, ...]) -> str:
+    if len(values) <= _MAX_METRIC_POINTS:
+        rendered = ", ".join(f"{value:.6g}" for value in values)
+        return f"[{rendered}]"
+    sampled = _sample_metric_values(values, _MAX_METRIC_POINTS)
+    rendered_sample = ", ".join(f"{value:.6g}" for value in sampled)
+    return (
+        f"observations={len(values)}, first={values[0]:.6g}, last={values[-1]:.6g}, "
+        f"min={min(values):.6g}, max={max(values):.6g}, "
+        f"ordered_sample=[{rendered_sample}]"
+    )
+
+
+def _sample_metric_values(values: tuple[float, ...], limit: int) -> tuple[float, ...]:
+    last_index = len(values) - 1
+    indices = tuple(round(position * last_index / (limit - 1)) for position in range(limit))
+    return tuple(values[index] for index in indices)
