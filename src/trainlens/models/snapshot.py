@@ -28,6 +28,7 @@ class FrameworkArtifact:
     history: dict[str, tuple[float, ...]]
     log_history: tuple[dict[str, float | int], ...] = ()
     latest_metrics: dict[str, float] | None = None
+    training_parameters: dict[str, Any] = field(default_factory=dict)
     model_name: str | None = None
     model_ref: Any | None = None
     confidence: float = 0.75

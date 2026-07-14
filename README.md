@@ -94,6 +94,11 @@ trainer.train()  # reads trainer.state.log_history
 # PyTorch Lightning
 trainer.fit(module, datamodule=datamodule)  # reads callback/logged metrics
 
+# Plain PyTorch
+# Keep model, optimizer, scheduler, and train_loader in the notebook namespace.
+# TrainLens reads parameter counts, optimizer groups, current learning rates,
+# scheduler epoch, batching settings, and dataset size without importing PyTorch.
+
 %explain_training
 ```
 

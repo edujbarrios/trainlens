@@ -152,10 +152,170 @@ class LightningTrainerAdapter:
         )
 
 
+class PyTorchModuleAdapter:
+    """Extract parameter counts from a plain PyTorch module-like object."""
+
+    name = "pytorch_module"
+
+    def can_handle(self, value: object) -> bool:
+        has_parameters = callable(getattr(value, "parameters", None))
+        return has_parameters and (
+            _module_name(value).startswith("torch.nn.")
+            or (
+                callable(getattr(value, "state_dict", None))
+                and callable(getattr(value, "train", None))
+            )
+        )
+
+    def extract(self, variable_name: str, value: object) -> FrameworkArtifact | None:
+        counts = _model_parameter_counts(value)
+        return FrameworkArtifact(
+            variable_name=variable_name,
+            framework="pytorch",
+            type_name=value.__class__.__name__,
+            history={},
+            training_parameters=counts,
+            model_name=value.__class__.__name__,
+            model_ref=value,
+            confidence=0.9,
+            reasons=("has PyTorch module parameters",),
+        )
+
+
+class PyTorchOptimizerAdapter:
+    """Extract hyperparameters from a plain PyTorch optimizer-like object."""
+
+    name = "pytorch_optimizer"
+
+    def can_handle(self, value: object) -> bool:
+        groups = getattr(value, "param_groups", None)
+        return _module_name(value).startswith("torch.optim.") and isinstance(groups, Sequence)
+
+    def extract(self, variable_name: str, value: object) -> FrameworkArtifact | None:
+        groups = getattr(value, "param_groups", None)
+        if not isinstance(groups, Sequence):
+            return None
+        parameters: dict[str, Any] = {
+            "optimizer": value.__class__.__name__,
+            "parameter_groups": len(groups),
+        }
+        for index, group in enumerate(groups):
+            if not isinstance(group, Mapping):
+                continue
+            for key, raw_value in group.items():
+                if str(key) == "params":
+                    continue
+                normalized = _training_parameter_value(raw_value)
+                if normalized is not None:
+                    parameters[f"group_{index}.{key}"] = normalized
+        defaults = getattr(value, "defaults", None)
+        if isinstance(defaults, Mapping):
+            for key, raw_value in defaults.items():
+                normalized = _training_parameter_value(raw_value)
+                if normalized is not None:
+                    parameters.setdefault(f"default.{key}", normalized)
+        return FrameworkArtifact(
+            variable_name=variable_name,
+            framework="pytorch",
+            type_name=value.__class__.__name__,
+            history={},
+            training_parameters=parameters,
+            confidence=0.92,
+            reasons=("has PyTorch optimizer parameter groups",),
+        )
+
+
+class PyTorchSchedulerAdapter:
+    """Extract state from a plain PyTorch learning-rate scheduler-like object."""
+
+    name = "pytorch_scheduler"
+
+    def can_handle(self, value: object) -> bool:
+        return _module_name(value).startswith("torch.optim.lr_scheduler") and (
+            hasattr(value, "last_epoch") or callable(getattr(value, "get_last_lr", None))
+        )
+
+    def extract(self, variable_name: str, value: object) -> FrameworkArtifact | None:
+        parameters: dict[str, Any] = {"scheduler": value.__class__.__name__}
+        state_dict = getattr(value, "state_dict", None)
+        if callable(state_dict):
+            try:
+                state = state_dict()
+            except (AttributeError, RuntimeError, TypeError, ValueError):
+                state = None
+            if isinstance(state, Mapping):
+                for key, raw_value in state.items():
+                    normalized = _training_parameter_value(raw_value)
+                    if normalized is not None:
+                        parameters[str(key)] = normalized
+        last_epoch = _coerce_int(getattr(value, "last_epoch", None))
+        if last_epoch is not None:
+            parameters["last_epoch"] = last_epoch
+        get_last_lr = getattr(value, "get_last_lr", None)
+        if callable(get_last_lr):
+            try:
+                last_lr = _training_parameter_value(get_last_lr())
+            except (AttributeError, RuntimeError, TypeError, ValueError):
+                last_lr = None
+            if last_lr is not None:
+                parameters["last_lr"] = last_lr
+        return FrameworkArtifact(
+            variable_name=variable_name,
+            framework="pytorch",
+            type_name=value.__class__.__name__,
+            history={},
+            training_parameters=parameters,
+            confidence=0.88,
+            reasons=("has PyTorch scheduler state",),
+        )
+
+
+class PyTorchDataLoaderAdapter:
+    """Extract batching parameters from a plain PyTorch DataLoader-like object."""
+
+    name = "pytorch_dataloader"
+
+    def can_handle(self, value: object) -> bool:
+        return _module_name(value).startswith("torch.utils.data.") and hasattr(
+            value, "dataset"
+        )
+
+    def extract(self, variable_name: str, value: object) -> FrameworkArtifact | None:
+        parameters: dict[str, Any] = {"loader": value.__class__.__name__}
+        for name in (
+            "batch_size",
+            "num_workers",
+            "drop_last",
+            "pin_memory",
+            "persistent_workers",
+            "prefetch_factor",
+            "timeout",
+        ):
+            normalized = _training_parameter_value(getattr(value, name, None))
+            if normalized is not None:
+                parameters[name] = normalized
+        dataset_size = _safe_len(getattr(value, "dataset", None))
+        if dataset_size is not None:
+            parameters["dataset_size"] = dataset_size
+        return FrameworkArtifact(
+            variable_name=variable_name,
+            framework="pytorch",
+            type_name=value.__class__.__name__,
+            history={},
+            training_parameters=parameters,
+            confidence=0.88,
+            reasons=("has PyTorch data-loader settings",),
+        )
+
+
 DEFAULT_ADAPTERS: tuple[FrameworkAdapter, ...] = (
     KerasHistoryAdapter(),
     HuggingFaceTrainerAdapter(),
     LightningTrainerAdapter(),
+    PyTorchModuleAdapter(),
+    PyTorchOptimizerAdapter(),
+    PyTorchSchedulerAdapter(),
+    PyTorchDataLoaderAdapter(),
 )
 
 
@@ -319,3 +479,45 @@ def _trainer_args_metadata(args: object | None) -> tuple[str, ...]:
     if not found:
         return ()
     return (f"has Trainer args: {', '.join(found)}",)
+
+
+def _training_parameter_value(value: object) -> Any | None:
+    if isinstance(value, bool | int | float | str):
+        return value
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes):
+        normalized = tuple(_training_parameter_value(item) for item in value)
+        if all(item is not None for item in normalized):
+            return normalized
+    return None
+
+
+def _model_parameter_counts(value: object) -> dict[str, Any]:
+    parameters = getattr(value, "parameters", None)
+    if not callable(parameters):
+        return {}
+    total = 0
+    trainable = 0
+    try:
+        for parameter in parameters():
+            numel = _coerce_int(getattr(parameter, "numel", lambda: None)())
+            if numel is None:
+                continue
+            total += numel
+            if bool(getattr(parameter, "requires_grad", False)):
+                trainable += numel
+    except (AttributeError, RuntimeError, TypeError, ValueError):
+        return {}
+    result: dict[str, Any] = {
+        "total_parameters": total,
+        "trainable_parameters": trainable,
+    }
+    if total:
+        result["trainable_ratio"] = trainable / total
+    return result
+
+
+def _safe_len(value: object) -> int | None:
+    try:
+        return len(value)  # type: ignore[arg-type]
+    except (RuntimeError, TypeError, ValueError):
+        return None
