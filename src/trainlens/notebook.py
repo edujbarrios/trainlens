@@ -24,29 +24,57 @@ class LiveReport:
     markdown: str
 
 
-def build_llm_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
+def build_llm_report(
+    namespace: Mapping[str, Any] | None = None,
+    *,
+    max_metric_points: int = 12,
+) -> LiveReport:
     """Build an LLM-generated training report from notebook context."""
 
-    return build_paper_report(namespace)
+    return build_paper_report(namespace, max_metric_points=max_metric_points)
 
 
-def build_paper_report(namespace: Mapping[str, Any] | None = None) -> LiveReport:
+def build_paper_report(
+    namespace: Mapping[str, Any] | None = None,
+    *,
+    max_metric_points: int = 12,
+) -> LiveReport:
     """Build a scientific paper-style training report from notebook context."""
 
-    return _build_report(namespace, mode="paper_report")
+    return _build_report(
+        namespace,
+        mode="paper_report",
+        max_metric_points=max_metric_points,
+    )
 
 
-def build_improvement_ideas(namespace: Mapping[str, Any] | None = None) -> LiveReport:
+def build_improvement_ideas(
+    namespace: Mapping[str, Any] | None = None,
+    *,
+    max_metric_points: int = 12,
+) -> LiveReport:
     """Build an evidence-backed improvement plan from notebook context."""
 
-    return _build_report(namespace, mode="improvement_ideas")
+    return _build_report(
+        namespace,
+        mode="improvement_ideas",
+        max_metric_points=max_metric_points,
+    )
 
 
-def _build_report(namespace: Mapping[str, Any] | None, *, mode: ReportMode) -> LiveReport:
+def _build_report(
+    namespace: Mapping[str, Any] | None,
+    *,
+    mode: ReportMode,
+    max_metric_points: int,
+) -> LiveReport:
     """Build one of the supported LLM-generated report modes."""
 
     report_namespace = _current_user_namespace() if namespace is None else namespace
-    context = build_llm_notebook_context(report_namespace)
+    context = build_llm_notebook_context(
+        report_namespace,
+        max_metric_points=max_metric_points,
+    )
     return LiveReport(
         result=AnalysisResult(metrics=context.metrics),
         markdown=explain_with_llm(context.markdown, mode=mode, require_provider=True),

@@ -107,10 +107,14 @@ Build and export notebook reports:
 ```python
 from trainlens import build_paper_report, write_report
 
-paper = build_paper_report()
+paper = build_paper_report(max_metric_points=12)
 write_report(paper, "trainlens-report.html")
 write_report(paper, "trainlens-report.json")
 ```
+
+Long metric histories are summarized with their endpoints, extrema, observation
+count, and an ordered sample. Adjust `max_metric_points` to trade prompt size for
+curve detail; values below `2` are rejected so training endpoints are always kept.
 
 Compare runs:
 

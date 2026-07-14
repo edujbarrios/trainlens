@@ -1,3 +1,5 @@
+import pytest
+
 from trainlens.llm.context import build_llm_notebook_context
 
 
@@ -37,3 +39,20 @@ def test_llm_context_does_not_repeat_metric_container_values() -> None:
     assert "value: {'loss': [1.0, 0.7, 0.4]}" not in context.markdown
     assert "- `loss`: [1, 0.7, 0.4]" in context.markdown
     assert "value: 'ag_news'" in context.markdown
+
+
+def test_llm_context_supports_a_smaller_metric_point_budget() -> None:
+    context = build_llm_notebook_context(
+        {"history": {"loss": [1.0, 0.8, 0.6, 0.5, 0.4]}},
+        max_metric_points=3,
+    )
+
+    metric_line = next(
+        line for line in context.markdown.splitlines() if line.startswith("- `loss`")
+    )
+    assert "ordered_sample=[1, 0.6, 0.4]" in metric_line
+
+
+def test_llm_context_rejects_a_budget_that_cannot_preserve_endpoints() -> None:
+    with pytest.raises(ValueError, match="at least 2"):
+        build_llm_notebook_context({}, max_metric_points=1)

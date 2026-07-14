@@ -92,3 +92,25 @@ def test_build_improvement_ideas_uses_improvement_mode(monkeypatch):
     assert report.markdown == "## TrainLens Improvement Ideas"
     assert captured["mode"] == "improvement_ideas"
     assert captured["require_provider"] is True
+
+
+def test_build_paper_report_forwards_metric_point_budget(monkeypatch):
+    captured: dict[str, object] = {}
+
+    def fake_explain(
+        markdown: str,
+        *,
+        mode: str = "paper_report",
+        require_provider: bool = False,
+    ) -> str:
+        captured["markdown"] = markdown
+        return "## TrainLens Scientific Report"
+
+    monkeypatch.setattr("trainlens.notebook.explain_with_llm", fake_explain)
+
+    build_paper_report(
+        {"history": {"loss": [1.0, 0.8, 0.6, 0.4]}},
+        max_metric_points=2,
+    )
+
+    assert "ordered_sample=[1, 0.4]" in str(captured["markdown"])
