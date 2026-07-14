@@ -44,6 +44,15 @@ def test_compare_runs_marks_new_and_removed_metrics() -> None:
     assert comparison.notes
 
 
+def test_compare_runs_does_not_classify_partial_metric_name_matches() -> None:
+    comparison = compare_runs(
+        {"lossless_compression": 0.5, "maple_syrup": 0.5},
+        {"lossless_compression": 0.4, "maple_syrup": 0.6},
+    )
+
+    assert {item.direction for item in comparison.metrics} == {"unknown"}
+
+
 def test_compare_runs_accepts_training_run_metric_series() -> None:
     baseline = TrainingRun(
         model_name="baseline",
