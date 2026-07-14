@@ -71,6 +71,18 @@ def build_llm_notebook_context(
                 f"- `{name}`: {_render_metric_values(series.values, max_metric_points)}"
             )
         lines.append("")
+    training_artifacts = [
+        artifact for artifact in snapshot.framework_artifacts if artifact.training_parameters
+    ]
+    if training_artifacts:
+        lines.extend(["## Training Parameters", ""])
+        for artifact in training_artifacts:
+            lines.append(
+                f"- `{artifact.variable_name}` ({artifact.type_name}, {artifact.framework})"
+            )
+            for name, value in sorted(artifact.training_parameters.items()):
+                lines.append(f"  - `{name}`: {value!r}")
+        lines.append("")
     candidates = inspector.find_models(snapshot)
     if candidates:
         lines.extend(["## Model Candidates", ""])

@@ -9,6 +9,7 @@ All notable changes to TrainLens will be documented here.
 - compact long metric histories while preserving endpoints, extrema, counts, and ordered samples
 - avoid repeating metric-container literals in LLM notebook context
 - allow LLM report callers to tune curve detail with `max_metric_points`
+- recognize plain PyTorch model, optimizer, scheduler, and data-loader training parameters
 
 ## 0.6.0 - 2026-07-10
 
