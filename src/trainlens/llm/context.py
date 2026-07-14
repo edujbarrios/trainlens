@@ -26,6 +26,11 @@ def build_llm_notebook_context(namespace: Mapping[str, Any]) -> LLMNotebookConte
     inspector = NotebookInspector()
     snapshot = inspector.snapshot(namespace)
     metric_series = extract_metric_series(snapshot.raw_namespace)
+    metric_variable_names = {
+        name
+        for name, value in snapshot.raw_namespace.items()
+        if extract_metric_series({name: value})
+    }
     metrics = {
         name: series.last
         for name, series in sorted(metric_series.items())
@@ -48,7 +53,7 @@ def build_llm_notebook_context(namespace: Mapping[str, Any]) -> LLMNotebookConte
             if variable.length is not None:
                 details.append(f"length={variable.length}")
             lines.append(f"- `{variable.name}`: " + ", ".join(details))
-            if variable.value is not None:
+            if variable.value is not None and variable.name not in metric_variable_names:
                 lines.append(f"  value: {variable.value!r}")
         lines.append("")
     if metric_series:
