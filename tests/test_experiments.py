@@ -1,6 +1,11 @@
 import pytest
 
-from trainlens import ExperimentRun, suggest_next_experiment
+from trainlens import (
+    ExperimentRun,
+    experiment_config,
+    render_next_experiment,
+    suggest_next_experiment,
+)
 
 
 def test_suggest_next_experiment_targets_generalization_gap():
@@ -54,6 +59,37 @@ def test_suggestion_accepts_an_explicit_objective():
     )
 
     assert recommendation.success_criteria[0].metric == "recall"
+
+
+def test_recommendation_can_apply_its_single_change_to_a_base_config():
+    base = {"learning_rate": 1e-3, "batch_size": 16, "epochs": 5}
+    recommendation = suggest_next_experiment(
+        [ExperimentRun(name="run", metrics={"accuracy": 0.8}, parameters=base)]
+    )
+
+    config = experiment_config(recommendation, base_parameters=base)
+
+    assert config == {"learning_rate": 5e-4, "batch_size": 16, "epochs": 5}
+    assert base["learning_rate"] == 1e-3
+
+
+def test_recommendation_renders_as_reviewable_markdown():
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(
+                name="baseline",
+                metrics={"train_loss": 0.2, "val_loss": 0.5},
+                parameters={"dropout": 0.1, "batch_size": 32},
+            )
+        ]
+    )
+
+    markdown = render_next_experiment(recommendation)
+
+    assert "## TrainLens Next Experiment" in markdown
+    assert "**Source run:** baseline" in markdown
+    assert "`dropout`: `0.15`" in markdown
+    assert "`val_loss` <= `0.495`" in markdown
 
 
 @pytest.mark.parametrize(
