@@ -27,6 +27,7 @@ important context lives in Python variables, not in a separate dashboard.
 | Run comparison | Compare baseline and experiment metrics with improvement/regression labels. |
 | Export | Write Markdown, HTML, JSON, and optional PDF artifacts. |
 | Privacy guardrails | Redact likely secrets before LLM prompts are created. |
+| Built-in prompts | Select and customize explanations for different training objectives. |
 
 TrainLens has two layers:
 
@@ -149,6 +150,53 @@ Metric direction is inferred from common names: loss-like metrics are better
 when they decrease; accuracy, F1, recall, precision, AUC, and score-like metrics
 are better when they increase. Unknown metrics are shown with deltas but without
 an improvement/regression claim.
+
+## Built-in prompts (in development)
+
+> **Development status:** This API is available on the repository's `main`
+> branch, but it has not yet been published in the PyPI version of TrainLens.
+
+TrainLens includes prompts for scientific reporting, improvement planning,
+training diagnosis, and controlled experiment design. Discover the available
+prompts and their intended use:
+
+```python
+from trainlens import show_trainlens_prompts
+
+for prompt in show_trainlens_prompts():
+    print(f"{prompt.name}: {prompt.description}")
+```
+
+Choose a built-in prompt and parameterize it for the goal of the analysis:
+
+```python
+from trainlens import PromptOptions, build_paper_report
+
+options = PromptOptions(
+    prompt_name="training_diagnosis",
+    objective="Explain why validation loss rose after epoch 8.",
+    model_family="vision transformer fine-tune",
+    audience="computer-vision researchers",
+    tone="concise, technical, and cautious",
+    focus_areas=("overfitting", "learning-rate schedule", "augmentation"),
+    rules=(
+        "Use only evidence contained in the notebook context.",
+        "Rank each hypothesis by confidence.",
+    ),
+    return_instructions=(
+        "Return observations, ranked hypotheses, verification checks, and next actions.",
+    ),
+)
+
+report = build_paper_report(globals(), prompt_options=options)
+print(report.markdown)
+```
+
+The configurable fields are `prompt_name`, `objective`, `heading`,
+`model_family`, `audience`, `tone`, `rules`, `focus_areas`, and
+`return_instructions`. Use `get_trainlens_prompt(name)` to inspect one built-in
+definition. Prompt construction still applies TrainLens secret redaction before
+notebook context is sent to an LLM provider.
 
 ## What TrainLens Inspects
 
