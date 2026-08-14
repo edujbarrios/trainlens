@@ -103,6 +103,46 @@ def suggest_next_experiment(
     )
 
 
+def experiment_config(
+    recommendation: NextExperimentRecommendation,
+    *,
+    base_parameters: Mapping[str, ParameterValue] | None = None,
+) -> dict[str, ParameterValue]:
+    """Build an executable parameter mapping with recommendation changes applied."""
+
+    config = dict(base_parameters or {})
+    config.update(recommendation.changes)
+    return config
+
+
+def render_next_experiment(recommendation: NextExperimentRecommendation) -> str:
+    """Render a recommendation as reviewable Markdown."""
+
+    lines = [
+        "## TrainLens Next Experiment",
+        "",
+        f"**Source run:** {recommendation.source_run}",
+        f"**Estimated cost:** {recommendation.estimated_cost}",
+        f"**Confidence:** {recommendation.confidence:.0%}",
+        "",
+        "### Hypothesis",
+        recommendation.hypothesis,
+        "",
+        "### Change one variable",
+    ]
+    lines.extend(f"- `{name}`: `{value}`" for name, value in recommendation.changes.items())
+    lines.extend(["", "### Keep constant"])
+    lines.extend(f"- `{name}`" for name in recommendation.keep_constant)
+    lines.extend(["", "### Success criteria"])
+    lines.extend(
+        f"- `{criterion.metric}` {criterion.operator} `{criterion.target:.6g}`"
+        for criterion in recommendation.success_criteria
+    )
+    lines.extend(["", "### Evidence"])
+    lines.extend(f"- {item}" for item in recommendation.evidence)
+    return "\n".join(lines).strip() + "\n"
+
+
 def _select_objective(runs: Sequence[ExperimentRun]) -> str | None:
     available = {name for run in runs for name in run.metrics}
     return next((name for name in _OBJECTIVE_PRIORITY if name in available), None)

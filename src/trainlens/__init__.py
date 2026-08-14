@@ -8,6 +8,8 @@ from trainlens.experiments import (
     ExperimentRun,
     NextExperimentRecommendation,
     SuccessCriterion,
+    experiment_config,
+    render_next_experiment,
     suggest_next_experiment,
 )
 from trainlens.export import render_report, write_report
@@ -45,9 +47,11 @@ __all__ = [
     "build_llm_report",
     "build_paper_report",
     "compare_runs",
+    "experiment_config",
     "get_trainlens_prompt",
     "load_ipython_extension",
     "render_report",
+    "render_next_experiment",
     "render_run_comparison",
     "show_trainlens_prompts",
     "suggest_next_experiment",
