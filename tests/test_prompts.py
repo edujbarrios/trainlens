@@ -1,7 +1,9 @@
 from trainlens.llm.prompts import (
+    PromptOptions,
     ReportPromptContext,
     ReportPromptTemplate,
     render_ml_results_explanation_prompt,
+    render_prompt_with_options,
     show_trainlens_prompts,
 )
 
@@ -105,3 +107,18 @@ def test_unknown_named_prompt_lists_available_prompts():
 
     with pytest.raises(ValueError, match="Available: scientific_report"):
         render_ml_results_explanation_prompt("loss=0.8", prompt_name="missing")
+
+
+def test_prompt_options_render_a_reusable_custom_objective():
+    prompt = render_prompt_with_options(
+        "accuracy=0.91",
+        options=PromptOptions(
+            prompt_name="experiment_design",
+            objective="Improve minority-class recall without reducing overall accuracy.",
+            focus_areas=("class imbalance", "recall"),
+        ),
+    )
+
+    assert "Improve minority-class recall" in prompt
+    assert "## TrainLens Experiment Design" in prompt
+    assert "class imbalance" in prompt

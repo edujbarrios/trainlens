@@ -12,7 +12,7 @@ from IPython import get_ipython
 
 from trainlens.llm.context import build_llm_notebook_context
 from trainlens.llm.enhancer import explain_with_llm
-from trainlens.llm.prompts import ReportMode
+from trainlens.llm.prompts import PromptOptions, ReportMode
 from trainlens.models.analysis import AnalysisResult
 
 
@@ -28,16 +28,20 @@ def build_llm_report(
     namespace: Mapping[str, Any] | None = None,
     *,
     max_metric_points: int = 12,
+    prompt_options: PromptOptions | None = None,
 ) -> LiveReport:
     """Build an LLM-generated training report from notebook context."""
 
-    return build_paper_report(namespace, max_metric_points=max_metric_points)
+    return build_paper_report(
+        namespace, max_metric_points=max_metric_points, prompt_options=prompt_options
+    )
 
 
 def build_paper_report(
     namespace: Mapping[str, Any] | None = None,
     *,
     max_metric_points: int = 12,
+    prompt_options: PromptOptions | None = None,
 ) -> LiveReport:
     """Build a scientific paper-style training report from notebook context."""
 
@@ -45,6 +49,7 @@ def build_paper_report(
         namespace,
         mode="paper_report",
         max_metric_points=max_metric_points,
+        prompt_options=prompt_options,
     )
 
 
@@ -52,6 +57,7 @@ def build_improvement_ideas(
     namespace: Mapping[str, Any] | None = None,
     *,
     max_metric_points: int = 12,
+    prompt_options: PromptOptions | None = None,
 ) -> LiveReport:
     """Build an evidence-backed improvement plan from notebook context."""
 
@@ -59,6 +65,7 @@ def build_improvement_ideas(
         namespace,
         mode="improvement_ideas",
         max_metric_points=max_metric_points,
+        prompt_options=prompt_options,
     )
 
 
@@ -67,6 +74,7 @@ def _build_report(
     *,
     mode: ReportMode,
     max_metric_points: int,
+    prompt_options: PromptOptions | None,
 ) -> LiveReport:
     """Build one of the supported LLM-generated report modes."""
 
@@ -75,9 +83,12 @@ def _build_report(
         report_namespace,
         max_metric_points=max_metric_points,
     )
+    explain_kwargs: dict[str, Any] = {"mode": mode, "require_provider": True}
+    if prompt_options is not None:
+        explain_kwargs["prompt_options"] = prompt_options
     return LiveReport(
         result=AnalysisResult(metrics=context.metrics),
-        markdown=explain_with_llm(context.markdown, mode=mode, require_provider=True),
+        markdown=explain_with_llm(context.markdown, **explain_kwargs),
     )
 
 

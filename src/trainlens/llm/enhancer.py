@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from trainlens.llm.config import LLMConfig
 from trainlens.llm.openai_compatible import OpenAICompatibleProvider
-from trainlens.llm.prompts import ReportMode
+from trainlens.llm.prompts import PromptOptions, ReportMode
 
 
 def explain_with_llm(
@@ -12,6 +12,7 @@ def explain_with_llm(
     *,
     mode: ReportMode = "paper_report",
     require_provider: bool = False,
+    prompt_options: PromptOptions | None = None,
 ) -> str:
     """Explain a local TrainLens report with the configured LLM provider."""
 
@@ -28,7 +29,11 @@ def explain_with_llm(
             + "\n> LLM explanation skipped because provider configuration is missing.\n"
         )
     try:
-        return OpenAICompatibleProvider(config).explain(markdown_report, mode=mode)
+        if prompt_options is None:
+            return OpenAICompatibleProvider(config).explain(markdown_report, mode=mode)
+        return OpenAICompatibleProvider(config).explain(
+            markdown_report, mode=mode, prompt_options=prompt_options
+        )
     except Exception as exc:  # pragma: no cover - defensive notebook UX path
         if require_provider:
             msg = f"LLM explanation failed: {exc}"
