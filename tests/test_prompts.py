@@ -2,6 +2,7 @@ from trainlens.llm.prompts import (
     ReportPromptContext,
     ReportPromptTemplate,
     render_ml_results_explanation_prompt,
+    show_trainlens_prompts,
 )
 
 
@@ -61,3 +62,46 @@ def test_improvement_ideas_prompt_requests_experiment_plan():
     assert "Improvement Ideas" in prompt
     assert "Prioritized Experiments" in prompt
     assert "gpt-ideas" in prompt
+
+
+def test_builtin_prompts_are_discoverable_from_public_api():
+    from trainlens import show_trainlens_prompts as public_show_prompts
+
+    prompts = public_show_prompts()
+
+    assert prompts == show_trainlens_prompts()
+    assert [prompt.name for prompt in prompts] == [
+        "scientific_report",
+        "improvement_plan",
+        "training_diagnosis",
+        "experiment_design",
+    ]
+
+
+def test_named_prompt_can_be_fully_parameterized():
+    prompt = render_ml_results_explanation_prompt(
+        "loss=0.8",
+        prompt_name="training_diagnosis",
+        objective="Find the most likely reason convergence stopped.",
+        heading="## Custom Diagnosis",
+        audience="new ML practitioners",
+        tone="concise and educational",
+        model_family="image classifier",
+        rules=("Use only supplied values.",),
+        focus_areas=("learning-rate schedule",),
+        return_instructions=("Return exactly three ranked hypotheses.",),
+    )
+
+    assert "Find the most likely reason convergence stopped." in prompt
+    assert "## Custom Diagnosis" in prompt
+    assert "new ML practitioners" in prompt
+    assert "image classifier" in prompt
+    assert "learning-rate schedule" in prompt
+    assert "exactly three ranked hypotheses" in prompt
+
+
+def test_unknown_named_prompt_lists_available_prompts():
+    import pytest
+
+    with pytest.raises(ValueError, match="Available: scientific_report"):
+        render_ml_results_explanation_prompt("loss=0.8", prompt_name="missing")
