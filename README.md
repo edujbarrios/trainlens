@@ -28,6 +28,7 @@ important context lives in Python variables, not in a separate dashboard.
 | Export | Write Markdown, HTML, JSON, and optional PDF artifacts. |
 | Privacy guardrails | Redact likely secrets before LLM prompts are created. |
 | Built-in prompts | Select and customize explanations for different training objectives. |
+| Real-time monitoring | Stream metrics and detect training anomalies while a run is active. |
 
 TrainLens has two layers:
 
@@ -197,6 +198,62 @@ The configurable fields are `prompt_name`, `objective`, `heading`,
 `return_instructions`. Use `get_trainlens_prompt(name)` to inspect one built-in
 definition. Prompt construction still applies TrainLens secret redaction before
 notebook context is sent to an LLM provider.
+
+## Real-time monitoring (in development)
+
+> **Development status:** Real-time monitoring is available on the repository's
+> `main` branch, but it has not yet been published in the PyPI version of
+> TrainLens. Its callback interfaces may change before release.
+
+`TrainLensMonitor` processes metrics incrementally instead of waiting for a run
+to finish. It currently detects non-finite values, stagnant losses, and possible
+overfitting when training loss falls while validation loss rises. Every alert
+contains a stable code, severity, step, message, and the evidence that triggered
+it.
+
+```python
+from trainlens import MonitorConfig, TrainLensMonitor
+
+monitor = TrainLensMonitor(MonitorConfig(patience=3, min_delta=0.01))
+
+for epoch, metrics in enumerate(training_loop()):
+    alerts = monitor.observe(epoch, metrics)
+    for alert in alerts:
+        print(alert.severity, alert.message, alert.evidence)
+```
+
+`TrainLensCallback` provides dependency-free hooks shaped for Keras,
+Hugging Face Transformers, and PyTorch Lightning. It can collect alerts,
+request a stop after a critical anomaly, and invoke an application-defined
+handler periodically through `explain_every`.
+
+```python
+from trainlens import TrainLensCallback
+
+def explain_snapshot(observation):
+    print(f"Explain step {observation.step}: {dict(observation.metrics)}")
+
+callback = TrainLensCallback(
+    alerts=True,
+    explain_every=5,
+    on_explain=explain_snapshot,
+    stop_on_anomaly=False,
+)
+
+# Keras-style hook
+callback.on_epoch_end(epoch, logs)
+
+# Transformers-style hook
+callback.on_log(state=trainer_state, control=trainer_control, logs=logs)
+
+# Lightning-style hook
+callback.on_train_epoch_end(trainer)
+```
+
+Automatic stopping is opt-in and currently applies only to critical alerts,
+such as a NaN or infinite metric. The monitoring engine is local and
+deterministic; `explain_every` calls the supplied handler but does not contact
+an LLM unless that handler explicitly does so.
 
 ## What TrainLens Inspects
 
