@@ -25,6 +25,21 @@ class TrainLensPrompt:
     focus_areas: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class PromptOptions:
+    """Per-request overrides for a built-in TrainLens prompt."""
+
+    prompt_name: str | None = None
+    objective: str | None = None
+    heading: str | None = None
+    model_family: str = "foundation model fine-tuning"
+    audience: str = "researchers and ML engineers reviewing training results"
+    tone: str = "scientific, precise, well structured, and careful"
+    rules: tuple[str, ...] | None = None
+    focus_areas: tuple[str, ...] | None = None
+    return_instructions: tuple[str, ...] | None = None
+
+
 BUILTIN_PROMPTS: Mapping[str, TrainLensPrompt] = {
     "scientific_report": TrainLensPrompt(
         name="scientific_report",
@@ -290,3 +305,28 @@ def render_ml_results_explanation_prompt(
         ),
     )
     return ReportPromptTemplate().render(context)
+
+
+def render_prompt_with_options(
+    markdown_report: str,
+    *,
+    options: PromptOptions,
+    mode: ReportMode = "paper_report",
+    llm_model: str = "unknown",
+) -> str:
+    """Render a prompt from a reusable set of per-request options."""
+
+    return render_ml_results_explanation_prompt(
+        markdown_report,
+        mode=mode,
+        prompt_name=options.prompt_name,
+        llm_model=llm_model,
+        model_family=options.model_family,
+        audience=options.audience,
+        tone=options.tone,
+        objective=options.objective,
+        heading=options.heading,
+        return_instructions=options.return_instructions,
+        rules=options.rules,
+        focus_areas=options.focus_areas,
+    )

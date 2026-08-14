@@ -3,6 +3,7 @@
 from trainlens.llm.config import LLMConfig
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.llm.prompts import (
+    PromptOptions,
     ReportPromptContext,
     ReportPromptTemplate,
     TrainLensPrompt,
@@ -16,6 +17,7 @@ __all__ = [
     "LLMProvider",
     "ReportPromptContext",
     "ReportPromptTemplate",
+    "PromptOptions",
     "TrainLensPrompt",
     "explain_with_llm",
     "get_trainlens_prompt",

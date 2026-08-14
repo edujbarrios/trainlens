@@ -8,19 +8,36 @@ from typing import Any
 from urllib import request
 
 from trainlens.llm.config import LLMConfig
-from trainlens.llm.prompts import ReportMode, render_ml_results_explanation_prompt
+from trainlens.llm.prompts import (
+    PromptOptions,
+    ReportMode,
+    render_ml_results_explanation_prompt,
+    render_prompt_with_options,
+)
 
 
 @dataclass
 class OpenAICompatibleProvider:
     config: LLMConfig
 
-    def explain(self, markdown_report: str, *, mode: ReportMode = "paper_report") -> str:
-        prompt = render_ml_results_explanation_prompt(
-            markdown_report,
-            mode=mode,
-            llm_model=self.config.model,
-        )
+    def explain(
+        self,
+        markdown_report: str,
+        *,
+        mode: ReportMode = "paper_report",
+        prompt_options: PromptOptions | None = None,
+    ) -> str:
+        if prompt_options is None:
+            prompt = render_ml_results_explanation_prompt(
+                markdown_report, mode=mode, llm_model=self.config.model
+            )
+        else:
+            prompt = render_prompt_with_options(
+                markdown_report,
+                options=prompt_options,
+                mode=mode,
+                llm_model=self.config.model,
+            )
         payload = {
             "model": self.config.model,
             "messages": [
