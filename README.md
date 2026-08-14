@@ -29,6 +29,7 @@ important context lives in Python variables, not in a separate dashboard.
 | Privacy guardrails | Redact likely secrets before LLM prompts are created. |
 | Built-in prompts | Select and customize explanations for different training objectives. |
 | Real-time monitoring | Stream metrics and detect training anomalies while a run is active. |
+| Next-experiment planning | Turn run evidence into a controlled, measurable follow-up. |
 
 TrainLens has two layers:
 
@@ -254,6 +255,55 @@ Automatic stopping is opt-in and currently applies only to critical alerts,
 such as a NaN or infinite metric. The monitoring engine is local and
 deterministic; `explain_every` calls the supplied handler but does not contact
 an LLM unless that handler explicitly does so.
+
+## Next-experiment recommendations (in development)
+
+> **Development status:** Next-experiment recommendations are available on the
+> repository's `main` branch, but they have not yet been published in the PyPI
+> version of TrainLens. The recommendation rules and models may change before
+> release.
+
+TrainLens can turn completed runs into a structured proposal for the next
+controlled experiment. Recommendations contain a hypothesis, one parameter
+change, parameters to keep constant, measurable success criteria, estimated
+cost, confidence, and the evidence used to make the proposal.
+
+```python
+from trainlens import (
+    ExperimentRun,
+    experiment_config,
+    render_next_experiment,
+    suggest_next_experiment,
+)
+
+runs = [
+    ExperimentRun(
+        name="baseline",
+        metrics={"train_loss": 0.20, "validation_loss": 0.50},
+        parameters={"learning_rate": 1e-3, "dropout": 0.10, "batch_size": 32},
+        estimated_cost="medium",
+    ),
+]
+
+recommendation = suggest_next_experiment(
+    runs,
+    objective_metric="validation_loss",
+    minimum_improvement=0.01,
+)
+
+print(render_next_experiment(recommendation))
+
+next_config = experiment_config(
+    recommendation,
+    base_parameters=runs[0].parameters,
+)
+```
+
+The initial implementation is local and deterministic. It selects the strongest
+source run for the objective, detects evidence such as a generalization gap, and
+changes only one variable so that the result is easier to interpret. It does not
+claim that a recommendation is guaranteed to improve the model; its confidence
+and evidence fields are intended to make that uncertainty explicit.
 
 ## What TrainLens Inspects
 
