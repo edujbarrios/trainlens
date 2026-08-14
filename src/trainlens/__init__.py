@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from trainlens.callbacks import TrainLensCallback
 from trainlens.comparison import compare_runs, render_run_comparison
 from trainlens.export import render_report, write_report
 from trainlens.llm.prompts import (
@@ -29,6 +30,7 @@ __all__ = [
     "TrainingAlert",
     "TrainingObservation",
     "TrainLensMonitor",
+    "TrainLensCallback",
     "__version__",
     "build_improvement_ideas",
     "build_llm_report",
