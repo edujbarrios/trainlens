@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from trainlens.callbacks import TrainLensCallback
 from trainlens.comparison import compare_runs, render_run_comparison
+from trainlens.experiments import (
+    ExperimentRun,
+    NextExperimentRecommendation,
+    SuccessCriterion,
+    suggest_next_experiment,
+)
 from trainlens.export import render_report, write_report
 from trainlens.llm.prompts import (
     PromptOptions,
@@ -24,11 +30,14 @@ __version__ = "0.7.0"
 
 __all__ = [
     "LiveReport",
+    "ExperimentRun",
     "MonitorConfig",
+    "NextExperimentRecommendation",
     "PromptOptions",
     "TrainLensPrompt",
     "TrainingAlert",
     "TrainingObservation",
+    "SuccessCriterion",
     "TrainLensMonitor",
     "TrainLensCallback",
     "__version__",
@@ -41,6 +50,7 @@ __all__ = [
     "render_report",
     "render_run_comparison",
     "show_trainlens_prompts",
+    "suggest_next_experiment",
     "unload_ipython_extension",
     "write_report",
 ]
