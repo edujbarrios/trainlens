@@ -11,6 +11,7 @@ from trainlens.llm.prompts import (
     show_trainlens_prompts,
 )
 from trainlens.magic.extension import load_ipython_extension, unload_ipython_extension
+from trainlens.monitoring import MonitorConfig, TrainingAlert, TrainingObservation, TrainLensMonitor
 from trainlens.notebook import (
     LiveReport,
     build_improvement_ideas,
@@ -22,8 +23,12 @@ __version__ = "0.7.0"
 
 __all__ = [
     "LiveReport",
+    "MonitorConfig",
     "PromptOptions",
     "TrainLensPrompt",
+    "TrainingAlert",
+    "TrainingObservation",
+    "TrainLensMonitor",
     "__version__",
     "build_improvement_ideas",
     "build_llm_report",
