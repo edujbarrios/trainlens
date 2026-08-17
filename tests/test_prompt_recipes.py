@@ -6,7 +6,9 @@ from trainlens.prompt_recipes import (
     improvement_plan_prompt,
     overfitting_review_prompt,
     prompt_options,
+    reproducibility_audit_prompt,
     scientific_report_prompt,
+    sensitivity_analysis_prompt,
     training_diagnosis_prompt,
 )
 
@@ -157,3 +159,37 @@ def test_ablation_recipe_supports_complete_parameterization():
     assert options.rules == ("Keep the encoder frozen.",)
     assert options.focus_areas == ("projector depth",)
     assert options.return_instructions == ("Return a three-row ablation matrix.",)
+
+
+def test_sensitivity_recipe_defines_robustness_evidence():
+    prompt = render_prompt_with_options(
+        "learning_rate=0.001\nbatch_size=32",
+        options=sensitivity_analysis_prompt(),
+    )
+
+    assert "parameter ranges and sampling scales" in prompt
+    assert "robust operating regions" in prompt
+    assert "sampling design" in prompt
+    assert "summary statistics" in prompt
+
+
+def test_reproducibility_recipe_supports_complete_parameterization():
+    options = reproducibility_audit_prompt(
+        objective="Audit the reported benchmark.",
+        heading="## Benchmark Reproduction",
+        model_family="language model",
+        audience="external reviewers",
+        tone="strict",
+        rules=("Do not infer missing seeds.",),
+        focus_areas=("environment capture",),
+        return_instructions=("Return a replication checklist.",),
+    )
+
+    assert options.objective == "Audit the reported benchmark."
+    assert options.heading == "## Benchmark Reproduction"
+    assert options.model_family == "language model"
+    assert options.audience == "external reviewers"
+    assert options.tone == "strict"
+    assert options.rules == ("Do not infer missing seeds.",)
+    assert options.focus_areas == ("environment capture",)
+    assert options.return_instructions == ("Return a replication checklist.",)
