@@ -32,6 +32,20 @@ def test_suggest_next_experiment_targets_generalization_gap():
     assert recommendation.evidence
 
 
+def test_suggestion_avoids_a_noop_when_dropout_is_already_at_limit():
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(
+                name="regularized",
+                metrics={"train_loss": 0.2, "validation_loss": 0.5},
+                parameters={"dropout": 0.8},
+            )
+        ]
+    )
+
+    assert recommendation.changes == {"weight_decay": 0.01}
+
+
 def test_suggestion_uses_best_run_and_changes_one_variable():
     recommendation = suggest_next_experiment(
         [
