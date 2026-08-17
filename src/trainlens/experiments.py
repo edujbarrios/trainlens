@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from math import isfinite
 from typing import Literal, TypeAlias
 
 ParameterValue: TypeAlias = str | int | float | bool | None
@@ -68,17 +69,23 @@ def suggest_next_experiment(
 
     if not runs:
         raise ValueError("at least one experiment run is required")
-    if minimum_improvement <= 0:
-        raise ValueError("minimum_improvement must be positive")
+    if not isfinite(minimum_improvement) or minimum_improvement <= 0:
+        raise ValueError("minimum_improvement must be finite and positive")
     objective = objective_metric or _select_objective(runs)
     if objective is None:
         raise ValueError("no supported objective metric was found; pass objective_metric")
     direction = _metric_direction(objective)
     if direction is None:
         raise ValueError(f"cannot infer whether {objective!r} should increase or decrease")
-    eligible = [run for run in runs if objective in run.metrics]
+    eligible = [
+        run
+        for run in runs
+        if objective in run.metrics and isfinite(run.metrics[objective])
+    ]
     if not eligible:
-        raise ValueError(f"objective metric {objective!r} is missing from every run")
+        raise ValueError(
+            f"objective metric {objective!r} is missing or non-finite in every run"
+        )
     best = min(eligible, key=lambda run: run.metrics[objective]) if direction == "lower" else max(
         eligible, key=lambda run: run.metrics[objective]
     )
