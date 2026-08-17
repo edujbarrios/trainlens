@@ -1,3 +1,5 @@
+import pytest
+
 from trainlens.models.analysis import AnalysisResult
 from trainlens.storage.memory import InMemoryRunStore
 
@@ -27,6 +29,12 @@ def test_run_store_respects_max_runs():
     store.capture(AnalysisResult(model_name="Third"))
 
     assert [run.model_name for run in store.runs] == ["Second", "Third"]
+
+
+@pytest.mark.parametrize("max_runs", [True, 2.5, "2"])
+def test_run_store_rejects_non_integer_limits(max_runs):
+    with pytest.raises(TypeError, match="max_runs must be an integer or None"):
+        InMemoryRunStore(max_runs=max_runs)
 
 
 def test_run_store_renders_latest_pair_comparison():

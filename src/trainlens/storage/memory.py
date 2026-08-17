@@ -10,6 +10,10 @@ class InMemoryRunStore:
     """Keeps recent reports for a notebook session."""
 
     def __init__(self, max_runs: int | None = None) -> None:
+        if max_runs is not None and (
+            isinstance(max_runs, bool) or not isinstance(max_runs, int)
+        ):
+            raise TypeError("max_runs must be an integer or None")
         if max_runs is not None and max_runs < 1:
             msg = "max_runs must be at least 1 when provided"
             raise ValueError(msg)
