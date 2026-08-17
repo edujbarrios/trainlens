@@ -1,6 +1,8 @@
 from trainlens.llm.prompts import render_prompt_with_options
 from trainlens.prompt_recipes import (
+    ablation_study_prompt,
     controlled_experiment_prompt,
+    hypothesis_test_prompt,
     improvement_plan_prompt,
     overfitting_review_prompt,
     prompt_options,
@@ -121,3 +123,37 @@ def test_controlled_experiment_recipe_can_override_every_parameter():
     assert options.rules == ("Change learning rate only.",)
     assert options.focus_areas == ("minority-class recall",)
     assert options.return_instructions == ("Return a fixed seed and stopping rule.",)
+
+
+def test_hypothesis_test_recipe_renders_scientific_decision_rules():
+    prompt = render_prompt_with_options(
+        "accuracy_mean=0.91\naccuracy_std=0.02",
+        options=hypothesis_test_prompt(model_family="vision transformer"),
+    )
+
+    assert "null and alternative hypotheses" in prompt
+    assert "vision transformer" in prompt
+    assert "analysis method" in prompt
+    assert "threats to validity" in prompt
+
+
+def test_ablation_recipe_supports_complete_parameterization():
+    options = ablation_study_prompt(
+        objective="Measure the projector contribution.",
+        heading="## Projector Ablation",
+        model_family="vision-language model",
+        audience="multimodal researchers",
+        tone="compact and quantitative",
+        rules=("Keep the encoder frozen.",),
+        focus_areas=("projector depth",),
+        return_instructions=("Return a three-row ablation matrix.",),
+    )
+
+    assert options.objective == "Measure the projector contribution."
+    assert options.heading == "## Projector Ablation"
+    assert options.model_family == "vision-language model"
+    assert options.audience == "multimodal researchers"
+    assert options.tone == "compact and quantitative"
+    assert options.rules == ("Keep the encoder frozen.",)
+    assert options.focus_areas == ("projector depth",)
+    assert options.return_instructions == ("Return a three-row ablation matrix.",)
