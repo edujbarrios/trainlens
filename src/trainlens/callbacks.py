@@ -101,7 +101,14 @@ def _numeric_metrics(metrics: Mapping[str, Any]) -> dict[str, float]:
     for name, value in metrics.items():
         if isinstance(value, bool):
             continue
-        candidate = value.item() if callable(getattr(value, "item", None)) else value
+        item = getattr(value, "item", None)
+        if callable(item):
+            try:
+                candidate = item()
+            except (TypeError, ValueError, RuntimeError):
+                continue
+        else:
+            candidate = value
         if isinstance(candidate, int | float):
             normalized[str(name)] = float(candidate)
     return normalized

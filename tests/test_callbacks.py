@@ -57,3 +57,15 @@ def test_callback_ignores_metadata_and_normalizes_tensor_like_scalars():
     callback.observe(1, {"loss": Scalar(), "phase": "train", "ready": True})
 
     assert callback.monitor.observations[0].metrics == {"loss": 0.75}
+
+
+def test_callback_ignores_tensor_like_values_that_are_not_scalars():
+    class NonScalar:
+        def item(self):
+            raise ValueError("only one element tensors can be converted to scalars")
+
+    callback = TrainLensCallback()
+
+    callback.observe(1, {"loss": 0.75, "confusion_matrix": NonScalar()})
+
+    assert callback.monitor.observations[0].metrics == {"loss": 0.75}
