@@ -22,5 +22,8 @@ jobs:
       - run: ruff check .
       - run: mypy src/trainlens
       - run: pytest --cov=trainlens --cov-report=term-missing
-      - run: python -m build
+      - name: Build clean distributions
+        run: |
+          rm -rf dist
+          python -m build
       - run: python -m twine check dist/*
