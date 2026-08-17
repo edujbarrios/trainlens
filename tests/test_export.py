@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from trainlens import render_report, write_report
+from trainlens import ExperimentRun, render_report, suggest_next_experiment, write_report
 from trainlens.export import render_report as module_render_report
 from trainlens.models.analysis import AnalysisResult, Recommendation, Signal
 from trainlens.notebook import LiveReport
@@ -50,6 +50,27 @@ def test_render_report_exports_live_report_json() -> None:
 
     assert payload["markdown"] == "## Custom LLM Report\n"
     assert payload["result"]["framework"] == "sklearn"
+
+
+def test_render_report_exports_next_experiment_in_supported_formats() -> None:
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(
+                name="baseline",
+                metrics={"validation_loss": 0.5},
+                parameters={"learning_rate": 1e-3},
+            )
+        ]
+    )
+
+    markdown = str(render_report(recommendation, format="markdown"))
+    html = str(render_report(recommendation, format="html"))
+    payload = json.loads(str(render_report(recommendation, format="json")))
+
+    assert "## TrainLens Next Experiment" in markdown
+    assert "<h2>TrainLens Next Experiment</h2>" in html
+    assert payload["source_run"] == "baseline"
+    assert payload["success_criteria"][0]["metric"] == "validation_loss"
 
 
 def test_write_report_infers_format_from_suffix(tmp_path) -> None:
