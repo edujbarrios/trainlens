@@ -18,13 +18,6 @@ important context lives in Python variables, not in a separate dashboard.
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
 
-## Release Status
-
-TrainLens `0.8.0` is the current release line. Package metadata, release notes,
-documentation, tests, and PyPI distribution checks are aligned for this version.
-The PyPI badge above reflects the latest version actually published to the
-registry.
-
 ## What It Does
 
 | Feature | Purpose |
