@@ -1,3 +1,5 @@
+import pytest
+
 from trainlens.llm.prompts import render_prompt_with_options
 from trainlens.prompt_recipes import (
     ablation_study_prompt,
@@ -59,6 +61,21 @@ def test_generic_recipe_requires_and_preserves_all_prompt_fields():
     assert options.rules == ("Hold the control fixed.",)
     assert options.focus_areas == ("reproducibility",)
     assert options.return_instructions == ("Return a stopping rule.",)
+
+
+def test_generic_recipe_rejects_an_unknown_prompt_name_immediately():
+    with pytest.raises(ValueError, match="Unknown TrainLens prompt"):
+        prompt_options(
+            prompt_name="missing",
+            objective="Test one variable.",
+            heading="## Test",
+            model_family="classifier",
+            audience="researchers",
+            tone="direct",
+            rules=("Use evidence.",),
+            focus_areas=("metrics",),
+            return_instructions=("Return a result.",),
+        )
 
 
 def test_training_diagnosis_recipe_renders_ranked_hypotheses():

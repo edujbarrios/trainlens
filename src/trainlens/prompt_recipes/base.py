@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from trainlens.llm.prompts import PromptOptions
+from trainlens.llm.prompts import PromptOptions, get_trainlens_prompt
 
 
 def prompt_options(
@@ -19,6 +19,7 @@ def prompt_options(
 ) -> PromptOptions:
     """Build prompt options while requiring every configurable field."""
 
+    get_trainlens_prompt(prompt_name)
     return PromptOptions(
         prompt_name=prompt_name,
         objective=objective,
