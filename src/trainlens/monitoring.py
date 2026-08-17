@@ -68,7 +68,7 @@ class TrainLensMonitor:
         self.config = config or MonitorConfig()
         self._on_alert = on_alert
         self._observations: list[TrainingObservation] = []
-        self._emitted: set[tuple[str, int]] = set()
+        self._emitted: set[tuple[str, int, tuple[str, ...]]] = set()
 
     @property
     def observations(self) -> tuple[TrainingObservation, ...]:
@@ -93,7 +93,7 @@ class TrainLensMonitor:
         return fresh
 
     def _mark_fresh(self, alert: TrainingAlert) -> bool:
-        key = (alert.code, alert.step)
+        key = (alert.code, alert.step, alert.evidence)
         if key in self._emitted:
             return False
         self._emitted.add(key)
