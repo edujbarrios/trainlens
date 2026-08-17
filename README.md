@@ -153,10 +153,7 @@ when they decrease; accuracy, F1, recall, precision, AUC, and score-like metrics
 are better when they increase. Unknown metrics are shown with deltas but without
 an improvement/regression claim.
 
-## Built-in prompts (in development)
-
-> **Development status:** This API is available on the repository's `main`
-> branch, but it has not yet been published in the PyPI version of TrainLens.
+## Built-in prompts
 
 TrainLens includes prompts for scientific reporting, improvement planning,
 training diagnosis, and controlled experiment design. Discover the available
@@ -200,11 +197,7 @@ The configurable fields are `prompt_name`, `objective`, `heading`,
 definition. Prompt construction still applies TrainLens secret redaction before
 notebook context is sent to an LLM provider.
 
-## Real-time monitoring (in development)
-
-> **Development status:** Real-time monitoring is available on the repository's
-> `main` branch, but it has not yet been published in the PyPI version of
-> TrainLens. Its callback interfaces may change before release.
+## Real-time monitoring
 
 `TrainLensMonitor` processes metrics incrementally instead of waiting for a run
 to finish. It currently detects non-finite values, stagnant losses, and possible
@@ -256,12 +249,7 @@ such as a NaN or infinite metric. The monitoring engine is local and
 deterministic; `explain_every` calls the supplied handler but does not contact
 an LLM unless that handler explicitly does so.
 
-## Next-experiment recommendations (in development)
-
-> **Development status:** Next-experiment recommendations are available on the
-> repository's `main` branch, but they have not yet been published in the PyPI
-> version of TrainLens. The recommendation rules and models may change before
-> release.
+## Next-experiment recommendations
 
 TrainLens can turn completed runs into a structured proposal for the next
 controlled experiment. Recommendations contain a hypothesis, one parameter

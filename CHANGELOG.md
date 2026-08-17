@@ -2,6 +2,16 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.8.0 - 2026-08-17
+
+- add a discoverable catalog of built-in prompts for scientific reports, improvement plans, training diagnosis, and experiment design
+- allow report callers to parameterize prompt objectives, audiences, tone, rules, focus areas, headings, and return instructions
+- add dependency-free real-time monitoring for non-finite metrics, stagnant losses, and possible overfitting
+- add callback adapters shaped for Keras, Hugging Face Transformers, and PyTorch Lightning
+- add structured, evidence-backed next-experiment recommendations and executable parameter mappings
+- render and export next-experiment plans through the public report API
+- document prompt discovery, live monitoring, callbacks, and controlled next-experiment workflows
+
 ## 0.7.0 - 2026-07-14
 
 - ignore non-finite metrics in run comparisons to prevent invalid deltas and JSON values

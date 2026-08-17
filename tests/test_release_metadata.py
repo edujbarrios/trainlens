@@ -11,6 +11,8 @@ def test_release_versions_are_consistent() -> None:
     pyproject = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
     project_version = pyproject["project"]["version"]
     citation = (root / "CITATION.cff").read_text(encoding="utf-8")
+    changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
 
     assert trainlens.__version__ == project_version
     assert f'version: "{project_version}"' in citation
+    assert f"## {project_version} -" in changelog
