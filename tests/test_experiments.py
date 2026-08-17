@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from trainlens import (
@@ -61,6 +63,18 @@ def test_suggestion_accepts_an_explicit_objective():
     assert recommendation.success_criteria[0].metric == "recall"
 
 
+def test_suggestion_ignores_non_finite_objective_values():
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(name="invalid", metrics={"loss": math.nan}),
+            ExperimentRun(name="valid", metrics={"loss": 0.4}),
+        ]
+    )
+
+    assert recommendation.source_run == "valid"
+    assert math.isfinite(recommendation.success_criteria[0].target)
+
+
 def test_recommendation_can_apply_its_single_change_to_a_base_config():
     base = {"learning_rate": 1e-3, "batch_size": 16, "epochs": 5}
     recommendation = suggest_next_experiment(
@@ -97,6 +111,12 @@ def test_recommendation_renders_as_reviewable_markdown():
     [
         ([], {}, "at least one"),
         ([ExperimentRun("run", {"loss": 1.0})], {"minimum_improvement": 0}, "positive"),
+        (
+            [ExperimentRun("run", {"loss": 1.0})],
+            {"minimum_improvement": math.nan},
+            "finite and positive",
+        ),
+        ([ExperimentRun("run", {"loss": math.inf})], {}, "non-finite"),
         ([ExperimentRun("run", {"custom": 1.0})], {}, "no supported objective"),
     ],
 )
