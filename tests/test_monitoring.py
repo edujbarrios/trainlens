@@ -54,3 +54,15 @@ def test_monitor_keeps_an_immutable_observation_history():
 def test_monitor_rejects_invalid_configuration(kwargs, message):
     with pytest.raises(ValueError, match=message):
         MonitorConfig(**kwargs)
+
+
+@pytest.mark.parametrize("patience", [2.5, True, "3"])
+def test_monitor_rejects_non_integer_patience(patience):
+    with pytest.raises(TypeError, match="patience must be an integer"):
+        MonitorConfig(patience=patience)
+
+
+@pytest.mark.parametrize("min_delta", [math.nan, math.inf, -math.inf])
+def test_monitor_rejects_non_finite_min_delta(min_delta):
+    with pytest.raises(ValueError, match="min_delta must be finite"):
+        MonitorConfig(min_delta=min_delta)

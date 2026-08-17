@@ -41,8 +41,14 @@ class MonitorConfig:
     detect_overfitting: bool = True
 
     def __post_init__(self) -> None:
+        if isinstance(self.patience, bool) or not isinstance(self.patience, int):
+            raise TypeError("patience must be an integer")
         if self.patience < 2:
             raise ValueError("patience must be at least 2")
+        if isinstance(self.min_delta, bool) or not isinstance(self.min_delta, int | float):
+            raise TypeError("min_delta must be a finite number")
+        if not math.isfinite(self.min_delta):
+            raise ValueError("min_delta must be finite")
         if self.min_delta < 0:
             raise ValueError("min_delta cannot be negative")
 
