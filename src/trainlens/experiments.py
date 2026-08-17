@@ -173,7 +173,11 @@ def _propose_change(
     )
     if train_loss is not None and validation_loss is not None and validation_loss > train_loss:
         dropout = run.parameters.get("dropout")
-        if isinstance(dropout, int | float) and not isinstance(dropout, bool):
+        if (
+            isinstance(dropout, int | float)
+            and not isinstance(dropout, bool)
+            and 0 <= dropout < 0.8
+        ):
             old = float(dropout)
             new = min(0.8, round(old + 0.05, 4))
             return (
