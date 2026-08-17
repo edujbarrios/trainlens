@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Literal, Never, TypeAlias
 
 from trainlens.comparison import render_run_comparison
+from trainlens.experiments import NextExperimentRecommendation, render_next_experiment
 from trainlens.models.analysis import AnalysisResult
 from trainlens.models.comparison import RunComparison
 from trainlens.notebook import LiveReport
@@ -20,7 +21,9 @@ from trainlens.renderers.markdown import MarkdownRenderer
 
 ReportFormat: TypeAlias = Literal["markdown", "html", "json", "pdf"]
 ReportContent: TypeAlias = str | bytes
-ReportInput: TypeAlias = AnalysisResult | LiveReport | RunComparison
+ReportInput: TypeAlias = (
+    AnalysisResult | LiveReport | RunComparison | NextExperimentRecommendation
+)
 
 
 def render_report(report: ReportInput, *, format: ReportFormat = "markdown") -> ReportContent:
@@ -61,6 +64,8 @@ def _report_markdown(report: ReportInput) -> str:
         return report.markdown
     if isinstance(report, RunComparison):
         return render_run_comparison(report)
+    if isinstance(report, NextExperimentRecommendation):
+        return render_next_experiment(report)
     return MarkdownRenderer().render(report)
 
 
