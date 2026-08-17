@@ -16,6 +16,18 @@ def test_monitor_emits_critical_alert_for_non_finite_metric():
     assert received == list(alerts)
 
 
+def test_monitor_preserves_distinct_alerts_reported_at_the_same_step():
+    monitor = TrainLensMonitor()
+
+    loss_alerts = monitor.observe(2, {"loss": math.nan})
+    gradient_alerts = monitor.observe(2, {"gradient_norm": math.inf})
+    duplicate_alerts = monitor.observe(2, {"gradient_norm": math.inf})
+
+    assert loss_alerts[0].evidence == ("loss=nan",)
+    assert gradient_alerts[0].evidence == ("gradient_norm=inf",)
+    assert duplicate_alerts == ()
+
+
 def test_monitor_detects_diverging_training_and_validation_loss():
     monitor = TrainLensMonitor(MonitorConfig(patience=3, min_delta=0.01))
 
