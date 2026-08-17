@@ -73,6 +73,8 @@ def suggest_next_experiment(
         raise ValueError("minimum_improvement must be finite and positive")
     objective = objective_metric or _select_objective(runs)
     if objective is None:
+        if any(name in run.metrics for run in runs for name in _OBJECTIVE_PRIORITY):
+            raise ValueError("supported objective metrics are non-finite or non-numeric")
         raise ValueError("no supported objective metric was found; pass objective_metric")
     direction = _metric_direction(objective)
     if direction is None:
@@ -80,7 +82,7 @@ def suggest_next_experiment(
     eligible = [
         run
         for run in runs
-        if objective in run.metrics and isfinite(run.metrics[objective])
+        if objective in run.metrics and _is_finite_metric(run.metrics[objective])
     ]
     if not eligible:
         raise ValueError(
@@ -151,8 +153,21 @@ def render_next_experiment(recommendation: NextExperimentRecommendation) -> str:
 
 
 def _select_objective(runs: Sequence[ExperimentRun]) -> str | None:
-    available = {name for run in runs for name in run.metrics}
+    available = {
+        name
+        for run in runs
+        for name, value in run.metrics.items()
+        if _is_finite_metric(value)
+    }
     return next((name for name in _OBJECTIVE_PRIORITY if name in available), None)
+
+
+def _is_finite_metric(value: object) -> bool:
+    return (
+        isinstance(value, int | float)
+        and not isinstance(value, bool)
+        and isfinite(value)
+    )
 
 
 def _metric_direction(name: str) -> Literal["lower", "higher"] | None:
