@@ -2,8 +2,8 @@ from trainlens.llm.prompts import render_prompt_with_options
 from trainlens.prompt_recipes import (
     ablation_study_prompt,
     controlled_experiment_prompt,
-    improvement_plan_prompt,
     hypothesis_test_prompt,
+    improvement_plan_prompt,
     overfitting_review_prompt,
     prompt_options,
     scientific_report_prompt,
