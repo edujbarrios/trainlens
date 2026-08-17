@@ -197,6 +197,30 @@ The configurable fields are `prompt_name`, `objective`, `heading`,
 definition. Prompt construction still applies TrainLens secret redaction before
 notebook context is sent to an LLM provider.
 
+### Prompt recipes
+
+The installed `trainlens.prompt_recipes` package provides reusable defaults for
+scientific reports, training diagnosis, overfitting review, improvement plans,
+and controlled experiments. Every configurable prompt field can be overridden:
+
+```python
+from trainlens import build_paper_report
+from trainlens.prompt_recipes import controlled_experiment_prompt
+
+options = controlled_experiment_prompt(
+    objective="Test whether a lower learning rate improves validation recall.",
+    heading="## Recall Experiment",
+    model_family="text classifier",
+    audience="NLP researchers",
+    tone="concise and technical",
+    rules=("Change learning rate only.", "Use supplied evidence only."),
+    focus_areas=("minority-class recall", "optimization stability"),
+    return_instructions=("Return a fixed seed, stopping rule, and success criterion.",),
+)
+
+report = build_paper_report(globals(), prompt_options=options)
+```
+
 ## Real-time monitoring
 
 `TrainLensMonitor` processes metrics incrementally instead of waiting for a run
