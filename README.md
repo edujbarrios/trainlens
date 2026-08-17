@@ -1,6 +1,6 @@
 # TrainLens
 
-**Research-grade reports for AI training runs, directly from Python notebooks.**
+**TrainLens turns AI training runs into research-grade notebook reports, directly inside Jupyter.**
 
 TrainLens is a lightweight library for understanding, documenting, and comparing
 model-training experiments. It reads the state already present in a notebook,
