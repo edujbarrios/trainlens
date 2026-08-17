@@ -13,10 +13,17 @@ important context lives in Python variables, not in a separate dashboard.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/"><img alt="TrainLens 0.6.0" src="https://img.shields.io/badge/trainlens-0.6.0-blue?logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/trainlens?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
+
+## Release Status
+
+TrainLens `0.8.0` is the current release line. Package metadata, release notes,
+documentation, tests, and PyPI distribution checks are aligned for this version.
+The PyPI badge above reflects the latest version actually published to the
+registry.
 
 ## What It Does
 
@@ -321,8 +328,9 @@ pip install -e ".[dev]"
 python -m pytest
 python -m ruff check .
 mypy src/trainlens
+rm -rf dist
 python -m build --no-isolation
-python -m twine check dist/trainlens-0.6.0*
+python -m twine check dist/*
 ```
 
 New framework support should stay optional and be tested with fake objects or
