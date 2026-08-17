@@ -328,8 +328,9 @@ pip install -e ".[dev]"
 python -m pytest
 python -m ruff check .
 mypy src/trainlens
+rm -rf dist
 python -m build --no-isolation
-python -m twine check dist/trainlens-0.6.0*
+python -m twine check dist/*
 ```
 
 New framework support should stay optional and be tested with fake objects or
