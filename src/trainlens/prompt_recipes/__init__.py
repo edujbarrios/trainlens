@@ -10,10 +10,16 @@ from trainlens.prompt_recipes.experiments import (
     improvement_plan_prompt,
 )
 from trainlens.prompt_recipes.reports import scientific_report_prompt
+from trainlens.prompt_recipes.scientific_designs import (
+    ablation_study_prompt,
+    hypothesis_test_prompt,
+)
 
 __all__ = [
+    "ablation_study_prompt",
     "controlled_experiment_prompt",
     "improvement_plan_prompt",
+    "hypothesis_test_prompt",
     "overfitting_review_prompt",
     "prompt_options",
     "scientific_report_prompt",
