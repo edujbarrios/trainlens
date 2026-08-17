@@ -1,5 +1,7 @@
 from trainlens.llm.prompts import render_prompt_with_options
 from trainlens.prompt_recipes import (
+    controlled_experiment_prompt,
+    improvement_plan_prompt,
     overfitting_review_prompt,
     prompt_options,
     scientific_report_prompt,
@@ -86,3 +88,36 @@ def test_overfitting_recipe_supports_complete_customization():
     assert options.rules == ("Compare matched epochs.",)
     assert options.focus_areas == ("validation drift",)
     assert options.return_instructions == ("Return one controlled test.",)
+
+
+def test_improvement_plan_recipe_renders_prioritized_actions():
+    options = improvement_plan_prompt(model_family="multimodal projector")
+
+    prompt = render_prompt_with_options("validation_loss=0.58", options=options)
+
+    assert "Prioritize evidence-backed improvements" in prompt
+    assert "multimodal projector" in prompt
+    assert "expected information value and cost" in prompt
+    assert "measurable success criterion" in prompt
+
+
+def test_controlled_experiment_recipe_can_override_every_parameter():
+    options = controlled_experiment_prompt(
+        objective="Test whether a lower learning rate improves recall.",
+        heading="## Recall Experiment",
+        model_family="text classifier",
+        audience="NLP researchers",
+        tone="compact",
+        rules=("Change learning rate only.",),
+        focus_areas=("minority-class recall",),
+        return_instructions=("Return a fixed seed and stopping rule.",),
+    )
+
+    assert options.objective == "Test whether a lower learning rate improves recall."
+    assert options.heading == "## Recall Experiment"
+    assert options.model_family == "text classifier"
+    assert options.audience == "NLP researchers"
+    assert options.tone == "compact"
+    assert options.rules == ("Change learning rate only.",)
+    assert options.focus_areas == ("minority-class recall",)
+    assert options.return_instructions == ("Return a fixed seed and stopping rule.",)
