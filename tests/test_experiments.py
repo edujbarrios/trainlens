@@ -89,6 +89,21 @@ def test_suggestion_ignores_non_finite_objective_values():
     assert math.isfinite(recommendation.success_criteria[0].target)
 
 
+def test_suggestion_falls_back_when_higher_priority_objective_is_non_finite():
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(
+                name="run",
+                metrics={"validation_loss": math.nan, "accuracy": 0.8},
+                parameters={"learning_rate": 1e-3},
+            )
+        ]
+    )
+
+    assert recommendation.success_criteria[0].metric == "accuracy"
+    assert recommendation.success_criteria[0].operator == ">="
+
+
 def test_recommendation_can_apply_its_single_change_to_a_base_config():
     base = {"learning_rate": 1e-3, "batch_size": 16, "epochs": 5}
     recommendation = suggest_next_experiment(
