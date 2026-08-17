@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 
 import pytest
 
@@ -50,6 +51,17 @@ def test_render_report_exports_live_report_json() -> None:
 
     assert payload["markdown"] == "## Custom LLM Report\n"
     assert payload["result"]["framework"] == "sklearn"
+
+
+def test_json_export_replaces_non_finite_values_with_null() -> None:
+    result = AnalysisResult(metrics={"loss": math.nan, "gradient_norm": math.inf})
+
+    rendered = str(render_report(result, format="json"))
+    payload = json.loads(rendered, parse_constant=lambda value: pytest.fail(value))
+
+    assert payload["metrics"] == {"gradient_norm": None, "loss": None}
+    assert "NaN" not in rendered
+    assert "Infinity" not in rendered
 
 
 def test_render_report_exports_next_experiment_in_supported_formats() -> None:
