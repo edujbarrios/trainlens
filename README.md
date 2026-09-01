@@ -21,27 +21,71 @@ pip install trainlens
 
 ## Small example
 
-Compare two runs locally, without an LLM or tracking server:
+Suppose you are training a spam classifier on 2,000 short messages: 1,000 spam
+and 1,000 legitimate messages. The same 80/20 train-validation split and random
+seed are used in every experiment, so only the learning rate changes.
 
 ```python
 from trainlens import compare_runs, render_run_comparison
 
-comparison = compare_runs(
-    {"validation_loss": 0.52, "accuracy": 0.84},
-    {"validation_loss": 0.47, "accuracy": 0.87},
-    baseline_name="baseline",
-    experiment_name="lower learning rate",
-)
+experiments = {
+    "experiment 1 · baseline · lr=1e-3": {
+        "validation_loss": 0.52,
+        "accuracy": 0.84,
+    },
+    "experiment 2 · lr=5e-4": {
+        "validation_loss": 0.48,
+        "accuracy": 0.87,
+    },
+    "experiment 3 · lr=2e-4": {
+        "validation_loss": 0.44,
+        "accuracy": 0.90,
+    },
+    "experiment 4 · lr=1e-4": {
+        "validation_loss": 0.46,
+        "accuracy": 0.89,
+    },
+}
 
-print(render_run_comparison(comparison))
+baseline_name, baseline_metrics = next(iter(experiments.items()))
+for experiment_name, experiment_metrics in list(experiments.items())[1:]:
+    comparison = compare_runs(
+        baseline_metrics,
+        experiment_metrics,
+        baseline_name=baseline_name,
+        experiment_name=experiment_name,
+    )
+    print(render_run_comparison(comparison))
 ```
 
-In Jupyter, TrainLens can also inspect objects already in the notebook and
-generate an LLM-backed report:
+TrainLens reports the metric deltas and recognizes that lower loss and higher
+accuracy are improvements. Here, experiment 3 is the strongest result; reducing
+the learning rate again in experiment 4 does not improve it further.
+
+In Jupyter, you can ask TrainLens for a short evidence-based explanation. Keep
+the dataset note and metric series in the inspected notebook context:
 
 ```python
-%load_ext trainlens.magic.extension
-%explain_training
+from trainlens import PromptOptions, build_paper_report
+
+dataset_note = (
+    "Balanced spam dataset: 2,000 short messages, 1,000 spam and 1,000 "
+    "legitimate; fixed 80/20 split and random seed across all experiments."
+)
+experiment_validation_loss = [0.52, 0.48, 0.44, 0.46]
+experiment_accuracy = [0.84, 0.87, 0.90, 0.89]
+
+prompt = PromptOptions(
+    prompt_name="training_diagnosis",
+    objective=(
+        "Explain which experiment performed best, describe the trend across "
+        "the four runs, and suggest one controlled next experiment."
+    ),
+    tone="short, clear, and evidence-first",
+)
+
+report = build_paper_report(globals(), prompt_options=prompt)
+print(report.markdown)
 ```
 
 The LLM workflow requires an OpenAI-compatible endpoint. Local comparison,
