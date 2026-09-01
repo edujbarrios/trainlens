@@ -91,6 +91,13 @@ The LLM workflow requires an OpenAI-compatible endpoint. Local comparison,
 monitoring, experiment planning, and export remain deterministic and do not
 contact an external service.
 
+> **Human oversight required:** TrainLens is intended to support understanding
+> training results and making better-informed decisions—not to replace a human
+> reviewer. LLM-generated explanations can contain errors, omissions, or biases
+> inherited from a model's training data and design. Treat every recommendation
+> as assistance for the programmer, verify it against the underlying evidence,
+> and do not use it as the sole basis for consequential decisions.
+
 ## Documentation
 
 The complete guide covers notebook setup, framework adapters, the Python API,
