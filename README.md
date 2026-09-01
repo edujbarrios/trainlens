@@ -23,8 +23,9 @@ pip install trainlens
 
 Suppose you trained a spam classifier on 2,000 short messages: 1,000 spam and
 1,000 legitimate messages. Every run uses the same 80/20 split and random seed;
-only the learning rate changes. This single Jupyter cell compares the four runs
-and asks TrainLens to explain the evidence:
+each experiment changes one design choice relative to the baseline. This single
+Jupyter cell compares model quality and inference speed, then asks TrainLens to
+explain the trade-offs:
 
 ```python
 import os
@@ -56,15 +57,49 @@ dataset_note = (
     "legitimate; fixed 80/20 split and random seed across all experiments."
 )
 experiments = [
-    ("experiment 1 | baseline | lr=1e-3", {"validation_loss": 0.52, "accuracy": 0.84}),
-    ("experiment 2 | lr=5e-4", {"validation_loss": 0.48, "accuracy": 0.87}),
-    ("experiment 3 | lr=2e-4", {"validation_loss": 0.44, "accuracy": 0.90}),
-    ("experiment 4 | lr=1e-4", {"validation_loss": 0.46, "accuracy": 0.89}),
+    (
+        "experiment 1 | baseline",
+        {
+            "validation_loss": 0.52,
+            "accuracy": 0.84,
+            "f1": 0.82,
+            "latency_ms": 8.1,
+        },
+    ),
+    (
+        "experiment 2 | lower learning rate",
+        {
+            "validation_loss": 0.47,
+            "accuracy": 0.87,
+            "f1": 0.86,
+            "latency_ms": 8.1,
+        },
+    ),
+    (
+        "experiment 3 | add dropout",
+        {
+            "validation_loss": 0.45,
+            "accuracy": 0.88,
+            "f1": 0.89,
+            "latency_ms": 8.2,
+        },
+    ),
+    (
+        "experiment 4 | smaller hidden layer",
+        {
+            "validation_loss": 0.58,
+            "accuracy": 0.82,
+            "f1": 0.80,
+            "latency_ms": 5.6,
+        },
+    ),
 ]
 
 # These named series become part of the TrainLens notebook context.
 experiment_validation_loss = [metrics["validation_loss"] for _, metrics in experiments]
 experiment_accuracy = [metrics["accuracy"] for _, metrics in experiments]
+experiment_f1 = [metrics["f1"] for _, metrics in experiments]
+experiment_latency_ms = [metrics["latency_ms"] for _, metrics in experiments]
 
 # 3. Compare every run with the baseline using deterministic TrainLens analysis.
 baseline_name, baseline_metrics = experiments[0]
@@ -81,8 +116,8 @@ for experiment_name, experiment_metrics in experiments[1:]:
 prompt_options = PromptOptions(
     prompt_name="training_diagnosis",
     objective=(
-        "Identify the best experiment, explain the trend across all four runs, "
-        "and propose one controlled next experiment."
+        "Compare quality and latency across all four experiments, identify the "
+        "best quality run and fastest run, and propose one controlled next experiment."
     ),
     tone="short, clear, and evidence-first",
 )
@@ -90,10 +125,11 @@ report = build_paper_report(globals(), prompt_options=prompt_options)
 print(report.markdown)
 ```
 
-TrainLens recognizes that lower loss and higher accuracy are improvements. The
-results show experiment 3 as the strongest run, while experiment 4 still beats
-the baseline but does not surpass experiment 3. The final call sends the
-redacted notebook context to the configured model for a short diagnosis.
+TrainLens recognizes that lower loss and latency are improvements, while higher
+accuracy and F1 are improvements. The results make the trade-off visible:
+experiment 3 has the best model quality, but experiment 4 is faster at the cost
+of worse predictive metrics. The final call sends the redacted notebook context
+to the configured model for a short diagnosis.
 
 The LLM workflow requires an OpenAI-compatible HTTP endpoint, but it does not
 have to be an external service. You can use a remote provider or a locally
