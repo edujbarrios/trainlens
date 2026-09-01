@@ -37,10 +37,18 @@ from trainlens import (
     render_run_comparison,
 )
 
-# 1. Select the OpenAI-compatible endpoint and model used for the report.
+# 1. Select any OpenAI-compatible endpoint and the model used for the report.
+# Remote provider example:
 os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
 os.environ["TRAINLENS_LLM_MODEL"] = "your-model"
 os.environ["TRAINLENS_LLM_API_KEY"] = getpass("LLM API key: ")
+
+# Local model example with Ollama (use these values instead of the ones above):
+# os.environ["TRAINLENS_LLM_BASE_URL"] = "http://localhost:11434/v1"
+# os.environ["TRAINLENS_LLM_MODEL"] = "llama3.2"
+# os.environ["TRAINLENS_LLM_API_KEY"] = "ollama"  # Required; stays local.
+# LM Studio, vLLM, and llama.cpp also work when their OpenAI-compatible
+# server is running.
 
 # 2. Keep the dataset description and completed run evidence in the notebook.
 dataset_note = (
@@ -87,10 +95,13 @@ results show experiment 3 as the strongest run, while experiment 4 still beats
 the baseline but does not surpass experiment 3. The final call sends the
 redacted notebook context to the configured model for a short diagnosis.
 
-The LLM workflow requires an OpenAI-compatible endpoint. Local comparison,
-monitoring, experiment planning, and export remain deterministic and do not
-contact an external service.
+The LLM workflow requires an OpenAI-compatible HTTP endpoint, but it does not
+have to be an external service. You can use a remote provider or a locally
+running model through Ollama, LM Studio, vLLM, or llama.cpp. Local comparison,
+monitoring, experiment planning, and export remain deterministic and make no
+LLM request.
 
+> [!CAUTION]
 > **Human oversight required:** TrainLens is intended to support understanding
 > training results and making better-informed decisions—not to replace a human
 > reviewer. LLM-generated explanations can contain errors, omissions, or biases
