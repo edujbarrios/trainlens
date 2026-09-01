@@ -21,34 +21,46 @@ pip install trainlens
 
 ## Small example
 
-Suppose you are training a spam classifier on 2,000 short messages: 1,000 spam
-and 1,000 legitimate messages. The same 80/20 train-validation split and random
-seed are used in every experiment, so only the learning rate changes.
+Suppose you trained a spam classifier on 2,000 short messages: 1,000 spam and
+1,000 legitimate messages. Every run uses the same 80/20 split and random seed;
+only the learning rate changes. This single Jupyter cell compares the four runs
+and asks TrainLens to explain the evidence:
 
 ```python
-from trainlens import compare_runs, render_run_comparison
+import os
+from getpass import getpass
 
-experiments = {
-    "experiment 1 · baseline · lr=1e-3": {
-        "validation_loss": 0.52,
-        "accuracy": 0.84,
-    },
-    "experiment 2 · lr=5e-4": {
-        "validation_loss": 0.48,
-        "accuracy": 0.87,
-    },
-    "experiment 3 · lr=2e-4": {
-        "validation_loss": 0.44,
-        "accuracy": 0.90,
-    },
-    "experiment 4 · lr=1e-4": {
-        "validation_loss": 0.46,
-        "accuracy": 0.89,
-    },
-}
+from trainlens import (
+    PromptOptions,
+    build_paper_report,
+    compare_runs,
+    render_run_comparison,
+)
 
-baseline_name, baseline_metrics = next(iter(experiments.items()))
-for experiment_name, experiment_metrics in list(experiments.items())[1:]:
+# 1. Select the OpenAI-compatible endpoint and model used for the report.
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
+os.environ["TRAINLENS_LLM_MODEL"] = "your-model"
+os.environ["TRAINLENS_LLM_API_KEY"] = getpass("LLM API key: ")
+
+# 2. Keep the dataset description and completed run evidence in the notebook.
+dataset_note = (
+    "Balanced spam dataset: 2,000 short messages, 1,000 spam and 1,000 "
+    "legitimate; fixed 80/20 split and random seed across all experiments."
+)
+experiments = [
+    ("experiment 1 | baseline | lr=1e-3", {"validation_loss": 0.52, "accuracy": 0.84}),
+    ("experiment 2 | lr=5e-4", {"validation_loss": 0.48, "accuracy": 0.87}),
+    ("experiment 3 | lr=2e-4", {"validation_loss": 0.44, "accuracy": 0.90}),
+    ("experiment 4 | lr=1e-4", {"validation_loss": 0.46, "accuracy": 0.89}),
+]
+
+# These named series become part of the TrainLens notebook context.
+experiment_validation_loss = [metrics["validation_loss"] for _, metrics in experiments]
+experiment_accuracy = [metrics["accuracy"] for _, metrics in experiments]
+
+# 3. Compare every run with the baseline using deterministic TrainLens analysis.
+baseline_name, baseline_metrics = experiments[0]
+for experiment_name, experiment_metrics in experiments[1:]:
     comparison = compare_runs(
         baseline_metrics,
         experiment_metrics,
@@ -56,37 +68,24 @@ for experiment_name, experiment_metrics in list(experiments.items())[1:]:
         experiment_name=experiment_name,
     )
     print(render_run_comparison(comparison))
-```
 
-TrainLens reports the metric deltas and recognizes that lower loss and higher
-accuracy are improvements. Here, experiment 3 is the strongest result; reducing
-the learning rate again in experiment 4 does not improve it further.
-
-In Jupyter, you can ask TrainLens for a short evidence-based explanation. Keep
-the dataset note and metric series in the inspected notebook context:
-
-```python
-from trainlens import PromptOptions, build_paper_report
-
-dataset_note = (
-    "Balanced spam dataset: 2,000 short messages, 1,000 spam and 1,000 "
-    "legitimate; fixed 80/20 split and random seed across all experiments."
-)
-experiment_validation_loss = [0.52, 0.48, 0.44, 0.46]
-experiment_accuracy = [0.84, 0.87, 0.90, 0.89]
-
-prompt = PromptOptions(
+# 4. Ask the selected LLM for a concise, evidence-first TrainLens diagnosis.
+prompt_options = PromptOptions(
     prompt_name="training_diagnosis",
     objective=(
-        "Explain which experiment performed best, describe the trend across "
-        "the four runs, and suggest one controlled next experiment."
+        "Identify the best experiment, explain the trend across all four runs, "
+        "and propose one controlled next experiment."
     ),
     tone="short, clear, and evidence-first",
 )
-
-report = build_paper_report(globals(), prompt_options=prompt)
+report = build_paper_report(globals(), prompt_options=prompt_options)
 print(report.markdown)
 ```
+
+TrainLens recognizes that lower loss and higher accuracy are improvements. The
+results show experiment 3 as the strongest run, while experiment 4 still beats
+the baseline but does not surpass experiment 3. The final call sends the
+redacted notebook context to the configured model for a short diagnosis.
 
 The LLM workflow requires an OpenAI-compatible endpoint. Local comparison,
 monitoring, experiment planning, and export remain deterministic and do not
