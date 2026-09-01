@@ -37,6 +37,17 @@ TrainLens has two layers:
    heuristics, comparison, and export.
 2. An optional LLM layer for paper-style reports and experiment suggestions.
 
+## Documentation
+
+Complete usage documentation is available in two languages:
+
+- [English documentation](docs/en/README.md)
+- [Documentación en español](docs/es/README.md)
+
+The publication of a dedicated documentation website is planned for the future.
+Until then, the versioned Markdown documentation in [`docs/`](docs/README.md)
+is the canonical guide.
+
 ## Install
 
 ```bash
