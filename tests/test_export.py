@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import math
 
@@ -122,3 +123,28 @@ def test_html_table_preserves_pipes_inside_code_and_escaped_cells() -> None:
     assert rendered.count("<td>") == 2
     assert "<code>precision|recall</code>" in rendered
     assert "left|right" in rendered
+
+
+def test_html_table_does_not_drop_data_rows_containing_three_dashes() -> None:
+    from trainlens.export import _markdown_lines_to_html
+
+    rendered = "\n".join(
+        _markdown_lines_to_html(
+            ["| Metric | Value |", "| --- | ---: |", "| loss---aux | 1 |"]
+        )
+    )
+
+    assert "loss---aux" in rendered
+    assert rendered.count("<td>") == 2
+
+
+def test_pdf_export_preserves_unsupported_unicode_as_codepoint_escape() -> None:
+    pytest.importorskip("reportlab")
+    pypdf = pytest.importorskip("pypdf")
+    result = AnalysisResult(model_name="vision 🚀")
+
+    rendered = render_report(result, format="pdf")
+    reader = pypdf.PdfReader(io.BytesIO(rendered))
+    text = "".join(page.extract_text() or "" for page in reader.pages)
+
+    assert r"\U0001F680" in text

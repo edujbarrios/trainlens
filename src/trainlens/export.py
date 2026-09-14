@@ -155,7 +155,7 @@ def _markdown_lines_to_html(lines: list[str]) -> list[str]:
                 in_ordered_list = True
             rendered.append(f"<li>{_inline_html(item)}</li>")
         elif line.startswith("|"):
-            if "---" in line:
+            if _is_table_separator(line):
                 continue
             cells = [_inline_html(cell.strip()) for cell in _table_cells(line)]
             tag = "th" if not in_table else "td"
@@ -221,6 +221,13 @@ def _table_cells(line: str) -> list[str]:
     return cells
 
 
+def _is_table_separator(line: str) -> bool:
+    cells = _table_cells(line)
+    return bool(cells) and all(
+        re.fullmatch(r"\s*:?-{3,}:?\s*", cell) is not None for cell in cells
+    )
+
+
 def _markdown_to_pdf(markdown: str) -> bytes:
     try:
         canvas_module = import_module("reportlab.pdfgen.canvas")
@@ -247,10 +254,24 @@ def _markdown_to_pdf(markdown: str) -> bytes:
                 pdf.showPage()
                 pdf.setFont("Helvetica", 10)
                 y = height - 54
-            pdf.drawString(x, y, part[:110])
+            pdf.drawString(x, y, _pdf_safe_text(part[:110]))
             y -= 14
     pdf.save()
     return bytes(buffer.getvalue())
+
+
+def _pdf_safe_text(text: str) -> str:
+    rendered: list[str] = []
+    for character in text:
+        try:
+            character.encode("cp1252")
+        except UnicodeEncodeError:
+            codepoint = ord(character)
+            escape = f"\\u{codepoint:04X}" if codepoint <= 0xFFFF else f"\\U{codepoint:08X}"
+            rendered.append(escape)
+        else:
+            rendered.append(character)
+    return "".join(rendered)
 
 
 def _format_from_suffix(path: Path) -> ReportFormat:

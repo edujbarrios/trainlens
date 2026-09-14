@@ -27,6 +27,12 @@ _META_KEYS = {"step", "global_step", "epoch", "event", "name", "message", "msg"}
 def extract_trace_events(namespace: Mapping[str, Any], max_events: int = 8) -> list[TraceEvent]:
     """Return recent execution events from notebook variables and trainer state."""
 
+    if isinstance(max_events, bool) or not isinstance(max_events, int):
+        raise TypeError("max_events must be an integer")
+    if max_events < 0:
+        raise ValueError("max_events cannot be negative")
+    if max_events == 0:
+        return []
     events: list[TraceEvent] = []
     for name, value in namespace.items():
         if _looks_like_trace_name(name):
