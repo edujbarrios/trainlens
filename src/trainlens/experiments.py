@@ -11,7 +11,19 @@ from typing import Literal, TypeAlias
 ParameterValue: TypeAlias = str | int | float | bool | None
 EstimatedCost = Literal["low", "medium", "high", "unknown"]
 
-_LOWER_IS_BETTER = ("loss", "error", "perplexity", "wer", "cer", "latency")
+_LOWER_IS_BETTER = (
+    "loss",
+    "error",
+    "perplexity",
+    "wer",
+    "cer",
+    "latency",
+    "mae",
+    "mape",
+    "mse",
+    "msle",
+    "rmse",
+)
 _HIGHER_IS_BETTER = ("accuracy", "acc", "auc", "f1", "precision", "recall", "score")
 _OBJECTIVE_PRIORITY = (
     "validation_loss",
@@ -208,7 +220,12 @@ def _propose_change(
             0.62,
         )
     learning_rate = run.parameters.get("learning_rate")
-    if isinstance(learning_rate, int | float) and not isinstance(learning_rate, bool):
+    if (
+        isinstance(learning_rate, int | float)
+        and not isinstance(learning_rate, bool)
+        and isfinite(learning_rate)
+        and learning_rate > 0
+    ):
         new_rate = float(learning_rate) * 0.5
         return (
             {"learning_rate": new_rate},
@@ -232,6 +249,7 @@ def _first_value(metrics: Mapping[str, float], names: tuple[str, ...]) -> float 
 
 
 def _target(value: float, direction: Literal["lower", "higher"], improvement: float) -> float:
+    change = max(abs(value) * improvement, improvement if value == 0 else 0.0)
     if direction == "lower":
-        return value - abs(value) * improvement
-    return value + abs(value) * improvement
+        return value - change
+    return value + change

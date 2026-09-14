@@ -108,3 +108,10 @@ def test_render_report_exports_run_comparison_json_and_html() -> None:
     assert payload["metrics"][0]["name"] == "loss"
     assert payload["improvements"][0]["direction"] == "improved"
     assert "<h2>TrainLens Run Comparison</h2>" in html
+
+
+@pytest.mark.parametrize("metric", ["mae", "mape", "mse", "msle", "rmse"])
+def test_compare_runs_treats_common_error_metrics_as_lower_is_better(metric) -> None:
+    comparison = compare_runs({metric: 1.0}, {metric: 0.8})
+
+    assert comparison.metrics[0].direction == "improved"

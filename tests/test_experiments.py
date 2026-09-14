@@ -152,3 +152,28 @@ def test_recommendation_renders_as_reviewable_markdown():
 def test_suggestion_rejects_insufficient_evidence(runs, kwargs, message):
     with pytest.raises(ValueError, match=message):
         suggest_next_experiment(runs, **kwargs)
+
+
+@pytest.mark.parametrize("metric", ["mae", "mape", "mse", "msle", "rmse"])
+def test_suggestion_accepts_common_error_metrics_as_objectives(metric):
+    recommendation = suggest_next_experiment(
+        [ExperimentRun(name="run", metrics={metric: 1.0}, parameters={})],
+        objective_metric=metric,
+    )
+
+    assert recommendation.success_criteria[0].operator == "<="
+
+
+def test_zero_baseline_requires_a_nonzero_improvement_and_avoids_zero_learning_rate():
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(
+                name="run",
+                metrics={"accuracy": 0.0},
+                parameters={"learning_rate": 0.0},
+            )
+        ]
+    )
+
+    assert recommendation.changes == {"learning_rate_multiplier": 0.5}
+    assert recommendation.success_criteria[0].target == pytest.approx(0.01)
