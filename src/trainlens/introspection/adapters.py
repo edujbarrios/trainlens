@@ -344,8 +344,12 @@ def _module_name(value: object) -> str:
 def _preferred_value(primary: object | None, fallback: object | None) -> object | None:
     if primary is None:
         return fallback
-    if isinstance(primary, Sequence) and not isinstance(primary, str | bytes) and len(primary) == 0:
-        return fallback
+    if isinstance(primary, Sequence) and not isinstance(primary, str | bytes):
+        try:
+            if len(primary) == 0:
+                return fallback
+        except (RuntimeError, TypeError, ValueError):
+            return fallback
     return primary
 
 
@@ -396,11 +400,12 @@ def _log_history(value: object) -> tuple[dict[str, float | int], ...]:
 
 
 def _looks_like_log_history(value: object) -> bool:
-    return (
-        isinstance(value, Sequence)
-        and not isinstance(value, str | bytes)
-        and all(isinstance(item, Mapping) for item in value)
-    )
+    if not isinstance(value, Sequence) or isinstance(value, str | bytes):
+        return False
+    try:
+        return all(isinstance(item, Mapping) for item in value)
+    except (IndexError, RuntimeError, TypeError, ValueError):
+        return False
 
 
 def _latest_metrics(log_history: Sequence[Mapping[str, float | int]]) -> dict[str, float]:

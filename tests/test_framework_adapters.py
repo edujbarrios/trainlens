@@ -225,6 +225,41 @@ def test_llm_context_includes_plain_pytorch_training_parameters() -> None:
     assert "`batch_size`: 16" in context.markdown
 
 
+def test_llm_context_includes_huggingface_and_lightning_adapter_metrics() -> None:
+    huggingface = build_llm_notebook_context({"trainer": FakeHuggingFaceTrainer()})
+    lightning = build_llm_notebook_context({"trainer": FakeLightningTrainer()})
+
+    assert "## Metric Series" in huggingface.markdown
+    assert "`validation_loss`" in huggingface.markdown
+    assert huggingface.metrics["validation_loss"] == 0.9
+    assert "## Metric Series" in lightning.markdown
+    assert lightning.metrics["validation_accuracy"] == 0.88
+
+
+def test_optimizer_is_not_reported_as_a_model_or_metric_source() -> None:
+    result = explain_namespace({"optimizer": FakeAdamW()})
+    context = build_llm_notebook_context({"optimizer": FakeAdamW()})
+
+    assert result.model_name is None
+    assert any("Captured pytorch training parameters" in item for item in result.summary)
+    assert all("Adapted pytorch metrics" not in item for item in result.summary)
+    assert "## Model Candidates\n\n- No model object was detected." in context.markdown
+
+
+def test_broken_log_history_length_falls_back_without_raising() -> None:
+    class BrokenHistory(list):
+        def __len__(self):
+            raise RuntimeError("length unavailable")
+
+    trainer = FakeHuggingFaceTrainer()
+    trainer.state = type("State", (), {"log_history": BrokenHistory()})()
+    trainer.log_history = [{"step": 1, "loss": 0.7}]
+
+    snapshot = NotebookInspector().snapshot({"trainer": trainer})
+
+    assert snapshot.framework_artifacts[0].log_history[0]["loss"] == 0.7
+
+
 def test_llm_context_redacts_sensitive_optimizer_parameters() -> None:
     optimizer = FakeAdamW()
     optimizer.param_groups = [

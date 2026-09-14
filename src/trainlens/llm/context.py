@@ -8,6 +8,7 @@ from typing import Any
 
 from trainlens.analyzers.metrics import extract_metric_series
 from trainlens.introspection import NotebookInspector
+from trainlens.models.snapshot import NotebookSnapshot
 from trainlens.security import sanitize_value
 
 _MAX_METRIC_POINTS = 12
@@ -36,10 +37,11 @@ def build_llm_notebook_context(
 
     inspector = NotebookInspector()
     snapshot = inspector.snapshot(namespace)
-    metric_series = extract_metric_series(snapshot.raw_namespace)
+    metric_namespace = _namespace_with_framework_metrics(snapshot)
+    metric_series = extract_metric_series(metric_namespace)
     metric_variable_names = {
         name
-        for name, value in snapshot.raw_namespace.items()
+        for name, value in metric_namespace.items()
         if extract_metric_series({name: value})
     }
     metrics = {
@@ -126,3 +128,16 @@ def _sample_metric_values(values: tuple[float, ...], limit: int) -> tuple[float,
     last_index = len(values) - 1
     indices = tuple(round(position * last_index / (limit - 1)) for position in range(limit))
     return tuple(values[index] for index in indices)
+
+
+def _namespace_with_framework_metrics(snapshot: NotebookSnapshot) -> dict[str, Any]:
+    namespace = dict(snapshot.raw_namespace)
+    for artifact in snapshot.framework_artifacts:
+        prefix = f"{artifact.variable_name}_{artifact.framework}"
+        if artifact.history:
+            namespace[f"{prefix}_history"] = artifact.history
+        if artifact.log_history:
+            namespace[f"{prefix}_log_history"] = artifact.log_history
+        if artifact.latest_metrics:
+            namespace[f"{prefix}_metrics"] = artifact.latest_metrics
+    return namespace

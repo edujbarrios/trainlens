@@ -44,7 +44,7 @@ class NotebookInspector:
                 continue
             looks_like, reasons = looks_like_model(value)
             framework = detect_framework(value)
-            if not looks_like and framework is None:
+            if not looks_like:
                 continue
             confidence = 0.45 + (0.2 if framework else 0) + min(len(reasons) * 0.1, 0.3)
             candidates.append(
