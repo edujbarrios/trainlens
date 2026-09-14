@@ -27,6 +27,11 @@ _LOWER_IS_BETTER = (
     "latency",
     "fad",
     "frechet",
+    "mae",
+    "mape",
+    "mse",
+    "msle",
+    "rmse",
 )
 _HIGHER_IS_BETTER = (
     "accuracy",
