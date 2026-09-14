@@ -2,6 +2,14 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.8.1 - 2026-09-14
+
+- avoid no-op experiment recommendations for zero learning rates and zero-valued objectives
+- recognize MAE, MAPE, MSE, MSLE, and RMSE as lower-is-better metrics
+- preserve literal and escaped pipe characters in Markdown-to-HTML report tables
+- inspect framework model references without evaluating ambiguous object truth values
+- reject boolean, non-numeric, and invalid-step inputs in the real-time monitor
+
 ## 0.8.0 - 2026-08-17
 
 - add a discoverable catalog of built-in prompts for scientific reports, improvement plans, training diagnosis, and experiment design
