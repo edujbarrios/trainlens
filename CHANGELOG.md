@@ -2,6 +2,17 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.8.4 - 2026-09-14
+
+- redact camelCase credential fields in notebook and framework configuration
+- include Hugging Face and Lightning adapter metrics in LLM notebook context
+- exclude optimizers, schedulers, and data loaders from model candidates
+- distinguish adapted metrics from captured framework training parameters
+- tolerate broken framework log-history containers without boolean evaluation
+- reject success criteria beyond natural metric bounds
+- reject backwards monitoring steps and boolean trace steps
+- capture independent in-memory snapshots of mutable analysis results
+
 ## 0.8.3 - 2026-09-14
 
 - redact secrets from every customizable prompt field before provider submission
