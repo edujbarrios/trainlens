@@ -2,6 +2,15 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.8.2 - 2026-09-14
+
+- redact sensitive optimizer and scheduler parameters before constructing LLM context
+- recognize sensitive names embedded in dotted, slashed, dashed, or spaced parameter paths
+- preserve table rows containing triple dashes in HTML reports
+- preserve unsupported PDF characters as explicit Unicode code-point escapes
+- validate trace limits and return no events when `max_events=0`
+- validate callback explanation intervals and ignore tensor-like boolean metrics
+
 ## 0.8.1 - 2026-09-14
 
 - avoid no-op experiment recommendations for zero learning rates and zero-valued objectives
