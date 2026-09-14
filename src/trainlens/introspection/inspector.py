@@ -66,7 +66,9 @@ class NotebookInspector:
         for artifact in snapshot.framework_artifacts:
             if artifact.model_ref is None and artifact.model_name is None:
                 continue
-            model_ref = artifact.model_ref or snapshot.raw_namespace.get(artifact.variable_name)
+            model_ref = artifact.model_ref
+            if model_ref is None:
+                model_ref = snapshot.raw_namespace.get(artifact.variable_name)
             type_name = artifact.model_name or artifact.type_name
             candidates.append(
                 ModelCandidate(

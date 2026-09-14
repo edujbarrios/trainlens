@@ -1,4 +1,5 @@
 from trainlens.introspection import NotebookInspector
+from trainlens.models.snapshot import FrameworkArtifact, NotebookSnapshot
 
 
 class DemoModel:
@@ -88,3 +89,26 @@ def test_inspector_ignores_broken_object_metadata():
     assert artifact is not None
     assert artifact.shape is None
     assert artifact.length is None
+
+
+def test_framework_model_candidate_does_not_evaluate_model_truthiness():
+    class AmbiguousModel:
+        def __bool__(self):
+            raise ValueError("model truth value is ambiguous")
+
+    model = AmbiguousModel()
+    snapshot = NotebookSnapshot(
+        framework_artifacts=(
+            FrameworkArtifact(
+                variable_name="model",
+                framework="custom",
+                type_name="AmbiguousModel",
+                history={},
+                model_ref=model,
+            ),
+        )
+    )
+
+    candidates = NotebookInspector().find_models(snapshot)
+
+    assert candidates[0].object_ref is model

@@ -79,9 +79,15 @@ class TrainLensMonitor:
     def observe(self, step: int, metrics: Mapping[str, float | int]) -> tuple[TrainingAlert, ...]:
         """Record one metric snapshot and return alerts triggered by it."""
 
+        if isinstance(step, bool) or not isinstance(step, int):
+            raise TypeError("step must be an integer")
         if step < 0:
             raise ValueError("step cannot be negative")
-        normalized = {name: float(value) for name, value in metrics.items()}
+        normalized: dict[str, float] = {}
+        for name, value in metrics.items():
+            if isinstance(value, bool) or not isinstance(value, int | float):
+                raise TypeError(f"metric {name!r} must be a number")
+            normalized[str(name)] = float(value)
         observation = TrainingObservation(step=step, metrics=MappingProxyType(normalized))
         self._observations.append(observation)
 
