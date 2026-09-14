@@ -12,7 +12,8 @@ def test_run_store_exposes_latest_and_clear():
     store.capture(first)
     store.capture(second)
 
-    assert store.latest() is second
+    assert store.latest() == second
+    assert store.latest() is not second
     assert store.runs == (first, second)
 
     store.clear()
@@ -48,3 +49,13 @@ def test_run_store_renders_latest_pair_comparison():
     assert "**Experiment:** latest run" in markdown
     assert "validation_loss" in markdown
     assert "improved" in markdown
+
+
+def test_run_store_captures_a_snapshot_instead_of_a_mutable_alias():
+    result = AnalysisResult(metrics={"loss": 1.0})
+    store = InMemoryRunStore()
+    store.capture(result)
+
+    result.metrics["loss"] = 0.1
+
+    assert store.latest().metrics == {"loss": 1.0}

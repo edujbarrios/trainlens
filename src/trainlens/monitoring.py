@@ -83,6 +83,8 @@ class TrainLensMonitor:
             raise TypeError("step must be an integer")
         if step < 0:
             raise ValueError("step cannot be negative")
+        if self._observations and step < self._observations[-1].step:
+            raise ValueError("step cannot move backwards")
         normalized: dict[str, float] = {}
         for name, value in metrics.items():
             if isinstance(value, bool) or not isinstance(value, int | float):

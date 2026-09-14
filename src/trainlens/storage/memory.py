@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 from trainlens.comparison import compare_runs, render_run_comparison
 from trainlens.models.analysis import AnalysisResult
 
@@ -25,7 +27,7 @@ class InMemoryRunStore:
         return tuple(self._runs)
 
     def capture(self, result: AnalysisResult) -> None:
-        self._runs.append(result)
+        self._runs.append(deepcopy(result))
         if self.max_runs is not None:
             self._runs = self._runs[-self.max_runs :]
 
