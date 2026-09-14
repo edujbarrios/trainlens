@@ -1,3 +1,5 @@
+import pytest
+
 from trainlens.analyzers.traces import extract_trace_events
 from trainlens.pipeline import explain_namespace
 from trainlens.renderers.markdown import MarkdownRenderer
@@ -57,3 +59,18 @@ def test_extracts_pytorch_epoch_logs_as_trace_events():
     assert len(events) == 2
     assert events[0].epoch == 1.0
     assert events[0].metrics == {"train_loss": 2.0, "val_loss": 2.2}
+
+
+def test_zero_max_events_returns_no_trace_events():
+    assert extract_trace_events({"logs": [{"step": 1, "loss": 1.0}]}, max_events=0) == []
+
+
+@pytest.mark.parametrize("max_events", [True, 1.5, "2"])
+def test_rejects_non_integer_max_events(max_events):
+    with pytest.raises(TypeError, match="max_events must be an integer"):
+        extract_trace_events({}, max_events=max_events)
+
+
+def test_rejects_negative_max_events():
+    with pytest.raises(ValueError, match="max_events cannot be negative"):
+        extract_trace_events({}, max_events=-1)
