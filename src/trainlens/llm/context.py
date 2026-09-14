@@ -8,6 +8,7 @@ from typing import Any
 
 from trainlens.analyzers.metrics import extract_metric_series
 from trainlens.introspection import NotebookInspector
+from trainlens.security import sanitize_value
 
 _MAX_METRIC_POINTS = 12
 
@@ -81,7 +82,8 @@ def build_llm_notebook_context(
                 f"- `{artifact.variable_name}` ({artifact.type_name}, {artifact.framework})"
             )
             for name, value in sorted(artifact.training_parameters.items()):
-                lines.append(f"  - `{name}`: {value!r}")
+                safe_value = sanitize_value(name, value)
+                lines.append(f"  - `{name}`: {safe_value!r}")
         lines.append("")
     candidates = inspector.find_models(snapshot)
     if candidates:

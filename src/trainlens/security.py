@@ -53,7 +53,7 @@ _SECRET_PATTERNS = (
 def is_sensitive_name(name: str) -> bool:
     """Return true when a variable or field name is likely to contain credentials."""
 
-    normalized = name.lower().replace("-", "_")
+    normalized = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
     return _SENSITIVE_NAME_PATTERN.search(normalized) is not None
 
 

@@ -2,6 +2,7 @@ from trainlens.security import (
     OMITTED_VALUE,
     REDACTED_VALUE,
     TRUNCATED_VALUE,
+    is_sensitive_name,
     redact_text,
     sanitize_value,
 )
@@ -71,3 +72,9 @@ def test_sanitize_value_truncates_long_text_after_redaction():
 
     assert "sk-test1234567890" not in sanitized
     assert sanitized.endswith(TRUNCATED_VALUE)
+
+
+def test_sensitive_names_are_detected_inside_framework_parameter_paths():
+    assert is_sensitive_name("group_0.api_key")
+    assert is_sensitive_name("optimizer/client-secret")
+    assert is_sensitive_name("service credential")
