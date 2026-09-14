@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from math import isfinite
+
 from trainlens.models.analysis import AnalysisResult
 
 
@@ -30,7 +32,8 @@ class MarkdownRenderer:
                 ]
             )
             lines.extend(
-                f"| {name} | {value:.3f} |" for name, value in sorted(result.metrics.items())
+                f"| {_table_cell(name)} | {value:.3f} |"
+                for name, value in sorted(result.metrics.items())
             )
         if result.trace:
             lines.extend(
@@ -43,9 +46,12 @@ class MarkdownRenderer:
             for event in result.trace:
                 step = str(event.step) if event.step is not None else ""
                 epoch = f"{event.epoch:.2f}" if event.epoch is not None else ""
-                label = event.name or event.message or "training event"
+                label = _table_cell(event.name or event.message or "training event")
                 metrics = (
-                    ", ".join(f"{name}={value:.3f}" for name, value in event.metrics.items())
+                    ", ".join(
+                        f"{_table_cell(name)}={value:.3f}"
+                        for name, value in event.metrics.items()
+                    )
                     or "none"
                 )
                 lines.append(f"| {step} | {epoch} | {label} | {metrics} |")
@@ -78,7 +84,12 @@ def _result_explanation(result: AnalysisResult) -> list[str]:
     explanation: list[str] = []
     train_loss = result.metrics.get("train_loss")
     validation_loss = result.metrics.get("validation_loss")
-    if train_loss is not None and validation_loss is not None:
+    if (
+        train_loss is not None
+        and validation_loss is not None
+        and isfinite(train_loss)
+        and isfinite(validation_loss)
+    ):
         gap = validation_loss - train_loss
         if gap > 0.25:
             explanation.append(
@@ -120,3 +131,7 @@ def _result_explanation(result: AnalysisResult) -> list[str]:
             "to concrete training events."
         )
     return explanation
+
+
+def _table_cell(value: str) -> str:
+    return value.replace("\r", " ").replace("\n", " ").replace("|", r"\|")

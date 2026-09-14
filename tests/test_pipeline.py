@@ -38,3 +38,11 @@ def test_pipeline_summarizes_loss_changes():
 
     assert "Training loss changed from 2.000 to 1.300." in result.summary
     assert "Validation loss changed from 2.100 to 1.700." in result.summary
+
+
+def test_pipeline_does_not_treat_text_or_mapping_as_class_labels():
+    text_result = explain_namespace({"labels": "aaaaaaaaab"})
+    mapping_result = explain_namespace({"labels": {"majority": 9, "minority": 1}})
+
+    assert all(signal.title != "Class imbalance detected" for signal in text_result.signals)
+    assert all(signal.title != "Class imbalance detected" for signal in mapping_result.signals)
