@@ -58,9 +58,15 @@ class TrainingSessionAnalyzer(Analyzer):
             result.summary.append("No trained model object was confidently detected.")
 
         for artifact in snapshot.framework_artifacts:
-            result.summary.append(
-                f"Adapted {artifact.framework} metrics from `{artifact.variable_name}`."
-            )
+            if artifact.history or artifact.log_history or artifact.latest_metrics:
+                result.summary.append(
+                    f"Adapted {artifact.framework} metrics from `{artifact.variable_name}`."
+                )
+            elif artifact.training_parameters:
+                result.summary.append(
+                    f"Captured {artifact.framework} training parameters from "
+                    f"`{artifact.variable_name}`."
+                )
 
         if train_acc and train_acc.delta is not None:
             result.summary.append(
