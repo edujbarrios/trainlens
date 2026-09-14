@@ -78,3 +78,9 @@ def test_sensitive_names_are_detected_inside_framework_parameter_paths():
     assert is_sensitive_name("group_0.api_key")
     assert is_sensitive_name("optimizer/client-secret")
     assert is_sensitive_name("service credential")
+
+
+def test_sensitive_names_are_detected_in_camel_case():
+    for name in ("clientSecret", "privateKey", "accessToken", "refreshToken", "hfToken"):
+        assert is_sensitive_name(name)
+        assert sanitize_value(name, "opaque-credential") == REDACTED_VALUE
