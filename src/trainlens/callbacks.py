@@ -26,6 +26,10 @@ class TrainLensCallback:
         on_explain: ExplanationHandler | None = None,
         stop_on_anomaly: bool = False,
     ) -> None:
+        if explain_every is not None and (
+            isinstance(explain_every, bool) or not isinstance(explain_every, int)
+        ):
+            raise TypeError("explain_every must be an integer or None")
         if explain_every is not None and explain_every < 1:
             raise ValueError("explain_every must be at least 1")
         if explain_every is not None and on_explain is None:
@@ -109,6 +113,6 @@ def _numeric_metrics(metrics: Mapping[str, Any]) -> dict[str, float]:
                 continue
         else:
             candidate = value
-        if isinstance(candidate, int | float):
+        if isinstance(candidate, int | float) and not isinstance(candidate, bool):
             normalized[str(name)] = float(candidate)
     return normalized

@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+import pytest
+
 from trainlens import MonitorConfig, TrainLensCallback, TrainLensMonitor
 
 
@@ -67,5 +69,22 @@ def test_callback_ignores_tensor_like_values_that_are_not_scalars():
     callback = TrainLensCallback()
 
     callback.observe(1, {"loss": 0.75, "confusion_matrix": NonScalar()})
+
+    assert callback.monitor.observations[0].metrics == {"loss": 0.75}
+
+
+@pytest.mark.parametrize("explain_every", [True, 1.5, "2"])
+def test_callback_rejects_non_integer_explanation_intervals(explain_every):
+    with pytest.raises(TypeError, match="explain_every must be an integer or None"):
+        TrainLensCallback(explain_every=explain_every, on_explain=lambda observation: None)
+
+
+def test_callback_ignores_tensor_like_boolean_metrics():
+    class BooleanScalar:
+        def item(self):
+            return True
+
+    callback = TrainLensCallback()
+    callback.observe(1, {"ready": BooleanScalar(), "loss": 0.75})
 
     assert callback.monitor.observations[0].metrics == {"loss": 0.75}
