@@ -104,3 +104,21 @@ def test_pdf_export_explains_optional_dependency(monkeypatch) -> None:
 
     with pytest.raises(RuntimeError, match=r"trainlens\[pdf\]"):
         render_report(_result(), format="pdf")
+
+
+def test_html_table_preserves_pipes_inside_code_and_escaped_cells() -> None:
+    from trainlens.export import _markdown_lines_to_html
+
+    rendered = "\n".join(
+        _markdown_lines_to_html(
+            [
+                "| Metric | Value |",
+                "| --- | --- |",
+                r"| `precision|recall` | left\|right |",
+            ]
+        )
+    )
+
+    assert rendered.count("<td>") == 2
+    assert "<code>precision|recall</code>" in rendered
+    assert "left|right" in rendered
