@@ -1,3 +1,5 @@
+import math
+
 from trainlens.models.analysis import AnalysisResult, Recommendation, Signal
 from trainlens.renderers.markdown import MarkdownRenderer
 
@@ -30,3 +32,18 @@ def test_markdown_renderer_explains_loss_gap_and_trace():
 
     assert "Validation loss is materially higher" in markdown
     assert "Lower learning rate" in markdown
+
+
+def test_markdown_renderer_escapes_metric_table_cells():
+    markdown = MarkdownRenderer().render(AnalysisResult(metrics={"precision|recall\nmacro": 0.5}))
+
+    assert r"| precision\|recall macro | 0.500 |" in markdown
+
+
+def test_markdown_renderer_does_not_interpret_non_finite_loss_gap():
+    markdown = MarkdownRenderer().render(
+        AnalysisResult(metrics={"train_loss": math.nan, "validation_loss": 1.0})
+    )
+
+    assert "loss is materially" not in markdown
+    assert "loss are close" not in markdown
