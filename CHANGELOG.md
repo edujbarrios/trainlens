@@ -2,6 +2,16 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.8.3 - 2026-09-14
+
+- redact secrets from every customizable prompt field before provider submission
+- preserve Markdown and HTML table structure for arbitrary metric and trace names
+- reject text and mappings as class-label collections
+- avoid interpreting non-finite loss values as a valid generalization gap
+- avoid boolean evaluation of framework model references and log histories
+- validate LLM metric-point budgets and count metric-only results as findings
+- ignore boolean and non-numeric values in run comparisons
+
 ## 0.8.2 - 2026-09-14
 
 - redact sensitive optimizer and scheduler parameters before constructing LLM context
