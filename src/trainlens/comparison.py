@@ -237,7 +237,12 @@ def _metrics_from_run(run: RunLike) -> dict[str, float]:
 def _finite_metrics(metrics: Mapping[str, float]) -> dict[str, float]:
     finite: dict[str, float] = {}
     for key, value in metrics.items():
-        numeric_value = float(value)
+        if isinstance(value, bool):
+            continue
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            continue
         if isfinite(numeric_value):
             finite[str(key)] = numeric_value
     return finite

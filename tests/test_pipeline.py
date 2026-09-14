@@ -1,3 +1,4 @@
+from trainlens.models.analysis import AnalysisResult
 from trainlens.pipeline import explain_namespace
 
 
@@ -38,3 +39,7 @@ def test_pipeline_summarizes_loss_changes():
 
     assert "Training loss changed from 2.000 to 1.300." in result.summary
     assert "Validation loss changed from 2.100 to 1.700." in result.summary
+
+
+def test_analysis_result_counts_metrics_as_findings():
+    assert AnalysisResult(metrics={"loss": 0.5}).has_findings()

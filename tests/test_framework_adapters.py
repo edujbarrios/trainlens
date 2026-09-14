@@ -235,3 +235,16 @@ def test_llm_context_redacts_sensitive_optimizer_parameters() -> None:
 
     assert "private-provider-credential" not in context.markdown
     assert "[REDACTED]" in context.markdown
+
+
+def test_lightning_adapter_does_not_evaluate_model_truthiness() -> None:
+    class AmbiguousModel:
+        def __bool__(self):
+            raise ValueError("model truth value is ambiguous")
+
+    trainer = FakeLightningTrainer()
+    trainer.lightning_module = AmbiguousModel()
+
+    snapshot = NotebookInspector().snapshot({"trainer": trainer})
+
+    assert snapshot.framework_artifacts[0].model_ref is trainer.lightning_module
