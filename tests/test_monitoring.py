@@ -78,3 +78,15 @@ def test_monitor_rejects_non_integer_patience(patience):
 def test_monitor_rejects_non_finite_min_delta(min_delta):
     with pytest.raises(ValueError, match="min_delta must be finite"):
         MonitorConfig(min_delta=min_delta)
+
+
+@pytest.mark.parametrize("step", [True, 1.5, "1"])
+def test_monitor_rejects_non_integer_steps(step):
+    with pytest.raises(TypeError, match="step must be an integer"):
+        TrainLensMonitor().observe(step, {"loss": 1.0})
+
+
+@pytest.mark.parametrize("value", [True, False, "1.0", None])
+def test_monitor_rejects_boolean_and_non_numeric_metrics(value):
+    with pytest.raises(TypeError, match="must be a number"):
+        TrainLensMonitor().observe(1, {"loss": value})
