@@ -245,16 +245,20 @@ class ReportPromptTemplate:
     def render(self, context: ReportPromptContext) -> str:
         return self._template.render(
             markdown_report=redact_text(context.markdown_report),
-            task=context.task,
-            heading=context.heading,
-            return_instructions=context.return_instructions,
-            llm_model=context.llm_model,
-            model_family=context.model_family,
-            audience=context.audience,
-            tone=context.tone,
-            rules=context.rules,
-            focus_areas=context.focus_areas,
+            task=redact_text(context.task),
+            heading=redact_text(context.heading),
+            return_instructions=_redact_items(context.return_instructions),
+            llm_model=redact_text(context.llm_model),
+            model_family=redact_text(context.model_family),
+            audience=redact_text(context.audience),
+            tone=redact_text(context.tone),
+            rules=_redact_items(context.rules),
+            focus_areas=_redact_items(context.focus_areas),
         )
+
+
+def _redact_items(values: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(redact_text(value) for value in values)
 
 
 def render_ml_results_explanation_prompt(

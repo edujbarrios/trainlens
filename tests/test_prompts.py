@@ -122,3 +122,22 @@ def test_prompt_options_render_a_reusable_custom_objective():
     assert "Improve minority-class recall" in prompt
     assert "## TrainLens Experiment Design" in prompt
     assert "class imbalance" in prompt
+
+
+def test_prompt_redacts_secrets_from_every_customizable_field():
+    secret = "opaque-private-credential"
+    prompt = render_ml_results_explanation_prompt(
+        "safe context",
+        objective=f"use api_key={secret}",
+        heading=f"## token={secret}",
+        model_family=f"password={secret}",
+        audience=f"secret={secret}",
+        tone=f"api_key={secret}",
+        rules=(f"token={secret}",),
+        focus_areas=(f"password={secret}",),
+        return_instructions=(f"secret={secret}",),
+        llm_model=f"token={secret}",
+    )
+
+    assert secret not in prompt
+    assert "[REDACTED]" in prompt
