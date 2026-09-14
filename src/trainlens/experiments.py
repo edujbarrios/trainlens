@@ -105,7 +105,9 @@ def suggest_next_experiment(
     )
     change, hypothesis, evidence, confidence = _propose_change(best, objective)
     keep_constant = tuple(sorted(name for name in best.parameters if name not in change))
-    target = _target(best.metrics[objective], direction, minimum_improvement)
+    target = _target(best.metrics[objective], direction, minimum_improvement, objective)
+    if target == best.metrics[objective]:
+        raise ValueError(f"objective metric {objective!r} is already at its natural optimum")
     return NextExperimentRecommendation(
         hypothesis=hypothesis,
         changes=change,
@@ -248,8 +250,17 @@ def _first_value(metrics: Mapping[str, float], names: tuple[str, ...]) -> float 
     return None
 
 
-def _target(value: float, direction: Literal["lower", "higher"], improvement: float) -> float:
+def _target(
+    value: float,
+    direction: Literal["lower", "higher"],
+    improvement: float,
+    metric: str,
+) -> float:
     change = max(abs(value) * improvement, improvement if value == 0 else 0.0)
+    tokens = set(re.findall(r"[a-z0-9]+", metric.lower()))
     if direction == "lower":
-        return value - change
-    return value + change
+        target = value - change
+        return max(0.0, target) if tokens.intersection(_LOWER_IS_BETTER) else target
+    target = value + change
+    bounded = {"accuracy", "acc", "auc", "f1", "precision", "recall", "map", "ndcg"}
+    return min(1.0, target) if tokens.intersection(bounded) else target

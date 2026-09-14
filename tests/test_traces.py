@@ -74,3 +74,9 @@ def test_rejects_non_integer_max_events(max_events):
 def test_rejects_negative_max_events():
     with pytest.raises(ValueError, match="max_events cannot be negative"):
         extract_trace_events({}, max_events=-1)
+
+
+def test_boolean_trace_steps_are_not_coerced_to_integers():
+    events = extract_trace_events({"logs": [{"step": True, "loss": 1.0}]})
+
+    assert events[0].step is None

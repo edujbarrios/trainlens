@@ -90,3 +90,11 @@ def test_monitor_rejects_non_integer_steps(step):
 def test_monitor_rejects_boolean_and_non_numeric_metrics(value):
     with pytest.raises(TypeError, match="must be a number"):
         TrainLensMonitor().observe(1, {"loss": value})
+
+
+def test_monitor_rejects_steps_that_move_backwards():
+    monitor = TrainLensMonitor()
+    monitor.observe(3, {"loss": 1.0})
+
+    with pytest.raises(ValueError, match="cannot move backwards"):
+        monitor.observe(2, {"loss": 0.8})

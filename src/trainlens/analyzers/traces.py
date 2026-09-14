@@ -96,11 +96,15 @@ def _looks_like_trace_name(name: str) -> bool:
 
 
 def _coerce_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
     if hasattr(value, "item"):
         try:
             value = value.item()
         except (AttributeError, TypeError, ValueError):
             return None
+    if isinstance(value, bool):
+        return None
     try:
         return int(value)
     except (TypeError, ValueError):

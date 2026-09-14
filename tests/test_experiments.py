@@ -177,3 +177,9 @@ def test_zero_baseline_requires_a_nonzero_improvement_and_avoids_zero_learning_r
 
     assert recommendation.changes == {"learning_rate_multiplier": 0.5}
     assert recommendation.success_criteria[0].target == pytest.approx(0.01)
+
+
+@pytest.mark.parametrize(("metric", "value"), [("accuracy", 1.0), ("loss", 0.0)])
+def test_suggestion_rejects_objectives_already_at_their_natural_optimum(metric, value):
+    with pytest.raises(ValueError, match="already at its natural optimum"):
+        suggest_next_experiment([ExperimentRun("perfect", {metric: value})])
