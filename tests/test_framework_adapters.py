@@ -223,3 +223,15 @@ def test_llm_context_includes_plain_pytorch_training_parameters() -> None:
     assert "`group_0.lr`: 0.0003" in context.markdown
     assert "`last_lr`: (0.00015,)" in context.markdown
     assert "`batch_size`: 16" in context.markdown
+
+
+def test_llm_context_redacts_sensitive_optimizer_parameters() -> None:
+    optimizer = FakeAdamW()
+    optimizer.param_groups = [
+        {"params": [object()], "api_key": "private-provider-credential"}
+    ]
+
+    context = build_llm_notebook_context({"optimizer": optimizer})
+
+    assert "private-provider-credential" not in context.markdown
+    assert "[REDACTED]" in context.markdown
