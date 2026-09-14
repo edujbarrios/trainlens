@@ -105,7 +105,7 @@ def render_run_comparison(comparison: RunComparison) -> str:
         for item in comparison.metrics:
             lines.append(
                 "| "
-                f"{item.name} | "
+                f"{_escape_table_cell(item.name)} | "
                 f"{_format_optional_float(item.baseline)} | "
                 f"{_format_optional_float(item.experiment)} | "
                 f"{_format_optional_float(item.delta, signed=True)} | "
@@ -262,3 +262,7 @@ def _format_percent(value: float | None) -> str:
     if value is None:
         return ""
     return f"{value:+.1%}"
+
+
+def _escape_table_cell(value: str) -> str:
+    return value.replace("|", r"\|")

@@ -115,3 +115,14 @@ def test_compare_runs_treats_common_error_metrics_as_lower_is_better(metric) -> 
     comparison = compare_runs({metric: 1.0}, {metric: 0.8})
 
     assert comparison.metrics[0].direction == "improved"
+
+
+def test_run_comparison_escapes_metric_names_containing_pipes() -> None:
+    comparison = compare_runs({"precision|recall": 0.5}, {"precision|recall": 0.6})
+
+    markdown = render_run_comparison(comparison)
+    html = str(render_report(comparison, format="html"))
+
+    assert r"precision\|recall" in markdown
+    assert html.count("<td>") == 7
+    assert "precision|recall" in html

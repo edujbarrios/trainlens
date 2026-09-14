@@ -157,7 +157,7 @@ def _markdown_lines_to_html(lines: list[str]) -> list[str]:
         elif line.startswith("|"):
             if "---" in line:
                 continue
-            cells = [_inline_html(cell.strip()) for cell in line.strip("|").split("|")]
+            cells = [_inline_html(cell.strip()) for cell in _table_cells(line)]
             tag = "th" if not in_table else "td"
             if not in_table:
                 rendered.append("<table><tbody>")
@@ -195,6 +195,30 @@ def _ordered_list_item(line: str) -> str | None:
     if match is None:
         return None
     return match.group(1)
+
+
+def _table_cells(line: str) -> list[str]:
+    content = line.removeprefix("|").removesuffix("|")
+    cells: list[str] = []
+    current: list[str] = []
+    in_code = False
+    index = 0
+    while index < len(content):
+        character = content[index]
+        if character == "`":
+            in_code = not in_code
+            current.append(character)
+        elif character == "\\" and index + 1 < len(content) and content[index + 1] == "|":
+            current.append("|")
+            index += 1
+        elif character == "|" and not in_code:
+            cells.append("".join(current))
+            current = []
+        else:
+            current.append(character)
+        index += 1
+    cells.append("".join(current))
+    return cells
 
 
 def _markdown_to_pdf(markdown: str) -> bytes:
