@@ -56,3 +56,9 @@ def test_llm_context_supports_a_smaller_metric_point_budget() -> None:
 def test_llm_context_rejects_a_budget_that_cannot_preserve_endpoints() -> None:
     with pytest.raises(ValueError, match="at least 2"):
         build_llm_notebook_context({}, max_metric_points=1)
+
+
+@pytest.mark.parametrize("limit", [True, 2.5, "3"])
+def test_llm_context_rejects_non_integer_metric_limits(limit):
+    with pytest.raises(TypeError, match="max_metric_points must be an integer"):
+        build_llm_notebook_context({}, max_metric_points=limit)

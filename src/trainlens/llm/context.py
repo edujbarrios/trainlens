@@ -28,6 +28,8 @@ def build_llm_notebook_context(
 ) -> LLMNotebookContext:
     """Render notebook state as evidence, without heuristic findings."""
 
+    if isinstance(max_metric_points, bool) or not isinstance(max_metric_points, int):
+        raise TypeError("max_metric_points must be an integer")
     if max_metric_points < 2:
         msg = "max_metric_points must be at least 2 to preserve metric endpoints."
         raise ValueError(msg)

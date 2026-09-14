@@ -84,6 +84,15 @@ def test_compare_runs_ignores_non_finite_metrics() -> None:
     assert "Infinity" not in str(render_report(comparison, format="json"))
 
 
+def test_compare_runs_ignores_boolean_and_non_numeric_metrics() -> None:
+    comparison = compare_runs(
+        {"accuracy": False, "loss": "not-a-number"},
+        {"accuracy": True, "loss": None},
+    )
+
+    assert comparison.metrics == ()
+
+
 def test_render_run_comparison_outputs_markdown_table() -> None:
     comparison = compare_runs(
         {"validation_loss": 0.5},

@@ -45,6 +45,7 @@ class AnalysisResult:
     def has_findings(self) -> bool:
         return bool(
             self.summary
+            or self.metrics
             or self.signals
             or self.recommendations
             or self.top_features

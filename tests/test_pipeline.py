@@ -1,3 +1,4 @@
+from trainlens.models.analysis import AnalysisResult
 from trainlens.pipeline import explain_namespace
 
 
@@ -46,3 +47,7 @@ def test_pipeline_does_not_treat_text_or_mapping_as_class_labels():
 
     assert all(signal.title != "Class imbalance detected" for signal in text_result.signals)
     assert all(signal.title != "Class imbalance detected" for signal in mapping_result.signals)
+
+
+def test_analysis_result_counts_metrics_as_findings():
+    assert AnalysisResult(metrics={"loss": 0.5}).has_findings()

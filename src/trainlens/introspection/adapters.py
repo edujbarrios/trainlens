@@ -67,7 +67,9 @@ class HuggingFaceTrainerAdapter:
     def can_handle(self, value: object) -> bool:
         module = _module_name(value)
         state = getattr(value, "state", None)
-        log_history = getattr(state, "log_history", None) or getattr(value, "log_history", None)
+        log_history = _preferred_value(
+            getattr(state, "log_history", None), getattr(value, "log_history", None)
+        )
         return (
             module.startswith("transformers.")
             or (
@@ -83,7 +85,9 @@ class HuggingFaceTrainerAdapter:
     def extract(self, variable_name: str, value: object) -> FrameworkArtifact | None:
         state = getattr(value, "state", None)
         log_history = _log_history(
-            getattr(state, "log_history", None) or getattr(value, "log_history", None)
+            _preferred_value(
+                getattr(state, "log_history", None), getattr(value, "log_history", None)
+            )
         )
         if not log_history:
             return None
@@ -134,10 +138,10 @@ class LightningTrainerAdapter:
         latest_metrics = _metric_mapping(metrics)
         if not latest_metrics:
             return None
-        model_ref = (
-            getattr(value, "lightning_module", None)
-            or getattr(value, "model", None)
-            or getattr(value, "module", None)
+        model_ref = _first_not_none(
+            getattr(value, "lightning_module", None),
+            getattr(value, "model", None),
+            getattr(value, "module", None),
         )
         return FrameworkArtifact(
             variable_name=variable_name,
@@ -335,6 +339,18 @@ def extract_framework_artifact(
 
 def _module_name(value: object) -> str:
     return getattr(value.__class__, "__module__", "") or ""
+
+
+def _preferred_value(primary: object | None, fallback: object | None) -> object | None:
+    if primary is None:
+        return fallback
+    if isinstance(primary, Sequence) and not isinstance(primary, str | bytes) and len(primary) == 0:
+        return fallback
+    return primary
+
+
+def _first_not_none(*values: object | None) -> object | None:
+    return next((value for value in values if value is not None), None)
 
 
 def _display_name(value: object | None) -> str | None:
