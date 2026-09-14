@@ -88,3 +88,53 @@ def test_callback_ignores_tensor_like_boolean_metrics():
     callback.observe(1, {"ready": BooleanScalar(), "loss": 0.75})
 
     assert callback.monitor.observations[0].metrics == {"loss": 0.75}
+
+
+def test_callback_explanation_interval_counts_completed_observations_from_epoch_zero():
+    explained = []
+    callback = TrainLensCallback(explain_every=5, on_explain=explained.append)
+
+    for epoch in range(6):
+        callback.on_epoch_end(epoch, {"loss": 1.0})
+
+    assert [observation.step for observation in explained] == [4]
+
+
+def test_callback_implements_keras_lifecycle_protocol():
+    callback = TrainLensCallback()
+    callback.set_params({"epochs": 3})
+
+    assert callback.params == {"epochs": 3}
+    for name in (
+        "on_train_begin",
+        "on_train_end",
+        "on_epoch_begin",
+        "on_train_batch_begin",
+        "on_train_batch_end",
+        "on_test_begin",
+        "on_test_end",
+        "on_predict_begin",
+        "on_predict_end",
+    ):
+        assert callable(getattr(callback, name))
+
+
+def test_callback_implements_transformers_lifecycle_protocol_and_returns_control():
+    callback = TrainLensCallback()
+    control = SimpleNamespace(should_training_stop=False)
+
+    for name in (
+        "on_init_end",
+        "on_train_begin",
+        "on_train_end",
+        "on_epoch_begin",
+        "on_evaluate",
+        "on_save",
+        "on_prediction_step",
+        "on_step_begin",
+        "on_step_end",
+        "on_substep_end",
+    ):
+        assert getattr(callback, name)(object(), object(), control) is control
+
+    assert callback.on_epoch_end(object(), object(), control) is control
