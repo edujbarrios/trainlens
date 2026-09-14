@@ -37,11 +37,18 @@ history = {
 Configure an LLM provider, then load the extension:
 
 ```python
-%env TRAINLENS_LLM_BASE_URL=https://api.openai.com/v1
-%env TRAINLENS_LLM_API_KEY=replace-me
-%env TRAINLENS_LLM_MODEL=your-model
+import os
+from getpass import getpass
+
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = getpass("LLM API key: ")
+os.environ["TRAINLENS_LLM_MODEL"] = "your-model"
+
 %load_ext trainlens.magic.extension
 ```
+
+`getpass` keeps the credential out of the notebook cell and its saved output.
+Never paste a real API key into `%env` or commit it in an `.ipynb` file.
 
 ```python
 %explain_training
@@ -73,4 +80,3 @@ print(render_run_comparison(comparison))
 
 Use [notebooks.md](notebooks.md) for automatic inspection, or
 [python-api.md](python-api.md) when you want explicit, testable Python calls.
-

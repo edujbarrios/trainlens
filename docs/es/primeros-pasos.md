@@ -37,13 +37,20 @@ history = {
 Configura un proveedor LLM y carga la extensión:
 
 ```python
-%env TRAINLENS_LLM_BASE_URL=https://api.openai.com/v1
-%env TRAINLENS_LLM_API_KEY=reemplazar
-%env TRAINLENS_LLM_MODEL=tu-modelo
+import os
+from getpass import getpass
+
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
+os.environ["TRAINLENS_LLM_API_KEY"] = getpass("Clave API del LLM: ")
+os.environ["TRAINLENS_LLM_MODEL"] = "tu-modelo"
+
 %load_ext trainlens.magic.extension
 %explain_training
 %suggest_improvements
 ```
+
+`getpass` evita que la credencial quede escrita en la celda o en la salida guardada.
+No pegues una clave real en `%env` ni la publiques dentro de un archivo `.ipynb`.
 
 `%explain_training` también captura las métricas en memoria. Ejecútalo tras un
 segundo experimento y usa `%compare_runs`. Este historial pertenece a la
@@ -68,4 +75,3 @@ print(render_run_comparison(comparison))
 
 Continúa con [cuadernos.md](cuadernos.md) para la inspección automática o con
 [api-python.md](api-python.md) para llamadas explícitas y comprobables.
-
