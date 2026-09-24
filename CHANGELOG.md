@@ -2,6 +2,12 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.8.5 - 2026-09-24
+
+- preserve single-point training accuracy values while keeping change summaries delta-dependent
+- redact fine-grained GitHub personal access tokens and secret-shaped mapping keys from notebook context
+- avoid false class-imbalance warnings on balanced multiclass datasets by scaling against the balanced class expectation
+
 ## 0.8.4 - 2026-09-14
 
 - redact camelCase credential fields in notebook and framework configuration
