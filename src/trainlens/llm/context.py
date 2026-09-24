@@ -26,8 +26,9 @@ def build_llm_notebook_context(
     namespace: Mapping[str, Any],
     *,
     max_metric_points: int = _MAX_METRIC_POINTS,
+    include_values: bool = False,
 ) -> LLMNotebookContext:
-    """Render notebook state as evidence, without heuristic findings."""
+    """Render notebook state as evidence, minimizing unrelated literal values by default."""
 
     if isinstance(max_metric_points, bool) or not isinstance(max_metric_points, int):
         raise TypeError("max_metric_points must be an integer")
@@ -66,7 +67,11 @@ def build_llm_notebook_context(
             if variable.length is not None:
                 details.append(f"length={variable.length}")
             lines.append(f"- `{variable.name}`: " + ", ".join(details))
-            if variable.value is not None and variable.name not in metric_variable_names:
+            if (
+                include_values
+                and variable.value is not None
+                and variable.name not in metric_variable_names
+            ):
                 lines.append(f"  value: {variable.value!r}")
         lines.append("")
     if metric_series:
