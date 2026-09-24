@@ -51,11 +51,7 @@ os.environ["TRAINLENS_LLM_API_KEY"] = getpass("LLM API key: ")
 # LM Studio, vLLM, and llama.cpp also work when their OpenAI-compatible
 # server is running.
 
-# 2. Keep the dataset description and completed run evidence in the notebook.
-dataset_note = (
-    "Balanced spam dataset: 2,000 short messages, 1,000 spam and 1,000 "
-    "legitimate; fixed 80/20 split and random seed across all experiments."
-)
+# 2. Keep completed run evidence in the notebook.
 experiments = [
     (
         "experiment 1 | baseline",
@@ -128,14 +124,38 @@ print(report.markdown)
 TrainLens recognizes that lower loss and latency are improvements, while higher
 accuracy and F1 are improvements. The results make the trade-off visible:
 experiment 3 has the best model quality, but experiment 4 is faster at the cost
-of worse predictive metrics. The final call sends the redacted notebook context
-to the configured model for a short diagnosis.
+of worse predictive metrics. The final call sends a minimized, redacted notebook
+context to the configured model for a short diagnosis.
 
 The LLM workflow requires an OpenAI-compatible HTTP endpoint, but it does not
 have to be an external service. You can use a remote provider or a locally
 running model through Ollama, LM Studio, vLLM, or llama.cpp. Local comparison,
 monitoring, experiment planning, and export remain deterministic and make no
 LLM request.
+
+## Privacy when using an LLM
+
+TrainLens minimizes outbound notebook data by default. LLM reports include
+recognized metric series, useful framework/training parameters, model evidence,
+and basic variable metadata such as type, shape, or length. The literal contents
+of unrelated strings, scalars, lists, tuples, dictionaries, and sets are not sent
+by default.
+
+If a report deliberately needs those sanitized literal values, opt in explicitly:
+
+```python
+report = build_paper_report(globals(), include_values=True)
+```
+
+Secret redaction still applies when literal values are enabled. Keep credentials
+out of the notebook namespace whenever possible; redaction is defense in depth,
+not a secret-management system.
+
+Notebook-derived evidence is also kept out of the trusted system-instruction
+message sent to OpenAI-compatible providers. It is transmitted separately as
+untrusted data, with explicit instructions that instruction-like text found in
+notebook evidence must not override TrainLens' report rules. This reduces prompt-
+injection risk but does not make arbitrary external data inherently trustworthy.
 
 > [!CAUTION]
 > **Human oversight required:** TrainLens is intended to support understanding

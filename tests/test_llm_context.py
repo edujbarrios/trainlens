@@ -27,18 +27,35 @@ def test_llm_context_compacts_long_metric_series_with_training_evidence() -> Non
     assert context.metrics["loss"] == 0.51
 
 
-def test_llm_context_does_not_repeat_metric_container_values() -> None:
+def test_llm_context_does_not_send_unrelated_literal_values_by_default() -> None:
     context = build_llm_notebook_context(
         {
             "history": {"loss": [1.0, 0.7, 0.4]},
-            "dataset_name": "ag_news",
+            "customer_email": "person@example.com",
+            "project_codename": "internal-launch",
         }
     )
 
     assert "- `history`: type=dict" in context.markdown
     assert "value: {'loss': [1.0, 0.7, 0.4]}" not in context.markdown
     assert "- `loss`: [1, 0.7, 0.4]" in context.markdown
+    assert "person@example.com" not in context.markdown
+    assert "internal-launch" not in context.markdown
+    assert "- `customer_email`: type=str" in context.markdown
+
+
+def test_llm_context_can_explicitly_include_sanitized_literal_values() -> None:
+    context = build_llm_notebook_context(
+        {
+            "dataset_name": "ag_news",
+            "api_key": "sk-test1234567890",
+        },
+        include_values=True,
+    )
+
     assert "value: 'ag_news'" in context.markdown
+    assert "sk-test1234567890" not in context.markdown
+    assert "[REDACTED]" in context.markdown
 
 
 def test_llm_context_supports_a_smaller_metric_point_budget() -> None:

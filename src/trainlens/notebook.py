@@ -29,11 +29,15 @@ def build_llm_report(
     *,
     max_metric_points: int = 12,
     prompt_options: PromptOptions | None = None,
+    include_values: bool = False,
 ) -> LiveReport:
     """Build an LLM-generated training report from notebook context."""
 
     return build_paper_report(
-        namespace, max_metric_points=max_metric_points, prompt_options=prompt_options
+        namespace,
+        max_metric_points=max_metric_points,
+        prompt_options=prompt_options,
+        include_values=include_values,
     )
 
 
@@ -42,6 +46,7 @@ def build_paper_report(
     *,
     max_metric_points: int = 12,
     prompt_options: PromptOptions | None = None,
+    include_values: bool = False,
 ) -> LiveReport:
     """Build a scientific paper-style training report from notebook context."""
 
@@ -50,6 +55,7 @@ def build_paper_report(
         mode="paper_report",
         max_metric_points=max_metric_points,
         prompt_options=prompt_options,
+        include_values=include_values,
     )
 
 
@@ -58,6 +64,7 @@ def build_improvement_ideas(
     *,
     max_metric_points: int = 12,
     prompt_options: PromptOptions | None = None,
+    include_values: bool = False,
 ) -> LiveReport:
     """Build an evidence-backed improvement plan from notebook context."""
 
@@ -66,6 +73,7 @@ def build_improvement_ideas(
         mode="improvement_ideas",
         max_metric_points=max_metric_points,
         prompt_options=prompt_options,
+        include_values=include_values,
     )
 
 
@@ -75,14 +83,15 @@ def _build_report(
     mode: ReportMode,
     max_metric_points: int,
     prompt_options: PromptOptions | None,
+    include_values: bool,
 ) -> LiveReport:
     """Build one of the supported LLM-generated report modes."""
 
     report_namespace = _current_user_namespace() if namespace is None else namespace
-    context = build_llm_notebook_context(
-        report_namespace,
-        max_metric_points=max_metric_points,
-    )
+    context_kwargs: dict[str, Any] = {"max_metric_points": max_metric_points}
+    if include_values:
+        context_kwargs["include_values"] = True
+    context = build_llm_notebook_context(report_namespace, **context_kwargs)
     explain_kwargs: dict[str, Any] = {"mode": mode, "require_provider": True}
     if prompt_options is not None:
         explain_kwargs["prompt_options"] = prompt_options
