@@ -17,3 +17,16 @@ def test_detects_class_imbalance():
 
     assert signal is not None
     assert "smallest class" in signal.detail
+
+
+def test_balanced_multiclass_dataset_is_not_flagged() -> None:
+    labels = [label for label in range(10) for _ in range(100)]
+
+    assert detect_class_imbalance(labels) is None
+
+
+def test_detects_strong_multiclass_imbalance() -> None:
+    signal = detect_class_imbalance([0] * 80 + [1] * 10 + [2] * 10)
+
+    assert signal is not None
+    assert "3 classes" in signal.detail
