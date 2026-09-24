@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from collections.abc import Iterable
+from collections import Counter
 from typing import Any
 
 from trainlens.models.analysis import Signal
