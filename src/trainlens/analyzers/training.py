@@ -68,11 +68,12 @@ class TrainingSessionAnalyzer(Analyzer):
                     f"`{artifact.variable_name}`."
                 )
 
-        if train_acc and train_acc.delta is not None:
-            result.summary.append(
-                f"Training accuracy changed from {train_acc.first:.3f} to {train_acc.last:.3f}."
-            )
-            result.metrics["train_accuracy"] = train_acc.last or 0.0
+        if train_acc and train_acc.last is not None:
+            result.metrics["train_accuracy"] = train_acc.last
+            if train_acc.delta is not None:
+                result.summary.append(
+                    f"Training accuracy changed from {train_acc.first:.3f} to {train_acc.last:.3f}."
+                )
         if validation_acc and validation_acc.last is not None:
             result.metrics["validation_accuracy"] = validation_acc.last
         if train_loss and train_loss.last is not None:
