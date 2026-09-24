@@ -146,7 +146,8 @@ class NotebookInspector:
         try:
             if not self._is_small_literal(value):
                 return None
-            return sanitize_value(name, value)
+            sanitized: object = sanitize_value(name, value)
+            return sanitized
         except Exception:
             return None
 
