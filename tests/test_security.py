@@ -43,6 +43,15 @@ def test_redact_text_removes_url_credentials_and_query_secrets():
     assert "api_key=[REDACTED]" in redacted
 
 
+def test_redact_text_removes_fine_grained_github_pat() -> None:
+    secret = "github_pat_" + ("A" * 40)
+
+    redacted = redact_text(f"credential={secret}")
+
+    assert secret not in redacted
+    assert REDACTED_VALUE in redacted
+
+
 def test_sanitize_value_redacts_sensitive_nested_names():
     value = {
         "dataset": "mnist",
@@ -55,6 +64,15 @@ def test_sanitize_value_redacts_sensitive_nested_names():
     assert sanitized["dataset"] == "mnist"
     assert sanitized["token"] == REDACTED_VALUE
     assert sanitized["nested"]["client_secret"] == REDACTED_VALUE
+
+
+def test_sanitize_value_redacts_secret_shaped_mapping_keys() -> None:
+    secret = "github_pat_" + ("B" * 40)
+
+    sanitized = sanitize_value("config", {secret: "metadata"})
+
+    assert secret not in repr(sanitized)
+    assert sanitized == {REDACTED_VALUE: "metadata"}
 
 
 def test_sanitize_value_omits_large_nested_collections():
