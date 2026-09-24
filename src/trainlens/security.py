@@ -36,6 +36,7 @@ _SENSITIVE_NAME_PATTERN = re.compile(
 _SECRET_PATTERNS = (
     re.compile(r"\bsk-[A-Za-z0-9_-]{12,}\b"),
     re.compile(r"\bgh[opsu]_[A-Za-z0-9_]{20,}\b"),
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"),
     re.compile(
         r"([?&](?:api[_-]?key|access[_-]?token|token|secret|password)=)[^&#\s]+",
         re.I,
@@ -115,7 +116,7 @@ def _sanitize_value(
         if len(value) > max_collection_items:
             return OMITTED_VALUE
         return {
-            key: _sanitize_value(
+            _sanitize_mapping_key(key, max_text_chars): _sanitize_value(
                 str(key),
                 nested_value,
                 max_collection_items=max_collection_items,
@@ -164,6 +165,12 @@ def _sanitize_value(
             for item in value
         }
     return value
+
+
+def _sanitize_mapping_key(key: Any, max_text_chars: int) -> Any:
+    if not isinstance(key, str):
+        return key
+    return _truncate_text(redact_text(key), max_text_chars)
 
 
 def _truncate_text(text: str, max_text_chars: int) -> str:
