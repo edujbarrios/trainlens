@@ -23,10 +23,16 @@ class NotebookInspector:
         framework_artifacts: list[FrameworkArtifact] = []
         raw: dict[str, Any] = {}
         for name, value in namespace.items():
-            if self._ignore(name, value):
-                continue
+            try:
+                if self._ignore(name, value):
+                    continue
+            except Exception:
+                pass
             variables.append(self._describe(name, value))
-            artifact = extract_framework_artifact(name, value)
+            try:
+                artifact = extract_framework_artifact(name, value)
+            except Exception:
+                artifact = None
             if artifact:
                 framework_artifacts.append(artifact)
             raw[name] = value
@@ -42,8 +48,11 @@ class NotebookInspector:
             value = snapshot.raw_namespace.get(variable.name)
             if value is None:
                 continue
-            looks_like, reasons = looks_like_model(value)
-            framework = detect_framework(value)
+            try:
+                looks_like, reasons = looks_like_model(value)
+                framework = detect_framework(value)
+            except Exception:
+                continue
             if not looks_like:
                 continue
             confidence = 0.45 + (0.2 if framework else 0) + min(len(reasons) * 0.1, 0.3)
@@ -75,7 +84,7 @@ class NotebookInspector:
                     variable_name=artifact.variable_name,
                     object_ref=model_ref,
                     type_name=type_name,
-                    module=getattr(model_ref.__class__, "__module__", None),
+                    module=self._safe_module_name(model_ref),
                     framework=artifact.framework,
                     confidence=min(artifact.confidence + 0.05, 0.95),
                     reasons=artifact.reasons,
@@ -98,14 +107,13 @@ class NotebookInspector:
         shape = self._safe_attribute(value, "shape")
         normalized_shape = self._normalize_shape(shape)
         length = self._safe_len(value)
-        module = getattr(value.__class__, "__module__", None)
         return VariableInfo(
             name=name,
-            type_name=value.__class__.__name__,
-            module=module,
+            type_name=self._safe_type_name(value),
+            module=self._safe_module_name(value),
             shape=normalized_shape,
             length=length,
-            value=sanitize_value(name, value) if self._is_small_literal(value) else None,
+            value=self._safe_literal_value(name, value),
         )
 
     def _safe_len(self, value: object) -> int | None:
@@ -117,6 +125,29 @@ class NotebookInspector:
     def _safe_attribute(self, value: object, name: str) -> object | None:
         try:
             return getattr(value, name, None)
+        except Exception:
+            return None
+
+    def _safe_type_name(self, value: object) -> str:
+        try:
+            return value.__class__.__name__
+        except Exception:
+            return "unknown"
+
+    def _safe_module_name(self, value: object | None) -> str | None:
+        if value is None:
+            return None
+        try:
+            return getattr(value.__class__, "__module__", None)
+        except Exception:
+            return None
+
+    def _safe_literal_value(self, name: str, value: object) -> object | None:
+        try:
+            if not self._is_small_literal(value):
+                return None
+            sanitized: object = sanitize_value(name, value)
+            return sanitized
         except Exception:
             return None
 
