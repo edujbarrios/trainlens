@@ -2,6 +2,13 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.8.6 - 2026-09-24
+
+- keep notebook introspection running when unrelated objects expose failing properties or model/framework probes
+- minimize outbound LLM context by omitting unrelated literal notebook values by default while allowing explicit sanitized opt-in
+- keep notebook-derived evidence out of trusted system instructions and treat it as separate untrusted provider input
+- document the new LLM privacy defaults and prompt-injection trust boundary in the README
+
 ## 0.8.5 - 2026-09-24
 
 - preserve single-point training accuracy values while keeping change summaries delta-dependent
