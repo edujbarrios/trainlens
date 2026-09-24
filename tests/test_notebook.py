@@ -18,7 +18,7 @@ def test_build_llm_report_requires_provider(monkeypatch):
         raise AssertionError("Expected missing provider config to raise")
 
 
-def test_build_llm_report_sends_context_to_llm(monkeypatch):
+def test_build_llm_report_sends_minimized_context_to_llm(monkeypatch):
     captured: dict[str, object] = {}
 
     def fake_explain(
@@ -47,7 +47,28 @@ def test_build_llm_report_sends_context_to_llm(monkeypatch):
     assert captured["mode"] == "paper_report"
     assert captured["require_provider"] is True
     assert "TrainLens Notebook Context" in str(captured["markdown"])
+    assert "ag_news" not in str(captured["markdown"])
+    assert "distilbert-base-uncased" not in str(captured["markdown"])
     assert "Contrastive loss is regressing" not in str(captured["markdown"])
+
+
+def test_build_paper_report_can_opt_in_to_literal_values(monkeypatch):
+    captured: dict[str, object] = {}
+
+    def fake_explain(
+        markdown: str,
+        *,
+        mode: str = "paper_report",
+        require_provider: bool = False,
+    ) -> str:
+        captured["markdown"] = markdown
+        return "## TrainLens Scientific Report"
+
+    monkeypatch.setattr("trainlens.notebook.explain_with_llm", fake_explain)
+
+    build_paper_report({"dataset_name": "ag_news"}, include_values=True)
+
+    assert "value: 'ag_news'" in str(captured["markdown"])
 
 
 def test_build_paper_report_uses_paper_mode(monkeypatch):
