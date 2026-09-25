@@ -29,7 +29,7 @@ def test_real_ipython_extension_load_execute_unload_and_reload(monkeypatch) -> N
         shell.run_line_magic("explain_training", "--name candidate --no-llm")
         shell.run_line_magic("compare_runs", "baseline candidate")
 
-        magics = getattr(shell, "_trainlens_magics")
+        magics = shell._trainlens_magics
         assert magics.store.names == ("baseline", "candidate")
         assert "**Baseline:** baseline" in displayed[-1].data
 
@@ -40,7 +40,7 @@ def test_real_ipython_extension_load_execute_unload_and_reload(monkeypatch) -> N
 
         load_ipython_extension(shell)
         assert shell.find_line_magic("explain_training") is not None
-        assert getattr(shell, "_trainlens_magics") is magics
+        assert shell._trainlens_magics is magics
         assert magics.store.names == ("baseline", "candidate")
 
         unload_ipython_extension(shell)
