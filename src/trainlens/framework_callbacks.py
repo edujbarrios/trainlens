@@ -112,7 +112,8 @@ def _lightning_callback_base() -> Any:
         except (AttributeError, ImportError) as exc:
             errors.append(exc)
     raise RuntimeError(
-        "Lightning is required for lightning_callback(); install lightning or pytorch-lightning first."
+        "Lightning is required for lightning_callback(); install lightning or "
+        "pytorch-lightning first."
     ) from errors[-1]
 
 
