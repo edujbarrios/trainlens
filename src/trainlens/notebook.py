@@ -10,10 +10,11 @@ from typing import Any
 
 from IPython import get_ipython
 
-from trainlens.llm.context import build_llm_notebook_context
+from trainlens.llm.context import LLMNotebookContext, build_llm_notebook_context
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.llm.prompts import PromptOptions, ReportMode
 from trainlens.models.analysis import AnalysisResult
+from trainlens.pipeline import explain_namespace
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,27 @@ class LiveReport:
 
     result: AnalysisResult
     markdown: str
+
+    def _repr_markdown_(self) -> str:
+        """Render the report when returned as the last expression in IPython."""
+
+        return self.markdown
+
+
+def preview_notebook_context(
+    namespace: Mapping[str, Any] | None = None,
+    *,
+    max_metric_points: int = 12,
+    include_values: bool = False,
+) -> LLMNotebookContext:
+    """Return the exact sanitized notebook context used for an LLM request."""
+
+    report_namespace = _current_user_namespace() if namespace is None else namespace
+    return build_llm_notebook_context(
+        report_namespace,
+        max_metric_points=max_metric_points,
+        include_values=include_values,
+    )
 
 
 def build_llm_report(
@@ -88,15 +110,17 @@ def _build_report(
     """Build one of the supported LLM-generated report modes."""
 
     report_namespace = _current_user_namespace() if namespace is None else namespace
-    context_kwargs: dict[str, Any] = {"max_metric_points": max_metric_points}
-    if include_values:
-        context_kwargs["include_values"] = True
-    context = build_llm_notebook_context(report_namespace, **context_kwargs)
+    result = explain_namespace(report_namespace)
+    context = build_llm_notebook_context(
+        report_namespace,
+        max_metric_points=max_metric_points,
+        include_values=include_values,
+    )
     explain_kwargs: dict[str, Any] = {"mode": mode, "require_provider": True}
     if prompt_options is not None:
         explain_kwargs["prompt_options"] = prompt_options
     return LiveReport(
-        result=AnalysisResult(metrics=context.metrics),
+        result=result,
         markdown=explain_with_llm(context.markdown, **explain_kwargs),
     )
 
