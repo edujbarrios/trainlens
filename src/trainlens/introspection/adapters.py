@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from math import isfinite
 from typing import Any, Protocol, cast, runtime_checkable
 
 from trainlens.models.snapshot import FrameworkArtifact
+
+_MAX_ARRAY_LIKE_POINTS = 100_000
 
 
 class FrameworkAdapter(Protocol):
@@ -368,14 +371,46 @@ def _history_mapping(value: object) -> dict[str, tuple[float, ...]]:
         return {}
     history: dict[str, tuple[float, ...]] = {}
     for key, raw_values in value.items():
-        if isinstance(raw_values, Sequence) and not isinstance(raw_values, str | bytes):
-            values = _coerce_float_tuple(raw_values)
+        history_values = _history_values(raw_values)
+        if history_values is not None:
+            values = _coerce_float_tuple(history_values)
         else:
             scalar = _coerce_float(raw_values)
             values = () if scalar is None else (scalar,)
         if values:
             history[str(key)] = values
     return history
+
+
+def _history_values(value: object) -> tuple[object, ...] | None:
+    """Return a bounded 1-D numeric-history candidate without consuming generators."""
+
+    if isinstance(value, str | bytes | bytearray | Mapping):
+        return None
+    if isinstance(value, Sequence):
+        try:
+            return tuple(value)
+        except (IndexError, RuntimeError, TypeError, ValueError):
+            return None
+    shape = getattr(value, "shape", None)
+    if shape is None:
+        return None
+    try:
+        dimensions = tuple(shape)
+    except (RuntimeError, TypeError, ValueError):
+        return None
+    if len(dimensions) != 1:
+        return None
+    try:
+        length = len(value)  # type: ignore[arg-type]
+    except (RuntimeError, TypeError, ValueError):
+        return None
+    if length > _MAX_ARRAY_LIKE_POINTS:
+        return None
+    try:
+        return tuple(value)  # type: ignore[arg-type]
+    except (IndexError, RuntimeError, TypeError, ValueError):
+        return None
 
 
 def _log_history(value: object) -> tuple[dict[str, float | int], ...]:
@@ -386,14 +421,20 @@ def _log_history(value: object) -> tuple[dict[str, float | int], ...]:
     for entry in log_entries:
         normalized: dict[str, float | int] = {}
         for key, raw_value in entry.items():
-            if str(key) in {"step", "global_step", "epoch"}:
+            name = str(key)
+            if name in {"step", "global_step"}:
                 step = _coerce_int(raw_value)
                 if step is not None:
-                    normalized[str(key)] = step
+                    normalized[name] = step
+                continue
+            if name == "epoch":
+                epoch = _coerce_float(raw_value)
+                if epoch is not None:
+                    normalized[name] = epoch
                 continue
             numeric = _coerce_float(raw_value)
             if numeric is not None:
-                normalized[str(key)] = numeric
+                normalized[name] = numeric
         if normalized:
             entries.append(normalized)
     return tuple(entries)
@@ -441,9 +482,8 @@ def _coerce_float_tuple(values: Sequence[object]) -> tuple[float, ...]:
     numeric: list[float] = []
     for value in values:
         numeric_value = _coerce_float(value)
-        if numeric_value is None:
-            return ()
-        numeric.append(numeric_value)
+        if numeric_value is not None:
+            numeric.append(numeric_value)
     return tuple(numeric)
 
 
@@ -453,17 +493,13 @@ def _coerce_float(value: object) -> float | None:
     if isinstance(value, ItemScalar):
         try:
             value = value.item()
-        except (AttributeError, TypeError, ValueError):
-            return None
-    if isinstance(value, int | float | str | bytes | bytearray):
-        try:
-            return float(value)
-        except ValueError:
+        except (AttributeError, RuntimeError, TypeError, ValueError):
             return None
     try:
-        return float(cast(Any, value))
+        numeric = float(cast(Any, value))
     except (TypeError, ValueError):
         return None
+    return numeric if isfinite(numeric) else None
 
 
 def _coerce_int(value: object) -> int | None:
@@ -472,19 +508,22 @@ def _coerce_int(value: object) -> int | None:
     if isinstance(value, ItemScalar):
         try:
             value = value.item()
-        except (AttributeError, TypeError, ValueError):
+        except (AttributeError, RuntimeError, TypeError, ValueError):
             return None
     if isinstance(value, int):
         return value
-    if isinstance(value, float | str | bytes | bytearray):
+    if isinstance(value, float):
+        return int(value) if isfinite(value) and value.is_integer() else None
+    if isinstance(value, str | bytes | bytearray):
         try:
             return int(value)
         except ValueError:
             return None
     try:
-        return int(cast(Any, value))
-    except (TypeError, ValueError):
+        converted = int(cast(Any, value))
+    except (OverflowError, TypeError, ValueError):
         return None
+    return converted
 
 
 def _looks_like_metric_key(key: str) -> bool:
