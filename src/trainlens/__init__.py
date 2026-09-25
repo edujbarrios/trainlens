@@ -13,6 +13,7 @@ from trainlens.experiments import (
     suggest_next_experiment,
 )
 from trainlens.export import render_report, write_report
+from trainlens.framework_callbacks import keras_callback, lightning_callback, transformers_callback
 from trainlens.llm.prompts import (
     PromptOptions,
     TrainLensPrompt,
@@ -49,12 +50,15 @@ __all__ = [
     "compare_runs",
     "experiment_config",
     "get_trainlens_prompt",
+    "keras_callback",
+    "lightning_callback",
     "load_ipython_extension",
     "render_report",
     "render_next_experiment",
     "render_run_comparison",
     "show_trainlens_prompts",
     "suggest_next_experiment",
+    "transformers_callback",
     "unload_ipython_extension",
     "write_report",
 ]
