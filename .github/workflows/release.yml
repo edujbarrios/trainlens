@@ -2,31 +2,64 @@ name: Publish to PyPI
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
 jobs:
   build:
+    if: github.ref_type == 'tag' || startsWith(github.event.head_commit.message, 'release: TrainLens ')
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+    outputs:
+      tag: ${{ steps.release_tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip build twine
-      - name: Verify tag matches package version
-        shell: python
+      - name: Resolve and create release tag
+        id: release_tag
+        shell: bash
         run: |
-          import os
+          VERSION=$(python - <<'PY'
           import tomllib
           from pathlib import Path
 
-          version = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
-          tag = os.environ["GITHUB_REF_NAME"]
-          if tag != f"v{version}":
-              raise SystemExit(f"tag {tag!r} does not match package version {version!r}")
+          print(tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"])
+          PY
+          )
+          EXPECTED_TAG="v${VERSION}"
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            if [[ "${GITHUB_REF_NAME}" != "${EXPECTED_TAG}" ]]; then
+              echo "tag ${GITHUB_REF_NAME} does not match package version ${VERSION}" >&2
+              exit 1
+            fi
+            RELEASE_TAG="${GITHUB_REF_NAME}"
+          else
+            RELEASE_TAG="${EXPECTED_TAG}"
+            git fetch --tags --force
+            if git rev-parse "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+              TAGGED_COMMIT=$(git rev-list -n 1 "${RELEASE_TAG}")
+              if [[ "${TAGGED_COMMIT}" != "${GITHUB_SHA}" ]]; then
+                echo "${RELEASE_TAG} already points at ${TAGGED_COMMIT}, not ${GITHUB_SHA}" >&2
+                exit 1
+              fi
+            else
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git tag -a "${RELEASE_TAG}" "${GITHUB_SHA}" -m "TrainLens ${VERSION}"
+              git push origin "${RELEASE_TAG}"
+            fi
+          fi
+
+          echo "tag=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
       - name: Build clean distributions
         run: |
           rm -rf dist
@@ -52,3 +85,24 @@ jobs:
           name: python-package-distributions
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ needs.build.outputs.tag }}
+    steps:
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "GitHub release ${RELEASE_TAG} already exists."
+          else
+            gh release create "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "TrainLens ${RELEASE_TAG#v}" \
+              --generate-notes
+          fi
