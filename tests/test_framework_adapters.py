@@ -171,6 +171,35 @@ def test_pipeline_uses_huggingface_trainer_logs_and_model() -> None:
     assert result.metrics["validation_accuracy"] == 0.76
 
 
+def test_huggingface_adapter_preserves_fractional_epochs() -> None:
+    trainer = FakeHuggingFaceTrainer()
+    trainer.state = type(
+        "State",
+        (),
+        {
+            "log_history": [
+                {"epoch": 0.25, "loss": 1.2},
+                {"epoch": 0.5, "loss": 0.9},
+            ]
+        },
+    )()
+
+    snapshot = NotebookInspector().snapshot({"trainer": trainer})
+
+    artifact = snapshot.framework_artifacts[0]
+    assert artifact.log_history[0]["epoch"] == 0.25
+    assert artifact.log_history[1]["epoch"] == 0.5
+
+
+def test_framework_history_adapter_omits_only_non_finite_points() -> None:
+    history = FakeKerasHistory()
+    history.history = {"loss": [1.0, float("nan"), 0.7]}
+
+    snapshot = NotebookInspector().snapshot({"history": history})
+
+    assert snapshot.framework_artifacts[0].history["loss"] == (1.0, 0.7)
+
+
 def test_pipeline_uses_lightning_callback_metrics() -> None:
     result = explain_namespace({"trainer": FakeLightningTrainer()})
 
