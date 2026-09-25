@@ -10,6 +10,7 @@ from trainlens.models.metric import MetricSeries
 
 _TRAIN_PREFIXES = ("train_", "training_")
 _VALIDATION_PREFIXES = ("val_", "valid_", "validation_", "eval_")
+_MAX_ARRAY_LIKE_POINTS = 100_000
 _ALIASES = {
     "loss/train": "train_loss",
     "loss/eval": "validation_loss",
@@ -91,9 +92,10 @@ def _looks_like_history_name(name: str) -> bool:
 def _series_from_named_value(name: str, value: Any) -> dict[str, MetricSeries]:
     if _looks_like_log_history(value):
         return _series_from_log_history(value)
-    if not isinstance(value, Sequence) or isinstance(value, str | bytes):
+    values = _history_values(value)
+    if values is None:
         return {}
-    numeric = _coerce_floats(value)
+    numeric = _coerce_floats(values)
     if not numeric:
         return {}
     normalized, split = _normalize_name(name)
@@ -113,8 +115,9 @@ def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
         return {}
     found: dict[str, MetricSeries] = {}
     for key, raw_values in value.items():
-        if isinstance(raw_values, Sequence) and not isinstance(raw_values, str | bytes):
-            numeric = _coerce_floats(raw_values)
+        history_values = _history_values(raw_values)
+        if history_values is not None:
+            numeric = _coerce_floats(history_values)
             if numeric:
                 normalized, split = _normalize_name(str(key))
                 found[normalized] = MetricSeries(
@@ -131,6 +134,38 @@ def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
     return found
 
 
+def _history_values(value: Any) -> tuple[Any, ...] | None:
+    """Return a bounded 1-D history without consuming arbitrary iterables."""
+
+    if isinstance(value, str | bytes | bytearray | Mapping):
+        return None
+    if isinstance(value, Sequence):
+        try:
+            return tuple(value)
+        except (IndexError, RuntimeError, TypeError, ValueError):
+            return None
+
+    shape = getattr(value, "shape", None)
+    if shape is None:
+        return None
+    try:
+        dimensions = tuple(shape)
+    except (RuntimeError, TypeError, ValueError):
+        return None
+    if len(dimensions) != 1:
+        return None
+    try:
+        length = len(value)
+    except (RuntimeError, TypeError, ValueError):
+        return None
+    if length > _MAX_ARRAY_LIKE_POINTS:
+        return None
+    try:
+        return tuple(value)
+    except (IndexError, RuntimeError, TypeError, ValueError):
+        return None
+
+
 def _looks_like_log_history(value: Any) -> bool:
     return (
         isinstance(value, Sequence)
@@ -141,12 +176,11 @@ def _looks_like_log_history(value: Any) -> bool:
 
 def _series_from_log_history(value: Sequence[Any]) -> dict[str, MetricSeries]:
     grouped: dict[str, list[float]] = {}
-    steps: dict[str, list[int]] = {}
+    steps: dict[str, list[int | float | None]] = {}
     for index, entry in enumerate(value, start=1):
         if not isinstance(entry, Mapping):
             continue
-        raw_step = _first_present(entry, "step", "global_step", "epoch")
-        step = _coerce_step(index if raw_step is None else raw_step)
+        step = _observation_step(entry, index)
         for key, raw_value in entry.items():
             if key in {"step", "global_step", "epoch"}:
                 continue
@@ -155,31 +189,51 @@ def _series_from_log_history(value: Sequence[Any]) -> dict[str, MetricSeries]:
                 continue
             normalized, _split = _normalize_name(str(key))
             grouped.setdefault(normalized, []).append(numeric_value)
-            if step is not None:
-                steps.setdefault(normalized, []).append(step)
+            steps.setdefault(normalized, []).append(step)
     return {
         name: MetricSeries(
             name=name,
             values=tuple(values),
             split=_split_from_name(name),
-            steps=tuple(steps.get(name, ())),
+            steps=tuple(steps[name]),
         )
         for name, values in grouped.items()
     }
 
 
-def _coerce_step(value: Any) -> int | None:
+def _observation_step(entry: Mapping[Any, Any], default: int) -> int | float | None:
+    saw_step_metadata = False
+    for name in ("step", "global_step"):
+        if name not in entry:
+            continue
+        saw_step_metadata = True
+        step = _coerce_integer_step(entry[name])
+        if step is not None:
+            return step
+    if "epoch" in entry:
+        saw_step_metadata = True
+        epoch = _coerce_float(entry["epoch"])
+        if epoch is not None:
+            return epoch
+    return None if saw_step_metadata else default
+
+
+def _coerce_integer_step(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if hasattr(value, "item"):
+        try:
+            value = value.item()
+        except (AttributeError, RuntimeError, TypeError, ValueError):
+            return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value) if isfinite(value) and value.is_integer() else None
     try:
         return int(value)
-    except (TypeError, ValueError):
+    except (OverflowError, TypeError, ValueError):
         return None
-
-
-def _first_present(entry: Mapping[Any, Any], *names: str) -> Any:
-    for name in names:
-        if name in entry:
-            return entry[name]
-    return None
 
 
 def _split_from_name(name: str) -> str | None:
@@ -191,12 +245,13 @@ def _split_from_name(name: str) -> str | None:
 
 
 def _coerce_floats(values: Sequence[Any]) -> list[float]:
+    """Preserve finite observations and omit invalid/non-finite points."""
+
     numeric: list[float] = []
     for value in values:
         numeric_value = _coerce_float(value)
-        if numeric_value is None:
-            return []
-        numeric.append(numeric_value)
+        if numeric_value is not None:
+            numeric.append(numeric_value)
     return numeric
 
 
@@ -206,7 +261,7 @@ def _coerce_float(value: Any) -> float | None:
     if hasattr(value, "item"):
         try:
             value = value.item()
-        except (AttributeError, TypeError, ValueError):
+        except (AttributeError, RuntimeError, TypeError, ValueError):
             return None
     try:
         numeric_value = float(value)
