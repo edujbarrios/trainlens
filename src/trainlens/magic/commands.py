@@ -126,7 +126,9 @@ def _parse_explain_arguments(line: str) -> _ExplainArguments:
             )
         index += 1
     if dry_run and (name is not None or no_llm):
-        raise ValueError("--dry-run previews context only and cannot be combined with --name or --no-llm")
+        raise ValueError(
+            "--dry-run previews context only and cannot be combined with --name or --no-llm"
+        )
     return _ExplainArguments(name=name, no_llm=no_llm, dry_run=dry_run)
 
 
