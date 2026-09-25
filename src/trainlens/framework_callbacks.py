@@ -28,7 +28,7 @@ def keras_callback(
             "Keras is required for keras_callback(); install a supported Keras version first."
         ) from exc
 
-    class KerasTrainLensCallback(callback_base):  # type: ignore[misc,valid-type]
+    class KerasTrainLensCallback(callback_base):
         def __init__(self) -> None:
             super().__init__()
             self.trainlens = delegate
@@ -60,7 +60,7 @@ def transformers_callback(
             "Transformers is required for transformers_callback(); install transformers first."
         ) from exc
 
-    class TransformersTrainLensCallback(callback_base):  # type: ignore[misc,valid-type]
+    class TransformersTrainLensCallback(callback_base):
         def __init__(self) -> None:
             super().__init__()
             self.trainlens = delegate
@@ -93,7 +93,7 @@ def lightning_callback(
     delegate = _delegate(callback, callback_options)
     callback_base = _lightning_callback_base()
 
-    class LightningTrainLensCallback(callback_base):  # type: ignore[misc,valid-type]
+    class LightningTrainLensCallback(callback_base):
         def __init__(self) -> None:
             super().__init__()
             self.trainlens = delegate
