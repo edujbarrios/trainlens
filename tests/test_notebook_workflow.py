@@ -143,7 +143,7 @@ def test_run_store_allows_names_and_one_based_indices() -> None:
     assert store.get("baseline").model_name == "A"
     assert store.get(2).model_name == "B"
     assert "**Baseline:** baseline" in store.render_comparison("baseline", "candidate")
-    assert "**Experiment:** run 2" in store.render_comparison(1, 2)
+    assert "**Experiment:** candidate" in store.render_comparison(1, 2)
 
     with pytest.raises(ValueError, match="unknown run"):
         store.get("missing")
@@ -199,7 +199,10 @@ def test_pytorch_model_candidate_is_deduplicated_with_merged_evidence() -> None:
     assert any("parameters" in reason.lower() for reason in candidates[0].reasons)
 
     context = build_llm_notebook_context({"model": model})
-    model_lines = [line for line in context.markdown.splitlines() if line.startswith("- `model`")]
+    model_candidates = context.markdown.split("## Model Candidates", maxsplit=1)[1]
+    model_lines = [
+        line for line in model_candidates.splitlines() if line.startswith("- `model`")
+    ]
     assert len(model_lines) == 1
 
 
