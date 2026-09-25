@@ -68,7 +68,8 @@ class NotebookInspector:
                 )
             )
         candidates.extend(self._framework_model_candidates(snapshot))
-        return sorted(candidates, key=lambda item: item.confidence, reverse=True)
+        deduplicated = self._deduplicate_model_candidates(candidates)
+        return sorted(deduplicated, key=lambda item: item.confidence, reverse=True)
 
     def _framework_model_candidates(self, snapshot: NotebookSnapshot) -> list[ModelCandidate]:
         candidates: list[ModelCandidate] = []
@@ -91,6 +92,39 @@ class NotebookInspector:
                 )
             )
         return candidates
+
+    def _deduplicate_model_candidates(
+        self, candidates: list[ModelCandidate]
+    ) -> list[ModelCandidate]:
+        merged: list[ModelCandidate] = []
+        positions: dict[tuple[str, object], int] = {}
+        for candidate in candidates:
+            key: tuple[str, object]
+            if candidate.object_ref is not None:
+                key = ("object", id(candidate.object_ref))
+            else:
+                key = ("variable", candidate.variable_name)
+            position = positions.get(key)
+            if position is None:
+                positions[key] = len(merged)
+                merged.append(candidate)
+                continue
+            current = merged[position]
+            reasons = tuple(dict.fromkeys((*current.reasons, *candidate.reasons)))
+            merged[position] = ModelCandidate(
+                variable_name=current.variable_name,
+                object_ref=current.object_ref or candidate.object_ref,
+                type_name=(
+                    candidate.type_name
+                    if candidate.confidence > current.confidence
+                    else current.type_name
+                ),
+                module=current.module or candidate.module,
+                framework=current.framework or candidate.framework,
+                confidence=max(current.confidence, candidate.confidence),
+                reasons=reasons,
+            )
+        return merged
 
     def _ignore(self, name: str, value: object) -> bool:
         return (
