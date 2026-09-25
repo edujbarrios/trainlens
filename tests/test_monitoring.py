@@ -28,6 +28,18 @@ def test_monitor_preserves_distinct_alerts_reported_at_the_same_step():
     assert duplicate_alerts == ()
 
 
+def test_distinct_non_finite_events_remain_observable_across_advancing_steps():
+    monitor = TrainLensMonitor()
+
+    first = monitor.observe(1, {"loss": math.nan})
+    second = monitor.observe(2, {"loss": math.nan})
+
+    assert [alert.code for alert in first] == ["non_finite_metric"]
+    assert [alert.code for alert in second] == ["non_finite_metric"]
+    assert first[0].step == 1
+    assert second[0].step == 2
+
+
 def test_monitor_detects_diverging_training_and_validation_loss():
     monitor = TrainLensMonitor(MonitorConfig(patience=3, min_delta=0.01))
 
@@ -37,6 +49,23 @@ def test_monitor_detects_diverging_training_and_validation_loss():
 
     assert [alert.code for alert in alerts] == ["possible_overfitting"]
     assert alerts[0].evidence == ("train_loss: 0.8 -> 0.4", "val_loss: 0.7 -> 0.9")
+
+
+def test_persistent_overfitting_alert_is_suppressed_until_condition_clears():
+    monitor = TrainLensMonitor(MonitorConfig(patience=3, min_delta=0.01))
+
+    monitor.observe(1, {"train_loss": 0.8, "val_loss": 0.7})
+    monitor.observe(2, {"train_loss": 0.6, "val_loss": 0.8})
+    first = monitor.observe(3, {"train_loss": 0.4, "val_loss": 0.9})
+    repeated = monitor.observe(4, {"train_loss": 0.2, "val_loss": 1.0})
+    cleared = monitor.observe(5, {"train_loss": 0.19, "val_loss": 0.85})
+    monitor.observe(6, {"train_loss": 0.16, "val_loss": 0.9})
+    recurring = monitor.observe(7, {"train_loss": 0.13, "val_loss": 0.95})
+
+    assert [alert.code for alert in first] == ["possible_overfitting"]
+    assert repeated == ()
+    assert all(alert.code != "possible_overfitting" for alert in cleared)
+    assert [alert.code for alert in recurring] == ["possible_overfitting"]
 
 
 def test_monitor_detects_stagnant_loss_with_configured_threshold():
@@ -49,6 +78,25 @@ def test_monitor_detects_stagnant_loss_with_configured_threshold():
     alerts = monitor.observe(3, {"loss": 0.505})
 
     assert [alert.code for alert in alerts] == ["stagnation:loss"]
+
+
+def test_stagnation_alert_rearms_after_condition_clears():
+    monitor = TrainLensMonitor(
+        MonitorConfig(patience=3, min_delta=0.01, detect_overfitting=False)
+    )
+
+    monitor.observe(1, {"loss": 0.5})
+    monitor.observe(2, {"loss": 0.5})
+    first = monitor.observe(3, {"loss": 0.5})
+    repeated = monitor.observe(4, {"loss": 0.5})
+    cleared = monitor.observe(5, {"loss": 0.4})
+    monitor.observe(6, {"loss": 0.4})
+    recurring = monitor.observe(7, {"loss": 0.4})
+
+    assert [alert.code for alert in first] == ["stagnation:loss"]
+    assert repeated == ()
+    assert cleared == ()
+    assert [alert.code for alert in recurring] == ["stagnation:loss"]
 
 
 def test_monitor_keeps_an_immutable_observation_history():
