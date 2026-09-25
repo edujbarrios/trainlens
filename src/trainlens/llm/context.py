@@ -8,6 +8,7 @@ from typing import Any
 
 from trainlens.analyzers.metrics import extract_metric_series
 from trainlens.introspection import NotebookInspector
+from trainlens.models.metric import MetricSeries
 from trainlens.models.snapshot import NotebookSnapshot
 from trainlens.security import sanitize_value
 
@@ -20,6 +21,11 @@ class LLMNotebookContext:
 
     markdown: str
     metrics: dict[str, float]
+
+    def _repr_markdown_(self) -> str:
+        """Render the exact outbound context natively in IPython/Jupyter."""
+
+        return self.markdown
 
 
 def build_llm_notebook_context(
@@ -77,9 +83,7 @@ def build_llm_notebook_context(
     if metric_series:
         lines.extend(["## Metric Series", ""])
         for name, series in sorted(metric_series.items()):
-            lines.append(
-                f"- `{name}`: {_render_metric_values(series.values, max_metric_points)}"
-            )
+            lines.append(f"- `{name}`: {_render_metric_series(series, max_metric_points)}")
         lines.append("")
     training_artifacts = [
         artifact for artifact in snapshot.framework_artifacts if artifact.training_parameters
@@ -116,11 +120,47 @@ def build_llm_notebook_context(
     return LLMNotebookContext(markdown="\n".join(lines).strip() + "\n", metrics=metrics)
 
 
+def _render_metric_series(series: MetricSeries, max_metric_points: int) -> str:
+    if series.steps:
+        return _render_metric_points(series, max_metric_points)
+    return _render_metric_values(series.values, max_metric_points)
+
+
+def _render_metric_points(series: MetricSeries, max_metric_points: int) -> str:
+    points = tuple(zip(series.steps, series.values, strict=True))
+    if len(points) <= max_metric_points:
+        rendered = ", ".join(_format_metric_point(step, value) for step, value in points)
+        return f"points=[{rendered}]"
+    indices = _sample_indices(len(points), max_metric_points)
+    sampled = tuple(points[index] for index in indices)
+    rendered_sample = ", ".join(
+        _format_metric_point(step, value) for step, value in sampled
+    )
+    return (
+        f"observations={len(points)}, first_step={_format_step(points[0][0])}, "
+        f"last_step={_format_step(points[-1][0])}, "
+        f"first={series.values[0]:.6g}, last={series.values[-1]:.6g}, "
+        f"min={min(series.values):.6g}, max={max(series.values):.6g}, "
+        f"ordered_sample=[{rendered_sample}]"
+    )
+
+
+def _format_metric_point(step: int | float | None, value: float) -> str:
+    return f"({_format_step(step)}, {value:.6g})"
+
+
+def _format_step(step: int | float | None) -> str:
+    if step is None:
+        return "None"
+    return f"{step:g}"
+
+
 def _render_metric_values(values: tuple[float, ...], max_metric_points: int) -> str:
     if len(values) <= max_metric_points:
         rendered = ", ".join(f"{value:.6g}" for value in values)
         return f"[{rendered}]"
-    sampled = _sample_metric_values(values, max_metric_points)
+    indices = _sample_indices(len(values), max_metric_points)
+    sampled = tuple(values[index] for index in indices)
     rendered_sample = ", ".join(f"{value:.6g}" for value in sampled)
     return (
         f"observations={len(values)}, first={values[0]:.6g}, last={values[-1]:.6g}, "
@@ -129,10 +169,9 @@ def _render_metric_values(values: tuple[float, ...], max_metric_points: int) -> 
     )
 
 
-def _sample_metric_values(values: tuple[float, ...], limit: int) -> tuple[float, ...]:
-    last_index = len(values) - 1
-    indices = tuple(round(position * last_index / (limit - 1)) for position in range(limit))
-    return tuple(values[index] for index in indices)
+def _sample_indices(length: int, limit: int) -> tuple[int, ...]:
+    last_index = length - 1
+    return tuple(round(position * last_index / (limit - 1)) for position in range(limit))
 
 
 def _namespace_with_framework_metrics(snapshot: NotebookSnapshot) -> dict[str, Any]:

@@ -27,6 +27,7 @@ from trainlens.notebook import (
     build_improvement_ideas,
     build_llm_report,
     build_paper_report,
+    preview_notebook_context,
 )
 
 __version__ = "0.8.6"
@@ -53,6 +54,7 @@ __all__ = [
     "keras_callback",
     "lightning_callback",
     "load_ipython_extension",
+    "preview_notebook_context",
     "render_report",
     "render_next_experiment",
     "render_run_comparison",

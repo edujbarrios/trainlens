@@ -8,12 +8,23 @@ from IPython.core.interactiveshell import InteractiveShell
 
 from trainlens.magic.commands import TrainLensMagics
 
+_MAGIC_ATTRIBUTE = "_trainlens_magics"
+_MAGIC_NAMES = ("explain_training", "suggest_improvements", "compare_runs")
+
 
 def load_ipython_extension(ipython: InteractiveShell) -> None:
-    ipython.register_magics(TrainLensMagics)
+    """Register TrainLens magics, reusing notebook-local state across reloads."""
+
+    magics = getattr(ipython, _MAGIC_ATTRIBUTE, None)
+    if not isinstance(magics, TrainLensMagics):
+        magics = TrainLensMagics(ipython)
+        setattr(ipython, _MAGIC_ATTRIBUTE, magics)
+    ipython.register_magics(magics)
 
 
 def unload_ipython_extension(ipython: InteractiveShell) -> None:
-    ipython.magics_manager.magics["line"].pop("explain_training", None)
-    ipython.magics_manager.magics["line"].pop("suggest_improvements", None)
-    ipython.magics_manager.magics["line"].pop("compare_runs", None)
+    """Unregister TrainLens line magics without discarding captured run state."""
+
+    line_magics = ipython.magics_manager.magics["line"]
+    for name in _MAGIC_NAMES:
+        line_magics.pop(name, None)
