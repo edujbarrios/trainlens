@@ -21,15 +21,56 @@ Transformers, and Lightning are not required TrainLens dependencies.
 
 ```python
 %load_ext trainlens.magic.extension
-%explain_training
+
+%explain_training --name baseline --no-llm
+%explain_training --name candidate
+%compare_runs baseline candidate
 %suggest_improvements
-%compare_runs
 ```
 
-The first two commands require a configured LLM endpoint. `%compare_runs`
-compares the two most recently captured runs; it reports that more runs are
-needed if fewer than two are available. Command-line arguments are currently
-ignored.
+`%explain_training` always analyzes and captures the local run before it asks an
+LLM provider for an explanation. A missing or failing provider therefore does
+not discard the captured run. Use `--no-llm` to capture and render the local
+analysis without any provider request.
+
+Run names are stable notebook-local labels. `%compare_runs BASELINE EXPERIMENT`
+accepts names or one-based capture indices. With no arguments, `%compare_runs`
+keeps the original behavior and compares the two most recent runs.
+
+## Preview exactly what leaves the kernel
+
+Before making a provider request, preview the same sanitized context TrainLens
+would send:
+
+```python
+%explain_training --dry-run
+```
+
+or from Python:
+
+```python
+from trainlens import preview_notebook_context
+
+preview_notebook_context()
+```
+
+Preview mode uses the production context builder and sanitizer and performs no
+network request. It does not require provider configuration. Metric histories
+include aligned steps or fractional epochs when available, while long histories
+remain bounded by the configured metric-point budget.
+
+## Native notebook display
+
+`LiveReport` and notebook context previews implement IPython's Markdown display
+protocol. They can therefore be the final expression of a cell:
+
+```python
+from trainlens import build_paper_report
+
+build_paper_report()
+```
+
+The object still exposes `.markdown` and `.result` for programmatic use.
 
 ## Framework examples
 
@@ -46,22 +87,32 @@ trainer.fit(module, datamodule=datamodule)
 # Keep plain PyTorch objects visible in the notebook namespace:
 model, optimizer, scheduler, train_loader
 
-%explain_training
+%explain_training --name first-run
 ```
 
 Keep descriptive variables small and clearly named. TrainLens deliberately
-avoids serializing arbitrary objects or full datasets.
+avoids serializing arbitrary objects or full datasets. If the same model is
+detected through generic and framework-specific introspection, TrainLens merges
+that evidence into one model candidate rather than duplicating prompt context.
 
 ## Explicit namespaces
 
 Outside an active IPython shell, pass a mapping explicitly:
 
 ```python
-from trainlens import build_paper_report
+from trainlens import build_paper_report, preview_notebook_context
 
-report = build_paper_report({"history": history, "model_name": "classifier-v2"})
+namespace = {"history": history, "model_name": "classifier-v2"}
+preview = preview_notebook_context(namespace)
+report = build_paper_report(namespace)
 ```
 
-Calling `build_paper_report()` without a namespace outside IPython raises an
-error because there is no notebook namespace to inspect.
+Calling these helpers without a namespace outside IPython raises an error
+because there is no notebook namespace to inspect.
 
+## Extension reload behavior
+
+Loading the extension repeatedly is idempotent. Unloading removes the three
+line magics; loading it again in the same IPython shell reuses the TrainLens
+magic instance, so notebook-local captured runs remain available across an
+extension reload.
