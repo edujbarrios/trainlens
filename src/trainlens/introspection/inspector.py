@@ -111,9 +111,14 @@ class NotebookInspector:
                 continue
             current = merged[position]
             reasons = tuple(dict.fromkeys((*current.reasons, *candidate.reasons)))
+            object_ref = (
+                current.object_ref
+                if current.object_ref is not None
+                else candidate.object_ref
+            )
             merged[position] = ModelCandidate(
                 variable_name=current.variable_name,
-                object_ref=current.object_ref or candidate.object_ref,
+                object_ref=object_ref,
                 type_name=(
                     candidate.type_name
                     if candidate.confidence > current.confidence
