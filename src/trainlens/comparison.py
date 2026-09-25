@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping
 from math import isfinite
 from typing import TypeAlias
 
+from trainlens.metric_semantics import metric_direction
 from trainlens.models.analysis import AnalysisResult
 from trainlens.models.comparison import (
     ChangeMagnitude,
@@ -18,32 +18,6 @@ from trainlens.models.run import TrainingRun
 
 RunLike: TypeAlias = AnalysisResult | TrainingRun | Mapping[str, float]
 
-_LOWER_IS_BETTER = (
-    "loss",
-    "error",
-    "perplexity",
-    "wer",
-    "cer",
-    "latency",
-    "fad",
-    "frechet",
-    "mae",
-    "mape",
-    "mse",
-    "msle",
-    "rmse",
-)
-_HIGHER_IS_BETTER = (
-    "accuracy",
-    "acc",
-    "auc",
-    "f1",
-    "precision",
-    "recall",
-    "score",
-    "map",
-    "ndcg",
-)
 _MATERIAL_RELATIVE_DELTA = 0.05
 _MATERIAL_ABSOLUTE_DELTA = 0.01
 
@@ -163,10 +137,10 @@ def _compare_metric(
 def _direction(name: str, delta: float, magnitude: ChangeMagnitude) -> ComparisonDirection:
     if magnitude == "none":
         return "unchanged"
-    tokens = set(re.findall(r"[a-z0-9]+", name.lower()))
-    if tokens.intersection(_LOWER_IS_BETTER):
+    preferred = metric_direction(name)
+    if preferred == "lower":
         return "improved" if delta < 0 else "regressed"
-    if tokens.intersection(_HIGHER_IS_BETTER):
+    if preferred == "higher":
         return "improved" if delta > 0 else "regressed"
     return "unknown"
 

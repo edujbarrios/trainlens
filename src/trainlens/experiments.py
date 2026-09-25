@@ -2,29 +2,16 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from math import isfinite
 from typing import Literal, TypeAlias
 
+from trainlens.metric_semantics import metric_bounds, metric_direction
+
 ParameterValue: TypeAlias = str | int | float | bool | None
 EstimatedCost = Literal["low", "medium", "high", "unknown"]
 
-_LOWER_IS_BETTER = (
-    "loss",
-    "error",
-    "perplexity",
-    "wer",
-    "cer",
-    "latency",
-    "mae",
-    "mape",
-    "mse",
-    "msle",
-    "rmse",
-)
-_HIGHER_IS_BETTER = ("accuracy", "acc", "auc", "f1", "precision", "recall", "score")
 _OBJECTIVE_PRIORITY = (
     "validation_loss",
     "val_loss",
@@ -88,7 +75,7 @@ def suggest_next_experiment(
         if any(name in run.metrics for run in runs for name in _OBJECTIVE_PRIORITY):
             raise ValueError("supported objective metrics are non-finite or non-numeric")
         raise ValueError("no supported objective metric was found; pass objective_metric")
-    direction = _metric_direction(objective)
+    direction = metric_direction(objective)
     if direction is None:
         raise ValueError(f"cannot infer whether {objective!r} should increase or decrease")
     eligible = [
@@ -184,15 +171,6 @@ def _is_finite_metric(value: object) -> bool:
     )
 
 
-def _metric_direction(name: str) -> Literal["lower", "higher"] | None:
-    tokens = set(re.findall(r"[a-z0-9]+", name.lower()))
-    if tokens.intersection(_LOWER_IS_BETTER):
-        return "lower"
-    if tokens.intersection(_HIGHER_IS_BETTER):
-        return "higher"
-    return None
-
-
 def _propose_change(
     run: ExperimentRun, objective: str
 ) -> tuple[dict[str, ParameterValue], str, tuple[str, ...], float]:
@@ -257,10 +235,10 @@ def _target(
     metric: str,
 ) -> float:
     change = max(abs(value) * improvement, improvement if value == 0 else 0.0)
-    tokens = set(re.findall(r"[a-z0-9]+", metric.lower()))
-    if direction == "lower":
-        target = value - change
-        return max(0.0, target) if tokens.intersection(_LOWER_IS_BETTER) else target
-    target = value + change
-    bounded = {"accuracy", "acc", "auc", "f1", "precision", "recall", "map", "ndcg"}
-    return min(1.0, target) if tokens.intersection(bounded) else target
+    lower_bound, upper_bound = metric_bounds(metric)
+    target = value - change if direction == "lower" else value + change
+    if lower_bound is not None:
+        target = max(lower_bound, target)
+    if upper_bound is not None:
+        target = min(upper_bound, target)
+    return target
