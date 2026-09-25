@@ -68,7 +68,8 @@ class TrainLensMonitor:
         self.config = config or MonitorConfig()
         self._on_alert = on_alert
         self._observations: list[TrainingObservation] = []
-        self._emitted: set[tuple[str, int, tuple[str, ...]]] = set()
+        self._emitted_events: set[tuple[str, int, tuple[str, ...]]] = set()
+        self._active_persistent: set[str] = set()
 
     @property
     def observations(self) -> tuple[TrainingObservation, ...]:
@@ -94,18 +95,27 @@ class TrainLensMonitor:
         self._observations.append(observation)
 
         alerts = self._evaluate(observation)
-        fresh = tuple(alert for alert in alerts if self._mark_fresh(alert))
+        fresh = self._fresh_alerts(alerts)
         if self._on_alert is not None:
             for alert in fresh:
                 self._on_alert(alert)
         return fresh
 
-    def _mark_fresh(self, alert: TrainingAlert) -> bool:
-        key = (alert.code, alert.step, alert.evidence)
-        if key in self._emitted:
-            return False
-        self._emitted.add(key)
-        return True
+    def _fresh_alerts(self, alerts: tuple[TrainingAlert, ...]) -> tuple[TrainingAlert, ...]:
+        active_now = {alert.code for alert in alerts if _is_persistent_alert(alert.code)}
+        fresh: list[TrainingAlert] = []
+        for alert in alerts:
+            if _is_persistent_alert(alert.code):
+                if alert.code not in self._active_persistent:
+                    fresh.append(alert)
+                continue
+            key = (alert.code, alert.step, alert.evidence)
+            if key in self._emitted_events:
+                continue
+            self._emitted_events.add(key)
+            fresh.append(alert)
+        self._active_persistent = active_now
+        return tuple(fresh)
 
     def _evaluate(self, current: TrainingObservation) -> tuple[TrainingAlert, ...]:
         alerts: list[TrainingAlert] = []
@@ -190,6 +200,10 @@ class TrainLensMonitor:
             ),
             step=step,
         )
+
+
+def _is_persistent_alert(code: str) -> bool:
+    return code == "possible_overfitting" or code.startswith("stagnation:")
 
 
 def _first_metric(
