@@ -12,18 +12,27 @@ class MetricPoint:
 
     name: str
     value: float
-    step: int | None = None
+    step: int | float | None = None
     split: str | None = None
 
 
 @dataclass(frozen=True)
 class MetricSeries:
-    """A normalized sequence of metric observations."""
+    """A normalized sequence of metric observations.
+
+    When ``steps`` is present it is aligned 1:1 with ``values``. Unknown or invalid
+    step metadata is represented explicitly as ``None`` rather than silently
+    shifting later observations onto the wrong step.
+    """
 
     name: str
     values: tuple[float, ...]
     split: str | None = None
-    steps: tuple[int, ...] = field(default_factory=tuple)
+    steps: tuple[int | float | None, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if self.steps and len(self.steps) != len(self.values):
+            raise ValueError("MetricSeries steps must align 1:1 with values")
 
     @property
     def first(self) -> float | None:
