@@ -2,6 +2,17 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.9.0 - 2026-09-25
+
+- preserve metric history integrity with aligned step metadata, finite-value filtering, fractional epochs, and bounded one-dimensional array-like histories
+- centralize metric optimization semantics and natural bounds across run comparison and next-experiment recommendations
+- add persistent alert lifecycle handling so stagnation and overfitting alerts re-arm only after recovery
+- add optional framework-native callback adapters for Keras 3, Hugging Face Transformers, and Lightning while retaining the dependency-free callback core
+- make notebook capture local-first, including offline `--no-llm` runs, provider-failure fallback, stable run names, explicit run selection, and full `AnalysisResult` metadata
+- add exact outbound-context preview via `preview_notebook_context()` and `%explain_training --dry-run`, plus aligned metric steps and fractional epochs in bounded LLM context
+- render notebook reports natively as Markdown, deduplicate model candidates, preserve extension state across reloads, and add real IPython integration tests
+- continuously test and advertise CPython 3.11, 3.12, 3.13, and 3.14 with an explicit `<3.15` upper bound
+
 ## 0.8.6 - 2026-09-24
 
 - keep notebook introspection running when unrelated objects expose failing properties or model/framework probes
