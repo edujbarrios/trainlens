@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    if: github.ref_type == 'tag' || startsWith(github.event.head_commit.message, 'release: TrainLens ')
+    if: "${{ github.ref_type == 'tag' || startsWith(github.event.head_commit.message, 'release: TrainLens ') }}"
     runs-on: ubuntu-latest
     permissions:
       contents: write
