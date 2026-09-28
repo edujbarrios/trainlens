@@ -2,6 +2,13 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.9.1 - 2026-09-28
+
+- reject boolean and non-numeric `minimum_improvement` values at the next-experiment recommendation boundary instead of silently treating booleans as numbers or leaking low-level type errors
+- ignore framework callback updates that contain no usable numeric metrics so metadata-only events do not distort monitoring windows or re-arm persistent alerts
+- verify project and public package versions agree before creating a release tag
+- install and smoke-test the freshly built wheel in an isolated environment before Trusted Publishing can upload it to PyPI
+
 ## 0.9.0 - 2026-09-25
 
 - preserve metric history integrity with aligned step metadata, finite-value filtering, fractional epochs, and bounded one-dimensional array-like histories
