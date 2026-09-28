@@ -17,8 +17,9 @@ class FakeResponse:
     def __exit__(self, *_args: object) -> None:
         return None
 
-    def read(self) -> bytes:
-        return self.payload.encode("utf-8")
+    def read(self, size: int = -1) -> bytes:
+        encoded = self.payload.encode("utf-8")
+        return encoded if size < 0 else encoded[:size]
 
 
 def _provider() -> OpenAICompatibleProvider:
