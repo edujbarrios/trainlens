@@ -11,6 +11,7 @@ from trainlens.models.metric import MetricSeries
 _TRAIN_PREFIXES = ("train_", "training_")
 _VALIDATION_PREFIXES = ("val_", "valid_", "validation_", "eval_")
 _MAX_ARRAY_LIKE_POINTS = 100_000
+_MISSING = object()
 _ALIASES = {
     "loss/train": "train_loss",
     "loss/eval": "validation_loss",
@@ -103,12 +104,11 @@ def _series_from_named_value(name: str, value: Any) -> dict[str, MetricSeries]:
 
 
 def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
-    if hasattr(value, "history"):
-        value = value.history
-    elif hasattr(value, "metrics"):
-        value = value.metrics
-    elif hasattr(value, "log_history"):
-        value = value.log_history
+    for attribute in ("history", "metrics", "log_history"):
+        nested = _safe_getattr(value, attribute, _MISSING)
+        if nested is not _MISSING:
+            value = nested
+            break
     if _looks_like_log_history(value):
         return _series_from_log_history(value)
     if not isinstance(value, Mapping):
@@ -145,8 +145,8 @@ def _history_values(value: Any) -> tuple[Any, ...] | None:
         except (IndexError, RuntimeError, TypeError, ValueError):
             return None
 
-    shape = getattr(value, "shape", None)
-    if shape is None:
+    shape = _safe_getattr(value, "shape", _MISSING)
+    if shape is _MISSING or shape is None:
         return None
     try:
         dimensions = tuple(shape)
@@ -221,9 +221,10 @@ def _observation_step(entry: Mapping[Any, Any], default: int) -> int | float | N
 def _coerce_integer_step(value: Any) -> int | None:
     if isinstance(value, bool):
         return None
-    if hasattr(value, "item"):
+    item = _safe_getattr(value, "item", _MISSING)
+    if item is not _MISSING:
         try:
-            value = value.item()
+            value = item()
         except (AttributeError, RuntimeError, TypeError, ValueError):
             return None
     if isinstance(value, int):
@@ -258,9 +259,10 @@ def _coerce_floats(values: Sequence[Any]) -> list[float]:
 def _coerce_float(value: Any) -> float | None:
     if isinstance(value, bool):
         return None
-    if hasattr(value, "item"):
+    item = _safe_getattr(value, "item", _MISSING)
+    if item is not _MISSING:
         try:
-            value = value.item()
+            value = item()
         except (AttributeError, RuntimeError, TypeError, ValueError):
             return None
     try:
@@ -268,6 +270,13 @@ def _coerce_float(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return numeric_value if isfinite(numeric_value) else None
+
+
+def _safe_getattr(value: Any, name: str, default: Any = None) -> Any:
+    try:
+        return getattr(value, name, default)
+    except Exception:
+        return default
 
 
 def _normalize_name(name: str) -> tuple[str, str | None]:
