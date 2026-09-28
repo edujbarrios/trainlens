@@ -11,9 +11,12 @@ from typing import Any, cast
 from IPython.core.magic import Magics, line_magic, magics_class
 from IPython.display import Markdown, display
 
-from trainlens.llm.context import build_llm_notebook_context
+from trainlens.llm.context import (
+    build_llm_notebook_context,
+    build_llm_notebook_context_from_snapshot,
+)
 from trainlens.llm.enhancer import explain_with_llm
-from trainlens.pipeline import explain_namespace
+from trainlens.pipeline import analyze_snapshot, snapshot_namespace
 from trainlens.renderers.markdown import MarkdownRenderer
 from trainlens.storage.memory import InMemoryRunStore
 
@@ -37,12 +40,13 @@ class TrainLensMagics(Magics):
     def explain_training(self, line: str = "") -> None:
         args = _parse_explain_arguments(line)
         shell = cast(Any, self.shell)
-        context = build_llm_notebook_context(shell.user_ns)
+        snapshot = snapshot_namespace(shell.user_ns)
+        context = build_llm_notebook_context_from_snapshot(snapshot)
         if args.dry_run:
             display(Markdown(context.markdown))
             return
 
-        result = explain_namespace(shell.user_ns)
+        result = analyze_snapshot(snapshot)
         self.store.capture(result, name=args.name)
         if args.no_llm:
             display(Markdown(MarkdownRenderer().render(result)))

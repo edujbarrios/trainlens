@@ -34,7 +34,23 @@ def build_llm_notebook_context(
     max_metric_points: int = _MAX_METRIC_POINTS,
     include_values: bool = False,
 ) -> LLMNotebookContext:
-    """Render notebook state as evidence, minimizing unrelated literal values by default."""
+    """Capture and render notebook state as bounded LLM evidence."""
+
+    snapshot = NotebookInspector().snapshot(namespace)
+    return build_llm_notebook_context_from_snapshot(
+        snapshot,
+        max_metric_points=max_metric_points,
+        include_values=include_values,
+    )
+
+
+def build_llm_notebook_context_from_snapshot(
+    snapshot: NotebookSnapshot,
+    *,
+    max_metric_points: int = _MAX_METRIC_POINTS,
+    include_values: bool = False,
+) -> LLMNotebookContext:
+    """Render an existing notebook snapshot without inspecting live state again."""
 
     if isinstance(max_metric_points, bool) or not isinstance(max_metric_points, int):
         raise TypeError("max_metric_points must be an integer")
@@ -43,7 +59,6 @@ def build_llm_notebook_context(
         raise ValueError(msg)
 
     inspector = NotebookInspector()
-    snapshot = inspector.snapshot(namespace)
     metric_namespace = _namespace_with_framework_metrics(snapshot)
     metric_series = extract_metric_series(metric_namespace)
     metric_variable_names = {
