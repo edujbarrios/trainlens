@@ -2,6 +2,15 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.9.2 - 2026-09-28
+
+- keep notebook analysis best-effort when metric histories, model configuration, array metadata, or feature-importance properties raise during inspection
+- avoid consuming one-shot label iterators while automatically checking notebook data for class imbalance
+- coalesce repeated real-time monitoring callbacks at the same training step so they do not advance patience windows or create premature stagnation/overfitting alerts
+- reuse one captured notebook snapshot for deterministic local analysis and outbound LLM evidence in `%explain_training`
+- cap OpenAI-compatible provider response bodies at 4 MiB and report oversized or invalid UTF-8 responses explicitly
+- enforce an 80% coverage floor and continuously test the declared minimum IPython, Jinja2, and Rich runtime dependencies
+
 ## 0.9.1 - 2026-09-28
 
 - reject boolean and non-numeric `minimum_improvement` values at the next-experiment recommendation boundary instead of silently treating booleans as numbers or leaking low-level type errors
