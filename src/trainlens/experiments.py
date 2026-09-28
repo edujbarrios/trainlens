@@ -68,6 +68,8 @@ def suggest_next_experiment(
 
     if not runs:
         raise ValueError("at least one experiment run is required")
+    if isinstance(minimum_improvement, bool) or not isinstance(minimum_improvement, int | float):
+        raise TypeError("minimum_improvement must be a number")
     if not isfinite(minimum_improvement) or minimum_improvement <= 0:
         raise ValueError("minimum_improvement must be finite and positive")
     objective = objective_metric or _select_objective(runs)
