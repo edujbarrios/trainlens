@@ -52,6 +52,8 @@ class TrainLensCallback:
         """Normalize a framework metric mapping and update the monitor."""
 
         numeric = _numeric_metrics(metrics)
+        if not numeric:
+            return ()
         detected = self.monitor.observe(step, numeric)
         if self.alerts_enabled:
             self.alerts.extend(detected)
