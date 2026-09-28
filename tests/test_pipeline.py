@@ -49,5 +49,14 @@ def test_pipeline_does_not_treat_text_or_mapping_as_class_labels():
     assert all(signal.title != "Class imbalance detected" for signal in mapping_result.signals)
 
 
+def test_pipeline_does_not_consume_one_shot_label_iterators():
+    labels = iter([0, 0, 1])
+
+    result = explain_namespace({"labels": labels})
+
+    assert all(signal.title != "Class imbalance detected" for signal in result.signals)
+    assert next(labels) == 0
+
+
 def test_analysis_result_counts_metrics_as_findings():
     assert AnalysisResult(metrics={"loss": 0.5}).has_findings()
