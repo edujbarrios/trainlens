@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
 
 from trainlens.analyzers.base import Analyzer
@@ -152,7 +152,9 @@ class TrainingSessionAnalyzer(Analyzer):
 def _first_present(namespace: dict[str, object], *names: str) -> Iterable[Any] | None:
     for name in names:
         value = namespace.get(name)
-        if isinstance(value, Iterable) and not isinstance(value, str | bytes | Mapping):
+        if isinstance(value, Iterable) and not isinstance(
+            value, str | bytes | Mapping | Iterator
+        ):
             return value
     return None
 
