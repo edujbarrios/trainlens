@@ -21,9 +21,28 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: mypy src/trainlens
-      - run: pytest --cov=trainlens --cov-report=term-missing
+      - run: pytest --cov=trainlens --cov-report=term-missing --cov-fail-under=80
       - name: Build clean distributions
         run: |
           rm -rf dist
           python -m build
       - run: python -m twine check dist/*
+
+  minimum-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - name: Install declared minimum direct dependencies
+        run: |
+          pip install \
+            "ipython==8.12.0" \
+            "jinja2==3.1.0" \
+            "rich==13.7.0" \
+            "pytest==8.0.0" \
+            "pytest-cov==5.0.0"
+          pip install -e . --no-deps
+      - run: pytest --cov=trainlens --cov-report=term-missing --cov-fail-under=80
