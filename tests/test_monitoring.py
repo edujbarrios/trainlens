@@ -28,6 +28,39 @@ def test_monitor_preserves_distinct_alerts_reported_at_the_same_step():
     assert duplicate_alerts == ()
 
 
+def test_monitor_coalesces_repeated_steps_without_advancing_patience():
+    monitor = TrainLensMonitor(
+        MonitorConfig(patience=3, min_delta=0.0, detect_overfitting=False)
+    )
+
+    monitor.observe(1, {"loss": 0.5})
+    monitor.observe(1, {"accuracy": 0.7})
+    same_step_alerts = monitor.observe(1, {"learning_rate": 0.001})
+
+    assert same_step_alerts == ()
+    assert len(monitor.observations) == 1
+    assert monitor.observations[0].metrics == {
+        "loss": 0.5,
+        "accuracy": 0.7,
+        "learning_rate": 0.001,
+    }
+
+    monitor.observe(2, {"loss": 0.5})
+    alerts = monitor.observe(3, {"loss": 0.5})
+
+    assert [alert.code for alert in alerts] == ["stagnation:loss"]
+
+
+def test_repeated_step_updates_replace_existing_metric_values():
+    monitor = TrainLensMonitor()
+
+    monitor.observe(4, {"loss": 0.8, "accuracy": 0.6})
+    monitor.observe(4, {"loss": 0.7})
+
+    assert len(monitor.observations) == 1
+    assert monitor.observations[0].metrics == {"loss": 0.7, "accuracy": 0.6}
+
+
 def test_distinct_non_finite_events_remain_observable_across_advancing_steps():
     monitor = TrainLensMonitor()
 
