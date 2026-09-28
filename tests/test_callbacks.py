@@ -61,6 +61,32 @@ def test_callback_ignores_metadata_and_normalizes_tensor_like_scalars():
     assert callback.monitor.observations[0].metrics == {"loss": 0.75}
 
 
+def test_callback_ignores_updates_without_numeric_metrics():
+    callback = TrainLensCallback()
+
+    alerts = callback.observe(1, {"phase": "train", "ready": True})
+
+    assert alerts == ()
+    assert callback.monitor.observations == ()
+
+
+def test_metadata_only_updates_do_not_rearm_persistent_alerts():
+    callback = TrainLensCallback(
+        TrainLensMonitor(MonitorConfig(patience=2, min_delta=0.0))
+    )
+
+    callback.observe(1, {"loss": 1.0})
+    first = callback.observe(2, {"loss": 1.0})
+    metadata_only = callback.observe(3, {"phase": "train"})
+    callback.observe(4, {"loss": 1.0})
+    repeated = callback.observe(5, {"loss": 1.0})
+
+    assert [alert.code for alert in first] == ["stagnation:loss"]
+    assert metadata_only == ()
+    assert repeated == ()
+    assert [observation.step for observation in callback.monitor.observations] == [1, 2, 4, 5]
+
+
 def test_callback_ignores_tensor_like_values_that_are_not_scalars():
     class NonScalar:
         def item(self):
