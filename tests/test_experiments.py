@@ -154,6 +154,15 @@ def test_suggestion_rejects_insufficient_evidence(runs, kwargs, message):
         suggest_next_experiment(runs, **kwargs)
 
 
+@pytest.mark.parametrize("minimum_improvement", [True, False, "0.1", None])
+def test_suggestion_rejects_non_numeric_minimum_improvement(minimum_improvement):
+    with pytest.raises(TypeError, match="minimum_improvement must be a number"):
+        suggest_next_experiment(
+            [ExperimentRun("run", {"loss": 1.0})],
+            minimum_improvement=minimum_improvement,
+        )
+
+
 @pytest.mark.parametrize("metric", ["mae", "mape", "mse", "msle", "rmse"])
 def test_suggestion_accepts_common_error_metrics_as_objectives(metric):
     recommendation = suggest_next_experiment(
