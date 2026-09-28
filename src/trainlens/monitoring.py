@@ -78,7 +78,11 @@ class TrainLensMonitor:
         return tuple(self._observations)
 
     def observe(self, step: int, metrics: Mapping[str, float | int]) -> tuple[TrainingAlert, ...]:
-        """Record one metric snapshot and return alerts triggered by it."""
+        """Record one metric snapshot and return alerts triggered by it.
+
+        Repeated updates for the same step are merged into one historical observation so
+        framework callbacks cannot advance patience windows without training advancing.
+        """
 
         if isinstance(step, bool) or not isinstance(step, int):
             raise TypeError("step must be an integer")
@@ -91,10 +95,17 @@ class TrainLensMonitor:
             if isinstance(value, bool) or not isinstance(value, int | float):
                 raise TypeError(f"metric {name!r} must be a number")
             normalized[str(name)] = float(value)
-        observation = TrainingObservation(step=step, metrics=MappingProxyType(normalized))
-        self._observations.append(observation)
 
-        alerts = self._evaluate(observation)
+        if self._observations and step == self._observations[-1].step:
+            merged = dict(self._observations[-1].metrics)
+            merged.update(normalized)
+            observation = TrainingObservation(step=step, metrics=MappingProxyType(merged))
+            self._observations[-1] = observation
+        else:
+            observation = TrainingObservation(step=step, metrics=MappingProxyType(normalized))
+            self._observations.append(observation)
+
+        alerts = self._evaluate(observation, event_metrics=normalized)
         fresh = self._fresh_alerts(alerts)
         if self._on_alert is not None:
             for alert in fresh:
@@ -117,12 +128,18 @@ class TrainLensMonitor:
         self._active_persistent = active_now
         return tuple(fresh)
 
-    def _evaluate(self, current: TrainingObservation) -> tuple[TrainingAlert, ...]:
+    def _evaluate(
+        self,
+        current: TrainingObservation,
+        *,
+        event_metrics: Mapping[str, float] | None = None,
+    ) -> tuple[TrainingAlert, ...]:
         alerts: list[TrainingAlert] = []
         if self.config.detect_non_finite:
+            metrics = current.metrics if event_metrics is None else event_metrics
             invalid = tuple(
                 f"{name}={value}"
-                for name, value in current.metrics.items()
+                for name, value in metrics.items()
                 if not math.isfinite(value)
             )
             if invalid:
