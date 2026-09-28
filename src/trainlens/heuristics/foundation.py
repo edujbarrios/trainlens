@@ -39,6 +39,7 @@ ARCHITECTURE_KEYWORDS: dict[str, tuple[str, ...]] = {
         "mel",
     ),
 }
+_MISSING = object()
 
 
 def detect_foundation_architecture(model: object | None, namespace: Mapping[str, Any]) -> list[str]:
@@ -46,13 +47,15 @@ def detect_foundation_architecture(model: object | None, namespace: Mapping[str,
 
     haystack: list[str] = []
     if model is not None:
+        model_type = type(model)
+        config = _safe_getattr(model, "config")
         haystack.extend(
             str(value).lower()
             for value in (
-                model.__class__.__name__,
-                getattr(model.__class__, "__module__", ""),
-                getattr(getattr(model, "config", None), "model_type", ""),
-                getattr(getattr(model, "config", None), "architectures", ""),
+                getattr(model_type, "__name__", ""),
+                getattr(model_type, "__module__", ""),
+                _safe_getattr(config, "model_type", ""),
+                _safe_getattr(config, "architectures", ""),
             )
         )
         for attr in (
@@ -62,7 +65,7 @@ def detect_foundation_architecture(model: object | None, namespace: Mapping[str,
             "language_model",
             "mm_projector",
         ):
-            if hasattr(model, attr):
+            if _safe_getattr(model, attr, _MISSING) is not _MISSING:
                 haystack.append(attr)
     haystack.extend(name.lower() for name in namespace)
     text = " ".join(haystack)
@@ -240,3 +243,12 @@ def _numeric_value(namespace: Mapping[str, Any], *names: str) -> float | None:
         except (TypeError, ValueError):
             continue
     return None
+
+
+def _safe_getattr(value: object | None, name: str, default: Any = None) -> Any:
+    if value is None:
+        return default
+    try:
+        return getattr(value, name, default)
+    except Exception:
+        return default
