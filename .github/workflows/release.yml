@@ -34,6 +34,22 @@ jobs:
           print(tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"])
           PY
           )
+          PACKAGE_VERSION=$(python - <<'PY'
+          import re
+          from pathlib import Path
+
+          text = Path("src/trainlens/__init__.py").read_text(encoding="utf-8")
+          match = re.search(r'^__version__\s*=\s*"([^"]+)"', text, flags=re.MULTILINE)
+          if match is None:
+              raise SystemExit("could not find trainlens.__version__")
+          print(match.group(1))
+          PY
+          )
+          if [[ "${PACKAGE_VERSION}" != "${VERSION}" ]]; then
+            echo "package version ${PACKAGE_VERSION} does not match project version ${VERSION}" >&2
+            exit 1
+          fi
+
           EXPECTED_TAG="v${VERSION}"
 
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
@@ -60,11 +76,35 @@ jobs:
           fi
 
           echo "tag=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
       - name: Build clean distributions
         run: |
           rm -rf dist
           python -m build
           python -m twine check dist/*
+      - name: Install and smoke-test built wheel
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.release_tag.outputs.version }}
+        run: |
+          python -m venv .release-venv
+          .release-venv/bin/python -m pip install --upgrade pip
+          .release-venv/bin/python -m pip install dist/*.whl
+          .release-venv/bin/python - <<'PY'
+          import json
+          import os
+          from importlib.metadata import version
+
+          from trainlens import __version__, compare_runs, render_report
+
+          expected = os.environ["RELEASE_VERSION"]
+          assert __version__ == expected
+          assert version("trainlens") == expected
+          comparison = compare_runs({"loss": 1.0}, {"loss": 0.8})
+          payload = json.loads(render_report(comparison, format="json"))
+          assert payload["metrics"][0]["name"] == "loss"
+          print(f"installed TrainLens {expected}: PASS")
+          PY
       - uses: actions/upload-artifact@v6
         with:
           name: python-package-distributions
