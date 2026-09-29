@@ -284,7 +284,7 @@ def _strategy(
             return "vlm_adapter_finetune"
         if (
             components.get("mm_projector") is True
-            and components.get("vision_tower") is False
+            and components.get("vision_tower") in {False, None}
             and components.get("language_model") in {False, None}
         ):
             return "vlm_projector_alignment"
