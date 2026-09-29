@@ -11,6 +11,7 @@ from trainlens.introspection import NotebookInspector
 from trainlens.models.metric import MetricSeries
 from trainlens.models.snapshot import NotebookSnapshot
 from trainlens.security import sanitize_value
+from trainlens.training_profile import inspect_training_profile
 
 _MAX_METRIC_POINTS = 12
 
@@ -59,6 +60,14 @@ def build_llm_notebook_context_from_snapshot(
         raise ValueError(msg)
 
     inspector = NotebookInspector()
+    candidates = inspector.find_models(snapshot)
+    model_ref = candidates[0].object_ref if candidates else _first_artifact_model_ref(snapshot)
+    trainer = _first_artifact_source(snapshot, "huggingface")
+    training_profile = inspect_training_profile(
+        model_ref,
+        trainer=trainer,
+        namespace=snapshot.raw_namespace,
+    )
     metric_namespace = _namespace_with_framework_metrics(snapshot)
     metric_series = extract_metric_series(metric_namespace)
     metric_variable_names = {
@@ -113,7 +122,28 @@ def build_llm_notebook_context_from_snapshot(
                 safe_value = sanitize_value(name, value)
                 lines.append(f"  - `{name}`: {safe_value!r}")
         lines.append("")
-    candidates = inspector.find_models(snapshot)
+    if (
+        training_profile.parameters
+        or training_profile.trainable_components
+        or training_profile.frozen_components
+        or training_profile.observations
+    ):
+        lines.extend(["## Training Profile", ""])
+        lines.append(f"- strategy: `{training_profile.strategy}`")
+        if training_profile.trainable_components:
+            lines.append(
+                "- trainable components: "
+                + ", ".join(f"`{name}`" for name in training_profile.trainable_components)
+            )
+        if training_profile.frozen_components:
+            lines.append(
+                "- frozen components: "
+                + ", ".join(f"`{name}`" for name in training_profile.frozen_components)
+            )
+        for name, value in sorted(training_profile.parameters.items()):
+            safe_value = sanitize_value(name, value)
+            lines.append(f"- `{name}`: {safe_value!r}")
+        lines.append("")
     if candidates:
         lines.extend(["## Model Candidates", ""])
         for candidate in candidates:
@@ -200,3 +230,20 @@ def _namespace_with_framework_metrics(snapshot: NotebookSnapshot) -> dict[str, A
         if artifact.latest_metrics:
             namespace[f"{prefix}_metrics"] = artifact.latest_metrics
     return namespace
+
+
+def _first_artifact_model_ref(snapshot: NotebookSnapshot) -> object | None:
+    for artifact in snapshot.framework_artifacts:
+        if artifact.model_ref is not None:
+            return artifact.model_ref
+    return None
+
+
+def _first_artifact_source(snapshot: NotebookSnapshot, framework: str) -> object | None:
+    for artifact in snapshot.framework_artifacts:
+        if artifact.framework != framework:
+            continue
+        source = snapshot.raw_namespace.get(artifact.variable_name)
+        if source is not None:
+            return source
+    return None
