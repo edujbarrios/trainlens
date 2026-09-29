@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from trainlens.analyzers.metrics import extract_metric_series
 from trainlens.introspection import NotebookInspector
@@ -235,7 +235,7 @@ def _namespace_with_framework_metrics(snapshot: NotebookSnapshot) -> dict[str, A
 def _first_artifact_model_ref(snapshot: NotebookSnapshot) -> object | None:
     for artifact in snapshot.framework_artifacts:
         if artifact.model_ref is not None:
-            return artifact.model_ref
+            return cast(object, artifact.model_ref)
     return None
 
 
@@ -245,5 +245,5 @@ def _first_artifact_source(snapshot: NotebookSnapshot, framework: str) -> object
             continue
         source = snapshot.raw_namespace.get(artifact.variable_name)
         if source is not None:
-            return source
+            return cast(object, source)
     return None
