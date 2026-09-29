@@ -15,6 +15,35 @@ print(paper.markdown)
 `max_metric_points` must be at least 2; longer histories retain endpoints,
 extrema, count, and an ordered sample.
 
+## Inspect training configuration
+
+```python
+from trainlens import inspect_training_profile
+
+profile = inspect_training_profile(model, trainer=trainer, namespace=globals())
+print(profile.strategy)
+print(profile.trainable_components)
+print(profile.frozen_components)
+print(profile.parameters)
+```
+
+`inspect_training_profile()` uses safe duck typing and does not import optional
+framework packages. It normalizes common Hugging Face training arguments,
+PEFT/LoRA/DoRA settings, and VLM configuration such as projector type,
+multimodal learning rates, visual feature selection, and sequence length.
+
+For VLMs, TrainLens distinguishes projector-only alignment, adapter-based
+fine-tuning, and broader VLM fine-tuning when the available object state is
+sufficient. The profile also records detected trainable and frozen vision,
+language, and multimodal-projector components. Inspection is best-effort: an
+unknown or inaccessible attribute is omitted rather than making notebook
+analysis fail.
+
+The normal `%explain_training` and report workflows use the same profile to add
+VLM-specific evidence and recommendations. The exact sanitized profile included
+in an optional LLM request is visible through `preview_notebook_context()` or
+`%explain_training --dry-run`.
+
 ## Compare runs
 
 ```python
@@ -62,7 +91,8 @@ a recognizable direction if automatic selection is unsuitable.
 ## Public entry points
 
 The stable top-level package exports report builders, prompt configuration,
-comparison helpers, experiment planning, monitoring/callback classes, and
-export helpers. Framework inspection internals and model dataclasses under
-subpackages should be treated as lower-level APIs.
+comparison helpers, experiment planning, monitoring/callback classes,
+`TrainingProfile`, `inspect_training_profile()`, and export helpers. Framework
+inspection internals and model dataclasses under subpackages should be treated
+as lower-level APIs.
 
