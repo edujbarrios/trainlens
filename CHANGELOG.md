@@ -2,6 +2,15 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.10.0 - 2026-09-29
+
+- add public `TrainingProfile` and `inspect_training_profile()` APIs for dependency-light training-configuration introspection
+- understand common Hugging Face training arguments, PEFT/LoRA/DoRA settings, VLM projector configuration, and multimodal learning-rate splits through safe duck typing
+- detect projector-only alignment, parameter-efficient VLM fine-tuning, and full VLM fine-tuning while reporting frozen and trainable multimodal components
+- add VLM-specific signals and controlled recommendations for very small adapter ranks, fixed multimodal sequence lengths, split projector learning rates, and accidentally frozen training configurations
+- include the normalized VLM/PEFT training profile in deterministic notebook analysis and the exact sanitized context previewed or sent to an optional LLM provider
+- keep the new VLM training intelligence dependency-free with respect to Transformers, PEFT, and PyTorch
+
 ## 0.9.2 - 2026-09-28
 
 - keep notebook analysis best-effort when metric histories, model configuration, array metadata, or feature-importance properties raise during inspection

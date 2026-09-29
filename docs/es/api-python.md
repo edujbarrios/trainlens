@@ -15,6 +15,36 @@ print(paper.markdown)
 `max_metric_points` debe ser al menos 2; los historiales largos conservan
 extremos, mínimo, máximo, cantidad y una muestra ordenada.
 
+## Inspeccionar la configuración de entrenamiento
+
+```python
+from trainlens import inspect_training_profile
+
+profile = inspect_training_profile(model, trainer=trainer, namespace=globals())
+print(profile.strategy)
+print(profile.trainable_components)
+print(profile.frozen_components)
+print(profile.parameters)
+```
+
+`inspect_training_profile()` usa *duck typing* seguro y no importa paquetes
+opcionales de frameworks. Normaliza argumentos habituales de Hugging Face,
+configuración PEFT/LoRA/DoRA y parámetros de VLM como el tipo de projector,
+learning rates multimodales, selección de características visuales y longitud
+de secuencia.
+
+En VLMs, TrainLens distingue alineamiento sólo del projector, fine-tuning con
+adaptadores y fine-tuning VLM más amplio cuando el estado disponible permite
+inferirlo. El perfil también registra componentes de visión, lenguaje y
+projector multimodal detectados como entrenables o congelados. La inspección es
+*best effort*: un atributo desconocido o inaccesible se omite en vez de hacer
+fallar el análisis del notebook.
+
+Los flujos normales de `%explain_training` e informes reutilizan el mismo
+perfil para añadir evidencia y recomendaciones específicas de VLM. El perfil
+sanitizado exacto que se incluiría en una petición LLM opcional puede verse con
+`preview_notebook_context()` o `%explain_training --dry-run`.
+
 ## Comparar entrenamientos
 
 ```python
@@ -60,7 +90,8 @@ reconocible si la selección automática no sirve.
 ## Puntos de entrada públicos
 
 El paquete superior exporta constructores de informes, configuración de
-prompts, comparaciones, planificación, monitorización, callbacks y exportación.
-Los componentes internos de inspección y modelos de los subpaquetes deben
-considerarse APIs de nivel inferior.
+prompts, comparaciones, planificación, monitorización, callbacks,
+`TrainingProfile`, `inspect_training_profile()` y exportación. Los componentes
+internos de inspección y modelos de los subpaquetes deben considerarse APIs de
+nivel inferior.
 
