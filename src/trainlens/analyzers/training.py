@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
-from typing import Any
+from typing import Any, cast
 
 from trainlens.analyzers.base import Analyzer
 from trainlens.analyzers.metrics import extract_metric_series, paired_metric
@@ -256,7 +256,7 @@ def _first_artifact_model_name(snapshot: NotebookSnapshot) -> str | None:
 def _first_artifact_model_ref(snapshot: NotebookSnapshot) -> object | None:
     for artifact in snapshot.framework_artifacts:
         if artifact.model_ref is not None:
-            return artifact.model_ref
+            return cast(object, artifact.model_ref)
     return None
 
 
@@ -266,5 +266,5 @@ def _first_artifact_source(snapshot: NotebookSnapshot, framework: str) -> object
             continue
         source = snapshot.raw_namespace.get(artifact.variable_name)
         if source is not None:
-            return source
+            return cast(object, source)
     return None
