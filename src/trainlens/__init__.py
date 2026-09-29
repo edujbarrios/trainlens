@@ -29,6 +29,7 @@ from trainlens.notebook import (
     build_paper_report,
     preview_notebook_context,
 )
+from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
 __version__ = "0.9.2"
 
@@ -41,6 +42,7 @@ __all__ = [
     "TrainLensPrompt",
     "TrainingAlert",
     "TrainingObservation",
+    "TrainingProfile",
     "SuccessCriterion",
     "TrainLensMonitor",
     "TrainLensCallback",
@@ -51,6 +53,7 @@ __all__ = [
     "compare_runs",
     "experiment_config",
     "get_trainlens_prompt",
+    "inspect_training_profile",
     "keras_callback",
     "lightning_callback",
     "load_ipython_extension",
