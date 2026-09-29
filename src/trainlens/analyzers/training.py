@@ -22,9 +22,14 @@ from trainlens.heuristics.foundation import (
     detect_loss_plateau,
     foundation_recommendations,
 )
+from trainlens.heuristics.vlm_training import (
+    detect_vlm_training_signals,
+    vlm_training_recommendations,
+)
 from trainlens.introspection.models import ModelCandidate
 from trainlens.models.analysis import AnalysisResult, Recommendation
 from trainlens.models.snapshot import NotebookSnapshot
+from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
 
 class TrainingSessionAnalyzer(Analyzer):
@@ -39,11 +44,18 @@ class TrainingSessionAnalyzer(Analyzer):
         train_loss, validation_loss = paired_metric(metric_series, "loss")
         framework = model.framework if model else _first_artifact_framework(snapshot)
         model_name = model.display_name if model else _first_artifact_model_name(snapshot)
+        model_ref = model.object_ref if model else _first_artifact_model_ref(snapshot)
+        trainer = _first_artifact_source(snapshot, "huggingface")
+        training_profile = inspect_training_profile(
+            model_ref,
+            trainer=trainer,
+            namespace=snapshot.raw_namespace,
+        )
         result = AnalysisResult(
             model_name=model_name,
             framework=framework,
         )
-        families = detect_foundation_architecture(model.object_ref if model else None, namespace)
+        families = detect_foundation_architecture(model_ref, namespace)
 
         if model:
             result.summary.append(f"Detected {model.display_name} from `{model.variable_name}`.")
@@ -67,6 +79,8 @@ class TrainingSessionAnalyzer(Analyzer):
                     f"Captured {artifact.framework} training parameters from "
                     f"`{artifact.variable_name}`."
                 )
+
+        _append_training_profile_summary(result, training_profile)
 
         if train_acc and train_acc.last is not None:
             result.metrics["train_accuracy"] = train_acc.last
@@ -106,11 +120,17 @@ class TrainingSessionAnalyzer(Analyzer):
             if signal:
                 result.signals.append(signal)
 
+        vlm_signals = detect_vlm_training_signals(training_profile)
+        result.signals.extend(vlm_signals)
+
         if model:
             result.top_features = top_features(model.object_ref, infer_feature_names(namespace))
 
         result.recommendations.extend(self._recommendations(result))
         result.recommendations.extend(foundation_recommendations(families, result.signals))
+        result.recommendations.extend(
+            vlm_training_recommendations(training_profile, vlm_signals)
+        )
         return result
 
     def _recommendations(self, result: AnalysisResult) -> list[Recommendation]:
@@ -149,6 +169,54 @@ class TrainingSessionAnalyzer(Analyzer):
         return recommendations
 
 
+def _append_training_profile_summary(
+    result: AnalysisResult,
+    profile: TrainingProfile,
+) -> None:
+    if not (
+        profile.parameters
+        or profile.trainable_components
+        or profile.frozen_components
+        or profile.observations
+    ):
+        return
+    if profile.strategy != "unknown":
+        result.summary.append(
+            "Training strategy appears to be " + profile.strategy.replace("_", " ") + "."
+        )
+    if profile.trainable_components:
+        result.summary.append(
+            f"Trainable components: {', '.join(profile.trainable_components)}."
+        )
+    if profile.frozen_components:
+        result.summary.append(f"Frozen components: {', '.join(profile.frozen_components)}.")
+
+    learning_rates = []
+    for key, label in (
+        ("training.learning_rate", "base"),
+        ("training.mm_projector_lr", "projector"),
+        ("training.vision_tower_lr", "vision tower"),
+    ):
+        value = profile.parameters.get(key)
+        if value is not None:
+            learning_rates.append(f"{label}={value}")
+    if learning_rates:
+        result.summary.append("Learning rates: " + ", ".join(learning_rates) + ".")
+
+    rank = profile.parameters.get("peft.r")
+    alpha = profile.parameters.get("peft.lora_alpha")
+    targets = profile.parameters.get("peft.target_modules")
+    adapter_parts = []
+    if rank is not None:
+        adapter_parts.append(f"rank={rank}")
+    if alpha is not None:
+        adapter_parts.append(f"alpha={alpha}")
+    if isinstance(targets, tuple) and targets:
+        adapter_parts.append(f"targets={', '.join(targets)}")
+    if adapter_parts:
+        result.summary.append("PEFT adapter: " + ", ".join(adapter_parts) + ".")
+
+
 def _first_present(namespace: dict[str, object], *names: str) -> Iterable[Any] | None:
     for name in names:
         value = namespace.get(name)
@@ -182,4 +250,21 @@ def _first_artifact_model_name(snapshot: NotebookSnapshot) -> str | None:
     for artifact in snapshot.framework_artifacts:
         if artifact.model_name:
             return artifact.model_name
+    return None
+
+
+def _first_artifact_model_ref(snapshot: NotebookSnapshot) -> object | None:
+    for artifact in snapshot.framework_artifacts:
+        if artifact.model_ref is not None:
+            return artifact.model_ref
+    return None
+
+
+def _first_artifact_source(snapshot: NotebookSnapshot, framework: str) -> object | None:
+    for artifact in snapshot.framework_artifacts:
+        if artifact.framework != framework:
+            continue
+        source = snapshot.raw_namespace.get(artifact.variable_name)
+        if source is not None:
+            return source
     return None
