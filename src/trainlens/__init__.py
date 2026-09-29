@@ -31,7 +31,7 @@ from trainlens.notebook import (
 )
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
-__version__ = "0.9.2"
+__version__ = "0.10.0"
 
 __all__ = [
     "LiveReport",
