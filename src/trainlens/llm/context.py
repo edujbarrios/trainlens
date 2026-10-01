@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, cast
 
+from trainlens.analysis_config import AnalysisConfig
 from trainlens.analyzers.metrics import extract_metric_series
 from trainlens.introspection import NotebookInspector
 from trainlens.introspection.selection import framework_source_for_model
@@ -25,8 +26,6 @@ class LLMNotebookContext:
     metrics: dict[str, float]
 
     def _repr_markdown_(self) -> str:
-        """Render the exact outbound context natively in IPython/Jupyter."""
-
         return self.markdown
 
 
@@ -35,6 +34,7 @@ def build_llm_notebook_context(
     *,
     max_metric_points: int = _MAX_METRIC_POINTS,
     include_values: bool = False,
+    analysis_config: AnalysisConfig | None = None,
 ) -> LLMNotebookContext:
     """Capture and render notebook state as bounded LLM evidence."""
 
@@ -43,6 +43,7 @@ def build_llm_notebook_context(
         snapshot,
         max_metric_points=max_metric_points,
         include_values=include_values,
+        analysis_config=analysis_config,
     )
 
 
@@ -51,30 +52,30 @@ def build_llm_notebook_context_from_snapshot(
     *,
     max_metric_points: int = _MAX_METRIC_POINTS,
     include_values: bool = False,
+    analysis_config: AnalysisConfig | None = None,
 ) -> LLMNotebookContext:
     """Render an existing notebook snapshot without inspecting live state again."""
 
     if isinstance(max_metric_points, bool) or not isinstance(max_metric_points, int):
         raise TypeError("max_metric_points must be an integer")
     if max_metric_points < 2:
-        msg = "max_metric_points must be at least 2 to preserve metric endpoints."
-        raise ValueError(msg)
+        raise ValueError("max_metric_points must be at least 2 to preserve metric endpoints.")
 
     inspector = NotebookInspector()
     candidates = inspector.find_models(snapshot)
-    model_ref = candidates[0].object_ref if candidates else _first_artifact_model_ref(snapshot)
-    trainer = framework_source_for_model(snapshot, "huggingface", model_ref)
+    model_ref = _selected_model_ref(snapshot, candidates, analysis_config)
+    trainer = _selected_trainer(snapshot, model_ref, analysis_config)
     training_profile = inspect_training_profile(
         model_ref,
         trainer=trainer,
         namespace=snapshot.raw_namespace,
     )
     metric_namespace = _namespace_with_framework_metrics(snapshot)
+    if analysis_config is not None and analysis_config.metrics is not None:
+        metric_namespace["trainlens_explicit_metrics"] = analysis_config.metrics
     metric_series = extract_metric_series(metric_namespace)
     metric_variable_names = {
-        name
-        for name, value in metric_namespace.items()
-        if extract_metric_series({name: value})
+        name for name, value in metric_namespace.items() if extract_metric_series({name: value})
     }
     metrics = {
         name: series.last
@@ -98,11 +99,7 @@ def build_llm_notebook_context_from_snapshot(
             if variable.length is not None:
                 details.append(f"length={variable.length}")
             lines.append(f"- `{variable.name}`: " + ", ".join(details))
-            if (
-                include_values
-                and variable.value is not None
-                and variable.name not in metric_variable_names
-            ):
+            if include_values and variable.value is not None and variable.name not in metric_variable_names:
                 lines.append(f"  value: {variable.value!r}")
         lines.append("")
     if metric_series:
@@ -116,12 +113,9 @@ def build_llm_notebook_context_from_snapshot(
     if training_artifacts:
         lines.extend(["## Training Parameters", ""])
         for artifact in training_artifacts:
-            lines.append(
-                f"- `{artifact.variable_name}` ({artifact.type_name}, {artifact.framework})"
-            )
+            lines.append(f"- `{artifact.variable_name}` ({artifact.type_name}, {artifact.framework})")
             for name, value in sorted(artifact.training_parameters.items()):
-                safe_value = sanitize_value(name, value)
-                lines.append(f"  - `{name}`: {safe_value!r}")
+                lines.append(f"  - `{name}`: {sanitize_value(name, value)!r}")
         lines.append("")
     if (
         training_profile.parameters
@@ -142,17 +136,17 @@ def build_llm_notebook_context_from_snapshot(
                 + ", ".join(f"`{name}`" for name in training_profile.frozen_components)
             )
         for name, value in sorted(training_profile.parameters.items()):
-            safe_value = sanitize_value(name, value)
-            lines.append(f"- `{name}`: {safe_value!r}")
+            lines.append(f"- `{name}`: {sanitize_value(name, value)!r}")
         lines.append("")
     if candidates:
         lines.extend(["## Model Candidates", ""])
         for candidate in candidates:
             reasons = ", ".join(candidate.reasons) or "framework match"
             framework = candidate.framework or "unknown framework"
+            selected = " selected" if candidate.object_ref is model_ref else ""
             lines.append(
-                f"- `{candidate.variable_name}`: {candidate.type_name}, "
-                f"{framework}, confidence={candidate.confidence:.2f}, reasons={reasons}"
+                f"- `{candidate.variable_name}`: {candidate.type_name}, {framework}, "
+                f"confidence={candidate.confidence:.2f}, reasons={reasons}{selected}"
             )
     else:
         lines.extend(
@@ -164,6 +158,38 @@ def build_llm_notebook_context_from_snapshot(
             ]
         )
     return LLMNotebookContext(markdown="\n".join(lines).strip() + "\n", metrics=metrics)
+
+
+def _selected_model_ref(snapshot: NotebookSnapshot, candidates: list[Any], config: AnalysisConfig | None) -> object | None:
+    if config is not None and config.model is not None:
+        if isinstance(config.model, str):
+            if config.model not in snapshot.raw_namespace:
+                raise ValueError(f"model variable {config.model!r} was not found in the notebook snapshot")
+            return snapshot.raw_namespace[config.model]
+        return config.model
+    if config is not None and config.strict and len(candidates) > 1:
+        names = ", ".join(candidate.variable_name for candidate in candidates)
+        raise ValueError(
+            "multiple model candidates detected; select one explicitly with "
+            f"AnalysisConfig(model=...). Candidates: {names}"
+        )
+    return candidates[0].object_ref if candidates else _first_artifact_model_ref(snapshot)
+
+
+def _selected_trainer(
+    snapshot: NotebookSnapshot,
+    model_ref: object | None,
+    config: AnalysisConfig | None,
+) -> object | None:
+    if config is not None and config.trainer is not None:
+        if isinstance(config.trainer, str):
+            if config.trainer not in snapshot.raw_namespace:
+                raise ValueError(
+                    f"trainer variable {config.trainer!r} was not found in the notebook snapshot"
+                )
+            return snapshot.raw_namespace[config.trainer]
+        return config.trainer
+    return framework_source_for_model(snapshot, "huggingface", model_ref)
 
 
 def _render_metric_series(series: MetricSeries, max_metric_points: int) -> str:
@@ -179,15 +205,12 @@ def _render_metric_points(series: MetricSeries, max_metric_points: int) -> str:
         return f"points=[{rendered}]"
     indices = _sample_indices(len(points), max_metric_points)
     sampled = tuple(points[index] for index in indices)
-    rendered_sample = ", ".join(
-        _format_metric_point(step, value) for step, value in sampled
-    )
+    rendered_sample = ", ".join(_format_metric_point(step, value) for step, value in sampled)
     return (
         f"observations={len(points)}, first_step={_format_step(points[0][0])}, "
-        f"last_step={_format_step(points[-1][0])}, "
-        f"first={series.values[0]:.6g}, last={series.values[-1]:.6g}, "
-        f"min={min(series.values):.6g}, max={max(series.values):.6g}, "
-        f"ordered_sample=[{rendered_sample}]"
+        f"last_step={_format_step(points[-1][0])}, first={series.values[0]:.6g}, "
+        f"last={series.values[-1]:.6g}, min={min(series.values):.6g}, "
+        f"max={max(series.values):.6g}, ordered_sample=[{rendered_sample}]"
     )
 
 
@@ -203,15 +226,13 @@ def _format_step(step: int | float | None) -> str:
 
 def _render_metric_values(values: tuple[float, ...], max_metric_points: int) -> str:
     if len(values) <= max_metric_points:
-        rendered = ", ".join(f"{value:.6g}" for value in values)
-        return f"[{rendered}]"
+        return "[" + ", ".join(f"{value:.6g}" for value in values) + "]"
     indices = _sample_indices(len(values), max_metric_points)
     sampled = tuple(values[index] for index in indices)
     rendered_sample = ", ".join(f"{value:.6g}" for value in sampled)
     return (
         f"observations={len(values)}, first={values[0]:.6g}, last={values[-1]:.6g}, "
-        f"min={min(values):.6g}, max={max(values):.6g}, "
-        f"ordered_sample=[{rendered_sample}]"
+        f"min={min(values):.6g}, max={max(values):.6g}, ordered_sample=[{rendered_sample}]"
     )
 
 
