@@ -180,7 +180,7 @@ def _selected_model_ref(
                 raise ValueError(
                     f"model variable {config.model!r} was not found in the notebook snapshot"
                 )
-            return snapshot.raw_namespace[config.model]
+            return cast(object, snapshot.raw_namespace[config.model])
         return config.model
     if config is not None and config.strict and len(candidates) > 1:
         names = ", ".join(candidate.variable_name for candidate in candidates)
@@ -202,7 +202,7 @@ def _selected_trainer(
                 raise ValueError(
                     f"trainer variable {config.trainer!r} was not found in the notebook snapshot"
                 )
-            return snapshot.raw_namespace[config.trainer]
+            return cast(object, snapshot.raw_namespace[config.trainer])
         return config.trainer
     return framework_source_for_model(snapshot, "huggingface", model_ref)
 
