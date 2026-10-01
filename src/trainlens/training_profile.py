@@ -9,9 +9,11 @@ from typing import Any, Literal, TypeAlias
 TrainingStrategy = Literal[
     "unknown",
     "full_finetune",
+    "partial_finetune",
     "adapter_finetune",
     "vlm_projector_alignment",
     "vlm_adapter_finetune",
+    "vlm_partial_finetune",
     "vlm_full_finetune",
 ]
 TrainingParameter: TypeAlias = str | int | float | bool | tuple[str, ...] | None
@@ -90,6 +92,12 @@ class TrainingProfile:
     parameters: Mapping[str, TrainingParameter] = field(default_factory=dict)
     trainable_components: tuple[str, ...] = ()
     frozen_components: tuple[str, ...] = ()
+    trainable_parameters: int | None = None
+    total_parameters: int | None = None
+    trainable_fraction: float | None = None
+    adapters: tuple[str, ...] = ()
+    active_adapters: tuple[str, ...] = ()
+    quantization: str | None = None
     observations: tuple[str, ...] = ()
 
 
@@ -128,9 +136,24 @@ def inspect_training_profile(
                 if normalized is not None:
                     parameters[target] = normalized
 
-    has_peft = _extract_peft_parameters(model, parameters)
+    has_peft, adapters, active_adapters = _extract_peft_parameters(model, parameters)
     components = _component_states(model)
     is_vlm = _looks_like_vlm(model, config, components)
+    trainable_parameters, total_parameters = _parameter_counts(model)
+    trainable_fraction = (
+        trainable_parameters / total_parameters
+        if trainable_parameters is not None
+        and total_parameters is not None
+        and total_parameters > 0
+        else None
+    )
+    quantization = _quantization(model, config)
+    if adapters:
+        parameters["peft.adapters"] = adapters
+    if active_adapters:
+        parameters["peft.active_adapters"] = active_adapters
+    if quantization is not None:
+        parameters["training.quantization"] = quantization
 
     trainable = tuple(name for name, state in components.items() if state is True)
     frozen = tuple(name for name, state in components.items() if state is False)
@@ -139,6 +162,8 @@ def inspect_training_profile(
         has_peft=has_peft,
         model_state=_component_trainable_state(model),
         components=components,
+        trainable_parameters=trainable_parameters,
+        total_parameters=total_parameters,
     )
 
     observations: list[str] = []
@@ -146,6 +171,18 @@ def inspect_training_profile(
         observations.append("Detected vision-language model training configuration.")
     if has_peft:
         observations.append("Detected parameter-efficient adapter configuration.")
+    if trainable_parameters is not None and total_parameters is not None:
+        percentage = 100.0 * trainable_parameters / total_parameters if total_parameters else 0.0
+        observations.append(
+            "Trainable parameters: "
+            f"{trainable_parameters} / {total_parameters} ({percentage:.2f}%)."
+        )
+    if len(adapters) > 1:
+        observations.append(f"Detected PEFT adapters: {', '.join(adapters)}.")
+    if active_adapters:
+        observations.append(f"Active PEFT adapter(s): {', '.join(active_adapters)}.")
+    if quantization is not None:
+        observations.append(f"Detected {quantization} quantization configuration.")
     if trainable:
         observations.append(f"Trainable components: {', '.join(trainable)}.")
     if frozen:
@@ -156,6 +193,12 @@ def inspect_training_profile(
         parameters=parameters,
         trainable_components=trainable,
         frozen_components=frozen,
+        trainable_parameters=trainable_parameters,
+        total_parameters=total_parameters,
+        trainable_fraction=trainable_fraction,
+        adapters=adapters,
+        active_adapters=active_adapters,
+        quantization=quantization,
         observations=tuple(observations),
     )
 
@@ -178,18 +221,25 @@ def _extract_attributes(
 def _extract_peft_parameters(
     model: object | None,
     output: dict[str, TrainingParameter],
-) -> bool:
+) -> tuple[bool, tuple[str, ...], tuple[str, ...]]:
     if model is None:
-        return False
+        return False, (), ()
     raw_config = _safe_getattr(model, "peft_config")
+    active_adapters = _active_adapters(model)
+    adapters: tuple[str, ...] = ()
     config: object | None = raw_config
     if isinstance(raw_config, Mapping):
         try:
-            config = next(iter(raw_config.values()), None)
-        except (RuntimeError, TypeError, ValueError):
+            adapters = tuple(str(name) for name in raw_config)
+            selected = next((name for name in active_adapters if name in raw_config), None)
+            if selected is not None:
+                config = raw_config[selected]
+            else:
+                config = next(iter(raw_config.values()), None)
+        except (KeyError, RuntimeError, TypeError, ValueError):
             config = None
     if config is None:
-        return False
+        return False, adapters, active_adapters
 
     found = False
     for name in _PEFT_ARGUMENTS:
@@ -198,7 +248,76 @@ def _extract_peft_parameters(
             continue
         output[f"peft.{name}"] = normalized
         found = True
-    return found
+    return found, adapters, active_adapters
+
+
+def _active_adapters(model: object) -> tuple[str, ...]:
+    plural = _safe_getattr(model, "active_adapters")
+    normalized = _normalize_string_sequence(plural)
+    if normalized:
+        return normalized
+    singular = _safe_getattr(model, "active_adapter")
+    if isinstance(singular, str) and singular:
+        return (singular,)
+    return ()
+
+
+def _normalize_string_sequence(value: object | None) -> tuple[str, ...]:
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
+        try:
+            return tuple(str(item) for item in value)
+        except (RuntimeError, TypeError, ValueError):
+            return ()
+    return ()
+
+
+def _parameter_counts(model: object | None) -> tuple[int | None, int | None]:
+    if model is None:
+        return None, None
+    parameters_method = _safe_getattr(model, "parameters")
+    if not callable(parameters_method):
+        return None, None
+    try:
+        parameters = iter(parameters_method())
+    except Exception:
+        return None, None
+
+    trainable = 0
+    total = 0
+    seen = False
+    try:
+        for parameter in parameters:
+            numel_method = _safe_getattr(parameter, "numel")
+            if not callable(numel_method):
+                continue
+            try:
+                count = int(numel_method())
+            except (OverflowError, TypeError, ValueError):
+                continue
+            if count < 0:
+                continue
+            seen = True
+            total += count
+            if _safe_getattr(parameter, "requires_grad") is True:
+                trainable += count
+    except Exception:
+        return None, None
+    return (trainable, total) if seen else (None, None)
+
+
+def _quantization(model: object | None, config: object | None) -> str | None:
+    if _safe_getattr(model, "is_loaded_in_4bit") is True:
+        return "4bit"
+    if _safe_getattr(model, "is_loaded_in_8bit") is True:
+        return "8bit"
+    quantization_config = _safe_getattr(config, "quantization_config")
+    if quantization_config is None:
+        return None
+    try:
+        name = type(quantization_config).__name__
+    except Exception:
+        return "configured"
+    return name or "configured"
 
 
 def _component_states(model: object | None) -> dict[str, bool | None]:
@@ -278,6 +397,8 @@ def _strategy(
     has_peft: bool,
     model_state: bool | None,
     components: Mapping[str, bool | None],
+    trainable_parameters: int | None,
+    total_parameters: int | None,
 ) -> TrainingStrategy:
     if is_vlm:
         if has_peft:
@@ -288,14 +409,30 @@ def _strategy(
             and components.get("language_model") in {False, None}
         ):
             return "vlm_projector_alignment"
+        if _is_full_finetune(trainable_parameters, total_parameters):
+            return "vlm_full_finetune"
+        if _is_partial_finetune(trainable_parameters, total_parameters):
+            return "vlm_partial_finetune"
         if any(state is True for state in components.values()) or model_state is True:
             return "vlm_full_finetune"
         return "unknown"
     if has_peft:
         return "adapter_finetune"
+    if _is_full_finetune(trainable_parameters, total_parameters):
+        return "full_finetune"
+    if _is_partial_finetune(trainable_parameters, total_parameters):
+        return "partial_finetune"
     if model_state is True:
         return "full_finetune"
     return "unknown"
+
+
+def _is_full_finetune(trainable: int | None, total: int | None) -> bool:
+    return trainable is not None and total is not None and total > 0 and trainable == total
+
+
+def _is_partial_finetune(trainable: int | None, total: int | None) -> bool:
+    return trainable is not None and total is not None and 0 < trainable < total
 
 
 def _normalize_parameter(value: object | None) -> TrainingParameter | None:

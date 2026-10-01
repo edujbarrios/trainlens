@@ -212,12 +212,25 @@ def _append_training_profile_summary(
         result.summary.append(
             "Training strategy appears to be " + profile.strategy.replace("_", " ") + "."
         )
+    if profile.trainable_parameters is not None and profile.total_parameters is not None:
+        fraction = profile.trainable_fraction or 0.0
+        result.summary.append(
+            "Trainable parameters: "
+            f"{profile.trainable_parameters} / {profile.total_parameters} "
+            f"({fraction:.2%})."
+        )
     if profile.trainable_components:
         result.summary.append(
             f"Trainable components: {', '.join(profile.trainable_components)}."
         )
     if profile.frozen_components:
         result.summary.append(f"Frozen components: {', '.join(profile.frozen_components)}.")
+    if profile.adapters:
+        result.summary.append(f"PEFT adapters: {', '.join(profile.adapters)}.")
+    if profile.active_adapters:
+        result.summary.append(f"Active PEFT adapter(s): {', '.join(profile.active_adapters)}.")
+    if profile.quantization is not None:
+        result.summary.append(f"Quantization: {profile.quantization}.")
 
     learning_rates = []
     for key, label in (
