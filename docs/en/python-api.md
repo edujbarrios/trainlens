@@ -119,12 +119,7 @@ material-change thresholds. Built-in metric behavior remains available through
 ## Portable runs and richer comparisons
 
 ```python
-from trainlens import (
-    compare_runs,
-    load_run,
-    save_run,
-    training_run_from_analysis,
-)
+from trainlens import compare_runs, load_run, save_run, training_run_from_analysis
 
 run = training_run_from_analysis(result, parameters={"learning_rate": 1e-4})
 save_run(run, "run-a.json")
@@ -162,20 +157,24 @@ single = suggest_next_experiment(
 )
 next_parameters = experiment_config(single, base_parameters=runs[0].parameters)
 
+objectives = (
+    ObjectiveSpec(metric="validation_loss", direction="min"),
+    ObjectiveSpec(metric="latency_ms", direction="min"),
+)
+constraints = (
+    MetricConstraint(metric="latency_ms", operator="<=", threshold=10.0),
+)
+front = pareto_front(runs, objectives, constraints=constraints)
 multi = suggest_multiobjective_experiment(
     runs,
-    objectives=(
-        ObjectiveSpec(metric="validation_loss", direction="lower"),
-        ObjectiveSpec(metric="latency_ms", direction="lower"),
-    ),
-    constraints=(MetricConstraint(metric="latency_ms", maximum=10.0),),
+    objectives,
+    constraints=constraints,
 )
-front = pareto_front(runs, objectives=("validation_loss", "latency_ms"))
 ```
 
 Single-objective recommendations remain deterministic controlled heuristics.
-The multi-objective API can filter constraints and reason over a Pareto front
-instead of forcing all metrics into one scalar score.
+The multi-objective API can filter hard constraints and reason over a Pareto
+front instead of forcing all metrics into one scalar score.
 
 ## Extensible live monitoring
 
