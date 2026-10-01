@@ -10,6 +10,7 @@ from typing import Any
 
 from IPython import get_ipython
 
+from trainlens.analysis_config import AnalysisConfig
 from trainlens.llm.context import (
     LLMNotebookContext,
     build_llm_notebook_context,
@@ -29,8 +30,6 @@ class LiveReport:
     markdown: str
 
     def _repr_markdown_(self) -> str:
-        """Render the report when returned as the last expression in IPython."""
-
         return self.markdown
 
 
@@ -39,6 +38,7 @@ def preview_notebook_context(
     *,
     max_metric_points: int = 12,
     include_values: bool = False,
+    analysis_config: AnalysisConfig | None = None,
 ) -> LLMNotebookContext:
     """Return the exact sanitized notebook context used for an LLM request."""
 
@@ -47,6 +47,7 @@ def preview_notebook_context(
         report_namespace,
         max_metric_points=max_metric_points,
         include_values=include_values,
+        analysis_config=analysis_config,
     )
 
 
@@ -56,6 +57,7 @@ def build_llm_report(
     max_metric_points: int = 12,
     prompt_options: PromptOptions | None = None,
     include_values: bool = False,
+    analysis_config: AnalysisConfig | None = None,
 ) -> LiveReport:
     """Build an LLM-generated training report from notebook context."""
 
@@ -64,6 +66,7 @@ def build_llm_report(
         max_metric_points=max_metric_points,
         prompt_options=prompt_options,
         include_values=include_values,
+        analysis_config=analysis_config,
     )
 
 
@@ -73,6 +76,7 @@ def build_paper_report(
     max_metric_points: int = 12,
     prompt_options: PromptOptions | None = None,
     include_values: bool = False,
+    analysis_config: AnalysisConfig | None = None,
 ) -> LiveReport:
     """Build a scientific paper-style training report from notebook context."""
 
@@ -82,6 +86,7 @@ def build_paper_report(
         max_metric_points=max_metric_points,
         prompt_options=prompt_options,
         include_values=include_values,
+        analysis_config=analysis_config,
     )
 
 
@@ -91,6 +96,7 @@ def build_improvement_ideas(
     max_metric_points: int = 12,
     prompt_options: PromptOptions | None = None,
     include_values: bool = False,
+    analysis_config: AnalysisConfig | None = None,
 ) -> LiveReport:
     """Build an evidence-backed improvement plan from notebook context."""
 
@@ -100,6 +106,7 @@ def build_improvement_ideas(
         max_metric_points=max_metric_points,
         prompt_options=prompt_options,
         include_values=include_values,
+        analysis_config=analysis_config,
     )
 
 
@@ -110,16 +117,16 @@ def _build_report(
     max_metric_points: int,
     prompt_options: PromptOptions | None,
     include_values: bool,
+    analysis_config: AnalysisConfig | None,
 ) -> LiveReport:
-    """Build one of the supported LLM-generated report modes."""
-
     report_namespace = _current_user_namespace() if namespace is None else namespace
     snapshot = snapshot_namespace(report_namespace)
-    result = analyze_snapshot(snapshot)
+    result = analyze_snapshot(snapshot, config=analysis_config)
     context = build_llm_notebook_context_from_snapshot(
         snapshot,
         max_metric_points=max_metric_points,
         include_values=include_values,
+        analysis_config=analysis_config,
     )
     explain_kwargs: dict[str, Any] = {"mode": mode, "require_provider": True}
     if prompt_options is not None:
@@ -133,6 +140,5 @@ def _build_report(
 def _current_user_namespace() -> Mapping[str, Any]:
     shell = get_ipython()
     if shell is None:
-        msg = "No active IPython shell found; pass a namespace explicitly."
-        raise RuntimeError(msg)
+        raise RuntimeError("No active IPython shell found; pass a namespace explicitly.")
     return shell.user_ns
