@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -226,7 +227,17 @@ def _is_persistent_alert(code: str) -> bool:
 def _first_metric(
     observations: list[TrainingObservation], candidates: tuple[str, ...]
 ) -> str | None:
+    if not observations:
+        return None
+    first_names = tuple(observations[0].metrics)
     for candidate in candidates:
-        if all(candidate in item.metrics for item in observations):
-            return candidate
+        for name in first_names:
+            if _normalized_metric_name(name) != candidate:
+                continue
+            if all(name in item.metrics for item in observations):
+                return name
     return None
+
+
+def _normalized_metric_name(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
