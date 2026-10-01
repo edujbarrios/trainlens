@@ -32,7 +32,7 @@ def _load_tool() -> ModuleType:
     return module
 
 
-def test_openai_compatible_tool_requires_complete_llm_config(
+def test_openai_compatible_tool_requires_base_url_and_model(
     tmp_path: Path,
     monkeypatch,
     capsys,
@@ -47,7 +47,9 @@ def test_openai_compatible_tool_requires_complete_llm_config(
     monkeypatch.setattr(sys, "argv", ["trainlens_openai_compatible.py", str(report)])
 
     assert module.main() == 2
-    assert "TRAINLENS_LLM_BASE_URL" in capsys.readouterr().err
+    error = capsys.readouterr().err
+    assert "TRAINLENS_LLM_BASE_URL" in error
+    assert "TRAINLENS_LLM_MODEL" in error
 
 
 def test_openai_compatible_tool_sends_configured_model(
@@ -63,6 +65,7 @@ def test_openai_compatible_tool_sends_configured_model(
     def fake_urlopen(req: Any, **_kwargs: object) -> FakeResponse:
         captured["url"] = req.full_url
         captured["payload"] = json.loads(req.data.decode("utf-8"))
+        captured["authorization"] = req.get_header("Authorization")
         return FakeResponse()
 
     monkeypatch.setenv("TRAINLENS_LLM_BASE_URL", "https://api.example.com/v1/")
@@ -74,4 +77,28 @@ def test_openai_compatible_tool_sends_configured_model(
     assert module.main() == 0
     assert captured["url"] == "https://api.example.com/v1/chat/completions"
     assert captured["payload"]["model"] == "test-model"
+    assert captured["authorization"] == "Bearer test-key"
     assert "## Improved Report" in capsys.readouterr().out
+
+
+def test_openai_compatible_tool_allows_missing_api_key(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    report = tmp_path / "report.md"
+    report.write_text("## Report", encoding="utf-8")
+    module = _load_tool()
+    captured: dict[str, Any] = {}
+
+    def fake_urlopen(req: Any, **_kwargs: object) -> FakeResponse:
+        captured["authorization"] = req.get_header("Authorization")
+        return FakeResponse()
+
+    monkeypatch.setenv("TRAINLENS_LLM_BASE_URL", "http://localhost:11434/v1")
+    monkeypatch.setenv("TRAINLENS_LLM_MODEL", "local-model")
+    monkeypatch.delenv("TRAINLENS_LLM_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["trainlens_openai_compatible.py", str(report)])
+    monkeypatch.setattr(module.request, "urlopen", fake_urlopen)
+
+    assert module.main() == 0
+    assert captured["authorization"] is None
