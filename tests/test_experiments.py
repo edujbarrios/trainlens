@@ -104,6 +104,21 @@ def test_suggestion_falls_back_when_higher_priority_objective_is_non_finite():
     assert recommendation.success_criteria[0].operator == ">="
 
 
+def test_suggestion_preserves_percentage_scale_for_bounded_metrics():
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(
+                name="percent-scale",
+                metrics={"accuracy": 84.0},
+                parameters={"learning_rate": 1e-3},
+            )
+        ],
+        minimum_improvement=0.01,
+    )
+
+    assert recommendation.success_criteria[0].target == pytest.approx(84.84)
+
+
 def test_recommendation_can_apply_its_single_change_to_a_base_config():
     base = {"learning_rate": 1e-3, "batch_size": 16, "epochs": 5}
     recommendation = suggest_next_experiment(
