@@ -195,12 +195,37 @@ def _propose_change(
                 (f"training loss={train_loss}", f"validation loss={validation_loss}"),
                 0.72,
             )
-        return (
-            {"weight_decay": 0.01},
-            "Adding a controlled amount of weight decay may reduce the generalization gap.",
-            (f"training loss={train_loss}", f"validation loss={validation_loss}"),
-            0.62,
-        )
+        weight_decay = run.parameters.get("weight_decay")
+        if weight_decay is None:
+            return (
+                {"weight_decay": 0.01},
+                "Adding a controlled amount of weight decay may reduce the generalization gap.",
+                (f"training loss={train_loss}", f"validation loss={validation_loss}"),
+                0.62,
+            )
+        if (
+            isinstance(weight_decay, int | float)
+            and not isinstance(weight_decay, bool)
+            and isfinite(weight_decay)
+            and 0 <= weight_decay < 0.2
+        ):
+            old_weight_decay = float(weight_decay)
+            new_weight_decay = (
+                0.01
+                if old_weight_decay < 0.01
+                else min(0.2, round(old_weight_decay * 2.0, 6))
+            )
+            if new_weight_decay > old_weight_decay:
+                return (
+                    {"weight_decay": new_weight_decay},
+                    "A controlled increase in weight decay may reduce the generalization gap.",
+                    (
+                        f"training loss={train_loss}",
+                        f"validation loss={validation_loss}",
+                        f"current weight_decay={old_weight_decay:g}",
+                    ),
+                    0.62,
+                )
     learning_rate = run.parameters.get("learning_rate")
     if (
         isinstance(learning_rate, int | float)
