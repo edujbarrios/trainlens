@@ -27,12 +27,12 @@ def main() -> int:
 
     report = Path(args.report).read_text(encoding="utf-8") if args.report else sys.stdin.read()
     base_url = os.getenv("TRAINLENS_LLM_BASE_URL", "").strip().rstrip("/")
-    api_key = os.getenv("TRAINLENS_LLM_API_KEY")
+    api_key = os.getenv("TRAINLENS_LLM_API_KEY", "").strip()
     model = os.getenv("TRAINLENS_LLM_MODEL", "").strip()
-    if not base_url or not api_key or not model:
+    if not base_url or not model:
         print(
-            "TRAINLENS_LLM_BASE_URL, TRAINLENS_LLM_API_KEY, and "
-            "TRAINLENS_LLM_MODEL are required.",
+            "TRAINLENS_LLM_BASE_URL and TRAINLENS_LLM_MODEL are required. "
+            "TRAINLENS_LLM_API_KEY is optional for unauthenticated endpoints.",
             file=sys.stderr,
         )
         return 2
@@ -47,10 +47,13 @@ def main() -> int:
             {"role": "user", "content": report},
         ],
     }
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     req = request.Request(
         f"{base_url}/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     with request.urlopen(req, timeout=30) as response:  # noqa: S310
