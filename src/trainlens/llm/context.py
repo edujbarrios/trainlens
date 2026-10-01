@@ -144,6 +144,16 @@ def build_llm_notebook_context_from_snapshot(
     ):
         lines.extend(["## Training Profile", ""])
         lines.append(f"- strategy: `{training_profile.strategy}`")
+        if (
+            training_profile.trainable_parameters is not None
+            and training_profile.total_parameters is not None
+        ):
+            fraction = training_profile.trainable_fraction or 0.0
+            lines.append(
+                "- trainable parameters: "
+                f"{training_profile.trainable_parameters} / "
+                f"{training_profile.total_parameters} ({fraction:.2%})"
+            )
         if training_profile.trainable_components:
             lines.append(
                 "- trainable components: "
@@ -154,6 +164,18 @@ def build_llm_notebook_context_from_snapshot(
                 "- frozen components: "
                 + ", ".join(f"`{name}`" for name in training_profile.frozen_components)
             )
+        if training_profile.adapters:
+            lines.append(
+                "- PEFT adapters: "
+                + ", ".join(f"`{name}`" for name in training_profile.adapters)
+            )
+        if training_profile.active_adapters:
+            lines.append(
+                "- active PEFT adapters: "
+                + ", ".join(f"`{name}`" for name in training_profile.active_adapters)
+            )
+        if training_profile.quantization is not None:
+            lines.append(f"- quantization: `{training_profile.quantization}`")
         for name, value in sorted(training_profile.parameters.items()):
             lines.append(f"- `{name}`: {sanitize_value(name, value)!r}")
         lines.append("")
