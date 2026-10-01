@@ -44,6 +44,20 @@ def test_compare_runs_marks_new_and_removed_metrics() -> None:
     assert comparison.notes
 
 
+def test_compare_runs_reports_material_unknown_metric_movement() -> None:
+    comparison = compare_runs(
+        {"train_runtime": 10.0},
+        {"train_runtime": 12.0},
+    )
+
+    assert comparison.metrics[0].direction == "unknown"
+    assert comparison.metrics[0].magnitude == "material"
+    assert comparison.summary == (
+        "Material change detected in train_runtime, but optimization direction is unknown.",
+    )
+    assert "No material metric movement detected." not in comparison.summary
+
+
 def test_compare_runs_does_not_classify_partial_metric_name_matches() -> None:
     comparison = compare_runs(
         {"lossless_compression": 0.5, "maple_syrup": 0.5},
