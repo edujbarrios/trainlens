@@ -46,6 +46,38 @@ def test_suggestion_avoids_a_noop_when_dropout_is_already_at_limit():
     assert recommendation.changes == {"weight_decay": 0.01}
 
 
+def test_suggestion_increases_existing_weight_decay_instead_of_repeating_it():
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(
+                name="regularized",
+                metrics={"train_loss": 0.2, "validation_loss": 0.5},
+                parameters={"dropout": 0.8, "weight_decay": 0.01},
+            )
+        ]
+    )
+
+    assert recommendation.changes == {"weight_decay": 0.02}
+
+
+def test_suggestion_does_not_reduce_already_high_weight_decay():
+    recommendation = suggest_next_experiment(
+        [
+            ExperimentRun(
+                name="heavily-regularized",
+                metrics={"train_loss": 0.2, "validation_loss": 0.5},
+                parameters={
+                    "dropout": 0.8,
+                    "weight_decay": 0.3,
+                    "learning_rate": 1e-3,
+                },
+            )
+        ]
+    )
+
+    assert recommendation.changes == {"learning_rate": 5e-4}
+
+
 def test_suggestion_uses_best_run_and_changes_one_variable():
     recommendation = suggest_next_experiment(
         [
