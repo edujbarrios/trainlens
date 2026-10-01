@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Literal
@@ -29,6 +29,7 @@ class TrainingAlert:
     message: str
     evidence: tuple[str, ...]
     step: int
+    persistent: bool = False
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,10 @@ class MonitorConfig:
 
 
 AlertHandler = Callable[[TrainingAlert], None]
+AlertDetector = Callable[
+    [tuple[TrainingObservation, ...], TrainingObservation, MonitorConfig],
+    Iterable[TrainingAlert],
+]
 
 
 class TrainLensMonitor:
@@ -65,9 +70,11 @@ class TrainLensMonitor:
         config: MonitorConfig | None = None,
         *,
         on_alert: AlertHandler | None = None,
+        detectors: Iterable[AlertDetector] = (),
     ) -> None:
         self.config = config or MonitorConfig()
         self._on_alert = on_alert
+        self._detectors = list(detectors)
         self._observations: list[TrainingObservation] = []
         self._emitted_events: set[tuple[str, int, tuple[str, ...]]] = set()
         self._active_persistent: set[str] = set()
@@ -77,6 +84,17 @@ class TrainLensMonitor:
         """Return immutable access to observations received so far."""
 
         return tuple(self._observations)
+
+    @property
+    def detectors(self) -> tuple[AlertDetector, ...]:
+        """Return the custom alert detectors registered on this monitor."""
+
+        return tuple(self._detectors)
+
+    def add_detector(self, detector: AlertDetector) -> None:
+        """Register a custom deterministic alert detector for future observations."""
+
+        self._detectors.append(detector)
 
     def observe(self, step: int, metrics: Mapping[str, float | int]) -> tuple[TrainingAlert, ...]:
         """Record one metric snapshot and return alerts triggered by it.
@@ -114,10 +132,10 @@ class TrainLensMonitor:
         return fresh
 
     def _fresh_alerts(self, alerts: tuple[TrainingAlert, ...]) -> tuple[TrainingAlert, ...]:
-        active_now = {alert.code for alert in alerts if _is_persistent_alert(alert.code)}
+        active_now = {alert.code for alert in alerts if _is_persistent_alert(alert)}
         fresh: list[TrainingAlert] = []
         for alert in alerts:
-            if _is_persistent_alert(alert.code):
+            if _is_persistent_alert(alert):
                 if alert.code not in self._active_persistent:
                     fresh.append(alert)
                 continue
@@ -154,14 +172,17 @@ class TrainLensMonitor:
                     )
                 )
         window = self._observations[-self.config.patience :]
-        if len(window) < self.config.patience:
-            return tuple(alerts)
-        if self.config.detect_stagnation:
-            alerts.extend(self._stagnation_alerts(window, current.step))
-        if self.config.detect_overfitting:
-            alert = self._overfitting_alert(window, current.step)
-            if alert is not None:
-                alerts.append(alert)
+        if len(window) >= self.config.patience:
+            if self.config.detect_stagnation:
+                alerts.extend(self._stagnation_alerts(window, current.step))
+            if self.config.detect_overfitting:
+                alert = self._overfitting_alert(window, current.step)
+                if alert is not None:
+                    alerts.append(alert)
+
+        history = tuple(self._observations)
+        for detector in self._detectors:
+            alerts.extend(detector(history, current, self.config))
         return tuple(alerts)
 
     def _stagnation_alerts(
@@ -185,6 +206,7 @@ class TrainLensMonitor:
                             f"step {item.step}: {name}={item.metrics[name]}" for item in window
                         ),
                         step=step,
+                        persistent=True,
                     )
                 )
         return alerts
@@ -217,11 +239,16 @@ class TrainLensMonitor:
                 f"{validation_name}: {validation[0]} -> {validation[-1]}",
             ),
             step=step,
+            persistent=True,
         )
 
 
-def _is_persistent_alert(code: str) -> bool:
-    return code == "possible_overfitting" or code.startswith("stagnation:")
+def _is_persistent_alert(alert: TrainingAlert) -> bool:
+    return (
+        alert.persistent
+        or alert.code == "possible_overfitting"
+        or alert.code.startswith("stagnation:")
+    )
 
 
 def _first_metric(
