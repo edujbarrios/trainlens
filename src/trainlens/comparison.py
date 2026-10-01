@@ -12,8 +12,11 @@ from trainlens.models.comparison import (
     ChangeMagnitude,
     ComparisonDirection,
     MetricComparison,
+    ParameterChange,
     RunComparison,
+    TrajectoryComparison,
 )
+from trainlens.models.metric import MetricSeries
 from trainlens.models.run import TrainingRun
 
 RunLike: TypeAlias = AnalysisResult | TrainingRun | Mapping[str, float]
@@ -29,7 +32,7 @@ def compare_runs(
     baseline_name: str | None = None,
     experiment_name: str | None = None,
 ) -> RunComparison:
-    """Compare two runs and report metric improvements/regressions."""
+    """Compare two runs across final metrics, configuration, and trajectories."""
 
     baseline_metrics = _metrics_from_run(baseline)
     experiment_metrics = _metrics_from_run(experiment)
@@ -41,7 +44,8 @@ def compare_runs(
     improvements = tuple(item for item in comparisons if item.direction == "improved")
     regressions = tuple(item for item in comparisons if item.direction == "regressed")
     unchanged = tuple(item for item in comparisons if item.direction == "unchanged")
-    notes = _notes(comparisons)
+    parameter_changes = _parameter_changes(baseline, experiment)
+    trajectories = _trajectory_comparisons(baseline, experiment)
     return RunComparison(
         baseline_name=baseline_name or _run_name(baseline, fallback="baseline"),
         experiment_name=experiment_name or _run_name(experiment, fallback="experiment"),
@@ -50,7 +54,9 @@ def compare_runs(
         improvements=improvements,
         regressions=regressions,
         unchanged=unchanged,
-        notes=notes,
+        parameter_changes=parameter_changes,
+        trajectories=trajectories,
+        notes=_notes(comparisons),
     )
 
 
@@ -64,9 +70,21 @@ def render_run_comparison(comparison: RunComparison) -> str:
         f"**Experiment:** {comparison.experiment_name}",
     ]
     if comparison.summary:
-        lines.append("")
-        lines.append("### Summary")
+        lines.extend(["", "### Summary"])
         lines.extend(f"- {item}" for item in comparison.summary)
+    if comparison.parameter_changes:
+        lines.extend(
+            [
+                "",
+                "### Configuration changes",
+                "| Parameter | Baseline | Experiment |",
+                "| --- | --- | --- |",
+            ]
+        )
+        for item in comparison.parameter_changes:
+            lines.append(
+                f"| {_escape_table_cell(item.name)} | `{item.baseline}` | `{item.experiment}` |"
+            )
     if comparison.metrics:
         lines.extend(
             [
@@ -84,12 +102,26 @@ def render_run_comparison(comparison: RunComparison) -> str:
                 f"{_format_optional_float(item.experiment)} | "
                 f"{_format_optional_float(item.delta, signed=True)} | "
                 f"{_format_percent(item.relative_delta)} | "
-                f"{item.direction} | "
-                f"{item.magnitude} |"
+                f"{item.direction} | {item.magnitude} |"
+            )
+    if comparison.trajectories:
+        lines.extend(
+            [
+                "",
+                "### Training trajectories",
+                "| Metric | Baseline best | Experiment best | Baseline obs. | Experiment obs. |",
+                "| --- | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for item in comparison.trajectories:
+            lines.append(
+                f"| {_escape_table_cell(item.name)} | "
+                f"{_format_optional_float(item.baseline_best)} | "
+                f"{_format_optional_float(item.experiment_best)} | "
+                f"{item.baseline_observations} | {item.experiment_observations} |"
             )
     if comparison.notes:
-        lines.append("")
-        lines.append("### Notes")
+        lines.extend(["", "### Notes"])
         lines.extend(f"- {item}" for item in comparison.notes)
     return "\n".join(lines).strip() + "\n"
 
@@ -100,25 +132,9 @@ def _compare_metric(
     experiment: float | None,
 ) -> MetricComparison:
     if baseline is None:
-        return MetricComparison(
-            name=name,
-            baseline=None,
-            experiment=experiment,
-            delta=None,
-            relative_delta=None,
-            direction="new",
-            magnitude="material",
-        )
+        return MetricComparison(name, None, experiment, None, None, "new", "material")
     if experiment is None:
-        return MetricComparison(
-            name=name,
-            baseline=baseline,
-            experiment=None,
-            delta=None,
-            relative_delta=None,
-            direction="removed",
-            magnitude="material",
-        )
+        return MetricComparison(name, baseline, None, None, None, "removed", "material")
     delta = experiment - baseline
     relative_delta = _relative_delta(baseline, delta)
     magnitude = _magnitude(name, delta, relative_delta)
@@ -134,6 +150,54 @@ def _compare_metric(
     )
 
 
+def _parameter_changes(
+    baseline: RunLike,
+    experiment: RunLike,
+) -> tuple[ParameterChange, ...]:
+    if not isinstance(baseline, TrainingRun) or not isinstance(experiment, TrainingRun):
+        return ()
+    names = sorted(set(baseline.parameters) | set(experiment.parameters))
+    return tuple(
+        ParameterChange(name, baseline.parameters.get(name), experiment.parameters.get(name))
+        for name in names
+        if baseline.parameters.get(name) != experiment.parameters.get(name)
+    )
+
+
+def _trajectory_comparisons(
+    baseline: RunLike,
+    experiment: RunLike,
+) -> tuple[TrajectoryComparison, ...]:
+    if not isinstance(baseline, TrainingRun) or not isinstance(experiment, TrainingRun):
+        return ()
+    baseline_series = {metric.name: metric for metric in baseline.metrics}
+    experiment_series = {metric.name: metric for metric in experiment.metrics}
+    common = sorted(set(baseline_series) & set(experiment_series))
+    return tuple(
+        TrajectoryComparison(
+            name=name,
+            baseline_best=_best_value(name, baseline_series[name]),
+            experiment_best=_best_value(name, experiment_series[name]),
+            baseline_observations=len(baseline_series[name].values),
+            experiment_observations=len(experiment_series[name].values),
+        )
+        for name in common
+        if len(baseline_series[name].values) > 1 or len(experiment_series[name].values) > 1
+    )
+
+
+def _best_value(name: str, series: MetricSeries) -> float | None:
+    values = tuple(value for value in series.values if isfinite(value))
+    if not values:
+        return None
+    direction = metric_direction(name)
+    if direction == "lower":
+        return min(values)
+    if direction == "higher":
+        return max(values)
+    return series.last
+
+
 def _direction(name: str, delta: float, magnitude: ChangeMagnitude) -> ComparisonDirection:
     if magnitude == "none":
         return "unchanged"
@@ -145,20 +209,12 @@ def _direction(name: str, delta: float, magnitude: ChangeMagnitude) -> Compariso
     return "unknown"
 
 
-def _magnitude(
-    name: str,
-    delta: float,
-    relative_delta: float | None,
-) -> ChangeMagnitude:
+def _magnitude(name: str, delta: float, relative_delta: float | None) -> ChangeMagnitude:
     if abs(delta) < 1e-12:
         return "none"
     custom_relative, custom_absolute = metric_material_thresholds(name)
-    relative_threshold = (
-        _MATERIAL_RELATIVE_DELTA if custom_relative is None else custom_relative
-    )
-    absolute_threshold = (
-        _MATERIAL_ABSOLUTE_DELTA if custom_absolute is None else custom_absolute
-    )
+    relative_threshold = _MATERIAL_RELATIVE_DELTA if custom_relative is None else custom_relative
+    absolute_threshold = _MATERIAL_ABSOLUTE_DELTA if custom_absolute is None else custom_absolute
     if relative_delta is not None and abs(relative_delta) >= relative_threshold:
         return "material"
     if abs(delta) >= absolute_threshold:
@@ -167,9 +223,7 @@ def _magnitude(
 
 
 def _relative_delta(baseline: float, delta: float) -> float | None:
-    if abs(baseline) < 1e-12:
-        return None
-    return delta / abs(baseline)
+    return None if abs(baseline) < 1e-12 else delta / abs(baseline)
 
 
 def _summary(
@@ -181,20 +235,25 @@ def _summary(
     material_improvements = [item for item in improvements if item.magnitude == "material"]
     material_regressions = [item for item in regressions if item.magnitude == "material"]
     material_unknown = [
-        item
-        for item in comparisons
-        if item.direction == "unknown" and item.magnitude == "material"
+        item for item in comparisons if item.direction == "unknown" and item.magnitude == "material"
     ]
     if material_improvements:
-        names = ", ".join(item.name for item in material_improvements)
-        lines.append(f"Material improvement detected in {names}.")
-    if material_regressions:
-        names = ", ".join(item.name for item in material_regressions)
-        lines.append(f"Material regression detected in {names}.")
-    if material_unknown:
-        names = ", ".join(item.name for item in material_unknown)
         lines.append(
-            f"Material change detected in {names}, but optimization direction is unknown."
+            "Material improvement detected in "
+            + ", ".join(item.name for item in material_improvements)
+            + "."
+        )
+    if material_regressions:
+        lines.append(
+            "Material regression detected in "
+            + ", ".join(item.name for item in material_regressions)
+            + "."
+        )
+    if material_unknown:
+        lines.append(
+            "Material change detected in "
+            + ", ".join(item.name for item in material_unknown)
+            + ", but optimization direction is unknown."
         )
     new_metrics = [item.name for item in comparisons if item.direction == "new"]
     removed_metrics = [item.name for item in comparisons if item.direction == "removed"]
@@ -259,9 +318,7 @@ def _format_optional_float(value: float | None, *, signed: bool = False) -> str:
 
 
 def _format_percent(value: float | None) -> str:
-    if value is None:
-        return ""
-    return f"{value:+.1%}"
+    return "" if value is None else f"{value:+.1%}"
 
 
 def _escape_table_cell(value: str) -> str:
