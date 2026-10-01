@@ -34,6 +34,8 @@ from trainlens.metric_semantics import (
     unregister_metric,
 )
 from trainlens.models.analysis import AnalysisResult, EvidenceRef, Recommendation, Signal
+from trainlens.models.comparison import ParameterChange, TrajectoryComparison
+from trainlens.models.run import TrainingRun
 from trainlens.monitoring import MonitorConfig, TrainingAlert, TrainingObservation, TrainLensMonitor
 from trainlens.notebook import (
     LiveReport,
@@ -43,6 +45,7 @@ from trainlens.notebook import (
     preview_notebook_context,
 )
 from trainlens.pipeline import analyze
+from trainlens.runs import load_run, save_run, training_run_from_analysis
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
 __version__ = "0.10.1"
@@ -59,6 +62,7 @@ __all__ = [
     "MonitorConfig",
     "NextExperimentRecommendation",
     "ObjectiveSpec",
+    "ParameterChange",
     "PromptOptions",
     "Recommendation",
     "Signal",
@@ -69,6 +73,8 @@ __all__ = [
     "TrainingAlert",
     "TrainingObservation",
     "TrainingProfile",
+    "TrainingRun",
+    "TrajectoryComparison",
     "__version__",
     "analyze",
     "build_improvement_ideas",
@@ -82,15 +88,18 @@ __all__ = [
     "keras_callback",
     "lightning_callback",
     "load_ipython_extension",
+    "load_run",
     "pareto_front",
     "preview_notebook_context",
     "register_metric",
     "render_next_experiment",
     "render_report",
     "render_run_comparison",
+    "save_run",
     "show_trainlens_prompts",
     "suggest_multiobjective_experiment",
     "suggest_next_experiment",
+    "training_run_from_analysis",
     "transformers_callback",
     "unload_ipython_extension",
     "unregister_metric",
