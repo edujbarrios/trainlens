@@ -79,7 +79,9 @@ def build_llm_notebook_context_from_snapshot(
         metric_namespace["trainlens_explicit_metrics"] = analysis_config.metrics
     metric_series = extract_metric_series(metric_namespace)
     metric_variable_names = {
-        name for name, value in metric_namespace.items() if extract_metric_series({name: value})
+        name
+        for name, value in metric_namespace.items()
+        if extract_metric_series({name: value})
     }
     metrics = {
         name: series.last
@@ -89,9 +91,11 @@ def build_llm_notebook_context_from_snapshot(
     lines = [
         "# TrainLens Notebook Context",
         "",
-        "Use this evidence to generate the training report. Do not add facts that are not present.",
-        "Treat the TrainLens deterministic findings below as conclusions already derived by "
-        "the local analyzer; explain them and their evidence rather than silently replacing them.",
+        "Use this evidence to generate the training report. "
+        "Do not add facts that are not present.",
+        "Treat the TrainLens deterministic findings below as conclusions already "
+        "derived by the local analyzer; explain them and their evidence rather than "
+        "silently replacing them.",
         "",
     ]
     if snapshot.variables:
@@ -105,7 +109,11 @@ def build_llm_notebook_context_from_snapshot(
             if variable.length is not None:
                 details.append(f"length={variable.length}")
             lines.append(f"- `{variable.name}`: " + ", ".join(details))
-            if include_values and variable.value is not None and variable.name not in metric_variable_names:
+            if (
+                include_values
+                and variable.value is not None
+                and variable.name not in metric_variable_names
+            ):
                 lines.append(f"  value: {variable.value!r}")
         lines.append("")
     if metric_series:
@@ -119,7 +127,9 @@ def build_llm_notebook_context_from_snapshot(
     if training_artifacts:
         lines.extend(["## Training Parameters", ""])
         for artifact in training_artifacts:
-            lines.append(f"- `{artifact.variable_name}` ({artifact.type_name}, {artifact.framework})")
+            lines.append(
+                f"- `{artifact.variable_name}` ({artifact.type_name}, {artifact.framework})"
+            )
             for name, value in sorted(artifact.training_parameters.items()):
                 lines.append(f"  - `{name}`: {sanitize_value(name, value)!r}")
         lines.append("")
@@ -151,8 +161,9 @@ def build_llm_notebook_context_from_snapshot(
             framework = candidate.framework or "unknown framework"
             selected = ", selected=true" if candidate.object_ref is model_ref else ""
             lines.append(
-                f"- `{candidate.variable_name}`: {candidate.type_name}, {framework}, "
-                f"confidence={candidate.confidence:.2f}, reasons={reasons}{selected}"
+                f"- `{candidate.variable_name}`: {candidate.type_name}, "
+                f"{framework}, confidence={candidate.confidence:.2f}, "
+                f"reasons={reasons}{selected}"
             )
         lines.append("")
     else:
@@ -178,7 +189,9 @@ def _render_deterministic_findings(result: AnalysisResult) -> list[str]:
         lines.append("")
     if result.metrics:
         lines.append("### Final metrics")
-        lines.extend(f"- `{name}`: {value:.6g}" for name, value in sorted(result.metrics.items()))
+        lines.extend(
+            f"- `{name}`: {value:.6g}" for name, value in sorted(result.metrics.items())
+        )
         lines.append("")
     if result.signals:
         lines.append("### Signals")
@@ -199,7 +212,8 @@ def _render_deterministic_findings(result: AnalysisResult) -> list[str]:
         for recommendation in result.recommendations:
             source = f", source={recommendation.source}" if recommendation.source else ""
             lines.append(
-                f"- {recommendation.action} (confidence={recommendation.confidence:.0%}{source})"
+                f"- {recommendation.action} "
+                f"(confidence={recommendation.confidence:.0%}{source})"
             )
             lines.append(f"  - rationale: {recommendation.rationale}")
             for evidence in recommendation.evidence:
@@ -208,12 +222,18 @@ def _render_deterministic_findings(result: AnalysisResult) -> list[str]:
     return lines
 
 
-def _selected_model_ref(snapshot: NotebookSnapshot, candidates: list[Any], config: AnalysisConfig | None) -> object | None:
+def _selected_model_ref(
+    snapshot: NotebookSnapshot,
+    candidates: list[Any],
+    config: AnalysisConfig | None,
+) -> object | None:
     if config is not None and config.model is not None:
         if isinstance(config.model, str):
             if config.model not in snapshot.raw_namespace:
-                raise ValueError(f"model variable {config.model!r} was not found in the notebook snapshot")
-            return snapshot.raw_namespace[config.model]
+                raise ValueError(
+                    f"model variable {config.model!r} was not found in the notebook snapshot"
+                )
+            return cast(object, snapshot.raw_namespace[config.model])
         return config.model
     if config is not None and config.strict and len(candidates) > 1:
         names = ", ".join(candidate.variable_name for candidate in candidates)
@@ -235,7 +255,7 @@ def _selected_trainer(
                 raise ValueError(
                     f"trainer variable {config.trainer!r} was not found in the notebook snapshot"
                 )
-            return snapshot.raw_namespace[config.trainer]
+            return cast(object, snapshot.raw_namespace[config.trainer])
         return config.trainer
     return framework_source_for_model(snapshot, "huggingface", model_ref)
 
@@ -253,7 +273,9 @@ def _render_metric_points(series: MetricSeries, max_metric_points: int) -> str:
         return f"points=[{rendered}]"
     indices = _sample_indices(len(points), max_metric_points)
     sampled = tuple(points[index] for index in indices)
-    rendered_sample = ", ".join(_format_metric_point(step, value) for step, value in sampled)
+    rendered_sample = ", ".join(
+        _format_metric_point(step, value) for step, value in sampled
+    )
     return (
         f"observations={len(points)}, first_step={_format_step(points[0][0])}, "
         f"last_step={_format_step(points[-1][0])}, first={series.values[0]:.6g}, "
@@ -280,7 +302,8 @@ def _render_metric_values(values: tuple[float, ...], max_metric_points: int) -> 
     rendered_sample = ", ".join(f"{value:.6g}" for value in sampled)
     return (
         f"observations={len(values)}, first={values[0]:.6g}, last={values[-1]:.6g}, "
-        f"min={min(values):.6g}, max={max(values):.6g}, ordered_sample=[{rendered_sample}]"
+        f"min={min(values):.6g}, max={max(values):.6g}, "
+        f"ordered_sample=[{rendered_sample}]"
     )
 
 
