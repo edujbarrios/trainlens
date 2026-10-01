@@ -22,6 +22,7 @@ from trainlens.llm.prompts import (
     show_trainlens_prompts,
 )
 from trainlens.magic.extension import load_ipython_extension, unload_ipython_extension
+from trainlens.models.analysis import AnalysisResult, EvidenceRef, Recommendation, Signal
 from trainlens.monitoring import MonitorConfig, TrainingAlert, TrainingObservation, TrainLensMonitor
 from trainlens.notebook import (
     LiveReport,
@@ -37,18 +38,22 @@ __version__ = "0.10.1"
 
 __all__ = [
     "AnalysisConfig",
-    "LiveReport",
+    "AnalysisResult",
+    "EvidenceRef",
     "ExperimentRun",
+    "LiveReport",
     "MonitorConfig",
     "NextExperimentRecommendation",
     "PromptOptions",
+    "Recommendation",
+    "Signal",
+    "SuccessCriterion",
+    "TrainLensCallback",
+    "TrainLensMonitor",
     "TrainLensPrompt",
     "TrainingAlert",
     "TrainingObservation",
     "TrainingProfile",
-    "SuccessCriterion",
-    "TrainLensMonitor",
-    "TrainLensCallback",
     "__version__",
     "analyze",
     "build_improvement_ideas",
@@ -62,8 +67,8 @@ __all__ = [
     "lightning_callback",
     "load_ipython_extension",
     "preview_notebook_context",
-    "render_report",
     "render_next_experiment",
+    "render_report",
     "render_run_comparison",
     "show_trainlens_prompts",
     "suggest_next_experiment",
