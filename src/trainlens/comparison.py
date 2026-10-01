@@ -81,9 +81,11 @@ def render_run_comparison(comparison: RunComparison) -> str:
                 "| --- | --- | --- |",
             ]
         )
-        for item in comparison.parameter_changes:
+        for parameter_change in comparison.parameter_changes:
             lines.append(
-                f"| {_escape_table_cell(item.name)} | `{item.baseline}` | `{item.experiment}` |"
+                "| "
+                f"{_escape_table_cell(parameter_change.name)} | "
+                f"`{parameter_change.baseline}` | `{parameter_change.experiment}` |"
             )
     if comparison.metrics:
         lines.extend(
@@ -94,15 +96,15 @@ def render_run_comparison(comparison: RunComparison) -> str:
                 "| --- | ---: | ---: | ---: | ---: | --- | --- |",
             ]
         )
-        for item in comparison.metrics:
+        for metric_change in comparison.metrics:
             lines.append(
                 "| "
-                f"{_escape_table_cell(item.name)} | "
-                f"{_format_optional_float(item.baseline)} | "
-                f"{_format_optional_float(item.experiment)} | "
-                f"{_format_optional_float(item.delta, signed=True)} | "
-                f"{_format_percent(item.relative_delta)} | "
-                f"{item.direction} | {item.magnitude} |"
+                f"{_escape_table_cell(metric_change.name)} | "
+                f"{_format_optional_float(metric_change.baseline)} | "
+                f"{_format_optional_float(metric_change.experiment)} | "
+                f"{_format_optional_float(metric_change.delta, signed=True)} | "
+                f"{_format_percent(metric_change.relative_delta)} | "
+                f"{metric_change.direction} | {metric_change.magnitude} |"
             )
     if comparison.trajectories:
         lines.extend(
@@ -113,12 +115,12 @@ def render_run_comparison(comparison: RunComparison) -> str:
                 "| --- | ---: | ---: | ---: | ---: |",
             ]
         )
-        for item in comparison.trajectories:
+        for trajectory in comparison.trajectories:
             lines.append(
-                f"| {_escape_table_cell(item.name)} | "
-                f"{_format_optional_float(item.baseline_best)} | "
-                f"{_format_optional_float(item.experiment_best)} | "
-                f"{item.baseline_observations} | {item.experiment_observations} |"
+                f"| {_escape_table_cell(trajectory.name)} | "
+                f"{_format_optional_float(trajectory.baseline_best)} | "
+                f"{_format_optional_float(trajectory.experiment_best)} | "
+                f"{trajectory.baseline_observations} | {trajectory.experiment_observations} |"
             )
     if comparison.notes:
         lines.extend(["", "### Notes"])
