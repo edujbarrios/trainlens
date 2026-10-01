@@ -36,6 +36,8 @@ def explain_with_llm(
         active_provider = OpenAICompatibleProvider(config)
 
     try:
+        if prompt_options is None:
+            return active_provider.explain(markdown_report, mode=mode)
         return active_provider.explain(
             markdown_report,
             mode=mode,
