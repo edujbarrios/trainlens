@@ -12,10 +12,7 @@ from IPython.core.magic import Magics, line_magic, magics_class
 from IPython.display import Markdown, display
 
 from trainlens.analysis_config import AnalysisConfig
-from trainlens.llm.context import (
-    build_llm_notebook_context,
-    build_llm_notebook_context_from_snapshot,
-)
+from trainlens.llm.context import build_llm_notebook_context_from_snapshot
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.pipeline import analyze_snapshot, snapshot_namespace
 from trainlens.renderers.markdown import MarkdownRenderer
@@ -46,19 +43,16 @@ class TrainLensMagics(Magics):
         shell = cast(Any, self.shell)
         snapshot = snapshot_namespace(shell.user_ns)
         config = AnalysisConfig(model=args.model, trainer=args.trainer, strict=args.strict)
-        if args.dry_run:
-            context = build_llm_notebook_context_from_snapshot(
-                snapshot,
-                analysis_config=config,
-            )
-            display(Markdown(context.markdown))
-            return
-
         result = analyze_snapshot(snapshot, config=config)
         context = build_llm_notebook_context_from_snapshot(
             snapshot,
             analysis_config=config,
+            deterministic_result=result,
         )
+        if args.dry_run:
+            display(Markdown(context.markdown))
+            return
+
         self.store.capture(result, name=args.name)
         if args.no_llm:
             display(Markdown(MarkdownRenderer().render(result)))
@@ -84,7 +78,12 @@ class TrainLensMagics(Magics):
     def suggest_improvements(self, line: str = "") -> None:
         dry_run = _parse_suggest_arguments(line)
         shell = cast(Any, self.shell)
-        context = build_llm_notebook_context(shell.user_ns)
+        snapshot = snapshot_namespace(shell.user_ns)
+        result = analyze_snapshot(snapshot)
+        context = build_llm_notebook_context_from_snapshot(
+            snapshot,
+            deterministic_result=result,
+        )
         if dry_run:
             display(Markdown(context.markdown))
             return
