@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from math import isfinite
 from typing import TypeAlias
 
-from trainlens.metric_semantics import metric_direction
+from trainlens.metric_semantics import metric_direction, metric_material_thresholds
 from trainlens.models.analysis import AnalysisResult
 from trainlens.models.comparison import (
     ChangeMagnitude,
@@ -121,7 +121,7 @@ def _compare_metric(
         )
     delta = experiment - baseline
     relative_delta = _relative_delta(baseline, delta)
-    magnitude = _magnitude(delta, relative_delta)
+    magnitude = _magnitude(name, delta, relative_delta)
     direction = _direction(name, delta, magnitude)
     return MetricComparison(
         name=name,
@@ -145,12 +145,23 @@ def _direction(name: str, delta: float, magnitude: ChangeMagnitude) -> Compariso
     return "unknown"
 
 
-def _magnitude(delta: float, relative_delta: float | None) -> ChangeMagnitude:
+def _magnitude(
+    name: str,
+    delta: float,
+    relative_delta: float | None,
+) -> ChangeMagnitude:
     if abs(delta) < 1e-12:
         return "none"
-    if relative_delta is not None and abs(relative_delta) >= _MATERIAL_RELATIVE_DELTA:
+    custom_relative, custom_absolute = metric_material_thresholds(name)
+    relative_threshold = (
+        _MATERIAL_RELATIVE_DELTA if custom_relative is None else custom_relative
+    )
+    absolute_threshold = (
+        _MATERIAL_ABSOLUTE_DELTA if custom_absolute is None else custom_absolute
+    )
+    if relative_delta is not None and abs(relative_delta) >= relative_threshold:
         return "material"
-    if abs(delta) >= _MATERIAL_ABSOLUTE_DELTA:
+    if abs(delta) >= absolute_threshold:
         return "material"
     return "small"
 
