@@ -26,20 +26,30 @@ mapping. Automatic namespace lookup only works inside IPython/Jupyter.
 
 ### LLM provider is not configured
 
-Set non-empty `TRAINLENS_LLM_BASE_URL`, `TRAINLENS_LLM_API_KEY`, and
-`TRAINLENS_LLM_MODEL` values. Restart or re-run configuration cells if the
-kernel was created earlier.
+Set non-empty `TRAINLENS_LLM_BASE_URL` and `TRAINLENS_LLM_MODEL` values. Set
+`TRAINLENS_LLM_API_KEY` when the endpoint requires authentication; it may be
+omitted for local unauthenticated servers. Restart or re-run configuration cells
+if the kernel was created earlier.
 
 ### Metrics are missing
 
-Keep histories or trainer objects in the inspected namespace. Use conventional
-names, numeric values, and finite values. TrainLens does not execute training or
-retrieve metrics from a remote tracking server.
+Keep histories or trainer objects in the inspected namespace, or provide
+explicit metrics through `AnalysisConfig(metrics=...)`. Use numeric, finite
+values. TrainLens does not execute training or retrieve metrics from a remote
+tracking server.
 
 ### Comparison direction is unknown
 
-The metric name is outside the built-in vocabulary. The numeric delta is still
-valid, but decide the desired direction in domain-specific code.
+Register domain-specific semantics with `register_metric(MetricSpec(...))` when
+a metric name is outside the built-in vocabulary. Without a registered
+direction, the numeric delta remains valid but TrainLens will not label it as an
+improvement or regression.
+
+### LLM context was truncated
+
+`ContextPolicy` bounds outbound evidence. Use `preview_notebook_context()` to
+inspect the exact sanitized context and increase only the specific budgets you
+need. TrainLens marks omitted items and global character truncation explicitly.
 
 ### PDF export fails
 
@@ -49,12 +59,16 @@ layout, export Markdown or JSON and render it with a dedicated publishing tool.
 ## Current limitations
 
 - Alpha-stage API and a Python 3.11+ requirement
-- In-memory magic run history, with no persistent backend or collaboration UI
-- Heuristic framework detection and metric direction inference
-- Three focused live detectors rather than statistical drift analysis
-- Deterministic next-step rules rather than causal or hyperparameter search
-- LLM output quality and cost depend on the configured provider
+- Notebook magic history remains in-memory, although completed `TrainingRun`
+  artifacts can now be saved/loaded as JSON
+- Heuristic framework detection; ambiguous notebooks should use `AnalysisConfig`
+  for explicit model/trainer selection
+- A small built-in live-detector set; project-specific detectors can be added
+  through the public `AlertDetector` interface
+- Deterministic next-step and Pareto heuristics rather than causal inference or
+  full hyperparameter search
+- LLM output quality, privacy terms, and cost depend on the configured or
+  injected provider
 
 These constraints make TrainLens most useful as a lightweight notebook aid and
 reporting layer, not as an all-in-one MLOps platform.
-

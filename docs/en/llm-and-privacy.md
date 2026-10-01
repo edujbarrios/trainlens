@@ -1,7 +1,7 @@
 # LLM configuration, prompts, and privacy
 
 TrainLens talks to OpenAI-compatible `/chat/completions` endpoints using the
-Python standard library. Configure all required variables before calling an LLM
+Python standard library. Configure a base URL and model before calling an LLM
 report helper or magic:
 
 ```bash
@@ -11,11 +11,15 @@ export TRAINLENS_LLM_MODEL="your-model"
 export TRAINLENS_LLM_TIMEOUT_SECONDS="120"
 ```
 
-On Windows PowerShell, use `$env:NAME = "value"`. The base URL, API key, and
-model are all required. Invalid or non-positive timeout values fall back to 120
-seconds. Local OpenAI-compatible servers can use placeholder keys if they
-require no authentication but TrainLens still requires the variable to be
-non-empty.
+On Windows PowerShell, use `$env:NAME = "value"`. The base URL and model are
+required. The API key is optional for local or otherwise unauthenticated
+OpenAI-compatible endpoints; TrainLens omits the `Authorization` header when no
+key is configured. Invalid or non-positive timeout values fall back to 120
+seconds.
+
+You may also inject any object implementing the public `LLMProvider` protocol.
+`OpenAICompatibleProvider(LLMConfig(...))` is available when explicit
+configuration is preferable to environment variables.
 
 ## Select and customize a prompt
 
@@ -44,14 +48,25 @@ diagnostics, overfitting review, improvements, and controlled experiments.
 
 Local comparison, monitoring, experiment planning, inspection, and export do
 not call an external service. LLM helpers send a compact Markdown description
-of detected notebook evidence to the configured provider. TrainLens redacts
-likely secrets and truncates large literals before prompt construction, but
-redaction is defense in depth—not a reason to place credentials or sensitive
-records in notebook variables. Review provider retention and privacy terms.
+of detected notebook evidence to the configured provider. The outbound context
+includes deterministic TrainLens findings and their evidence provenance, so the
+provider explains locally derived conclusions instead of independently replacing
+them.
+
+TrainLens redacts likely secrets and truncates large literals before prompt
+construction. A default `ContextPolicy` also bounds metric series, notebook
+variables, training artifacts, model candidates, and total context characters.
+Use `preview_notebook_context()` to inspect the exact sanitized evidence. Custom
+budgets can be supplied through `context_policy=ContextPolicy(...)`; omissions
+and global truncation are marked explicitly.
+
+Redaction and context budgets are defense in depth—not a reason to place
+credentials or sensitive records in notebook variables. Review provider
+retention and privacy terms before enabling outbound reports.
 
 ## Failure modes
 
-Missing configuration raises a provider configuration error instead of silently
-falling back to fabricated prose. Network, authentication, model, timeout, and
-malformed-response errors are surfaced to the caller.
-
+Missing base/model configuration raises a provider configuration error instead
+of silently falling back to fabricated prose. Network, authentication, model,
+timeout, and malformed-response errors are surfaced to the caller. Injected
+providers use the same report orchestration and error handling.

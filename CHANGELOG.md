@@ -2,6 +2,17 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.11.0 - 2026-10-01
+
+- add public `AnalysisConfig` controls for explicit model/trainer selection, strict ambiguity handling, and authoritative metric/label evidence across deterministic analysis and LLM context
+- ground optional LLM reports in the local `AnalysisResult`, including deterministic summaries, signals, evidence provenance, and recommendations rather than asking the provider to reinterpret notebook state independently
+- expand `TrainingProfile` with partial fine-tuning detection, trainable/total parameter counts and fractions, multiple/active PEFT adapters, and 4-bit/8-bit quantization metadata while remaining framework-dependency-free
+- add an extensible `MetricRegistry` with aliases, bounds, units, and material-change thresholds, plus Pareto-front and constrained multi-objective experiment planning
+- make training runs portable with JSON `save_run()` / `load_run()` helpers and richer comparisons covering changed parameters, best trajectory values, and observation counts
+- add custom live-monitoring detectors with explicit persistent-alert lifecycle support while preserving deterministic built-in stagnation and overfitting alerts
+- add public `LLMProvider` injection, expose the OpenAI-compatible provider/configuration APIs, and allow local unauthenticated endpoints without a placeholder API key
+- add public `ContextPolicy` budgets for metric series, notebook variables, training artifacts, model candidates, and total outbound context size with explicit truncation notices
+
 ## 0.10.1 - 2026-10-01
 
 - report material metric changes even when optimization direction is unknown and preserve common 0–100 percentage scales in experiment success criteria

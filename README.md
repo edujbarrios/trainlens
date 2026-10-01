@@ -47,7 +47,7 @@ os.environ["TRAINLENS_LLM_API_KEY"] = getpass("LLM API key: ")
 # Local model example with Ollama (use these values instead of the ones above):
 # os.environ["TRAINLENS_LLM_BASE_URL"] = "http://localhost:11434/v1"
 # os.environ["TRAINLENS_LLM_MODEL"] = "llama3.2"
-# os.environ["TRAINLENS_LLM_API_KEY"] = "ollama"  # Required; stays local.
+# No API key is required when the local endpoint does not require authentication.
 # LM Studio, vLLM, and llama.cpp also work when their OpenAI-compatible
 # server is running.
 
@@ -133,13 +133,47 @@ running model through Ollama, LM Studio, vLLM, or llama.cpp. Local comparison,
 monitoring, experiment planning, and export remain deterministic and make no
 LLM request.
 
+## Explicit analysis and bounded LLM context
+
+TrainLens 0.11 adds explicit selection for notebooks that contain multiple
+models/trainers, plus a global policy for outbound LLM evidence:
+
+```python
+from trainlens import AnalysisConfig, ContextPolicy, build_paper_report
+
+report = build_paper_report(
+    globals(),
+    analysis_config=AnalysisConfig(
+        model="model_v2",
+        trainer="trainer_v2",
+        strict=True,
+    ),
+    context_policy=ContextPolicy(
+        max_variables=20,
+        max_metric_series=20,
+        max_chars=32_000,
+    ),
+)
+```
+
+`AnalysisConfig` can also provide authoritative metrics or labels. `ContextPolicy`
+emits explicit omission/truncation notices when a budget is reached. Optional LLM
+reports are grounded in the deterministic `AnalysisResult` and its evidence
+provenance; the provider is used to explain that local analysis rather than to
+replace it.
+
+You can also inject any object implementing the public `LLMProvider` protocol,
+or construct `OpenAICompatibleProvider(LLMConfig(...))` directly instead of
+using environment variables.
+
 ## Privacy when using an LLM
 
 TrainLens minimizes outbound notebook data by default. LLM reports include
 recognized metric series, useful framework/training parameters, model evidence,
 and basic variable metadata such as type, shape, or length. The literal contents
 of unrelated strings, scalars, lists, tuples, dictionaries, and sets are not sent
-by default.
+by default. Default `ContextPolicy` limits also bound the number of evidence
+items and total rendered context size.
 
 If a report deliberately needs those sanitized literal values, opt in explicitly:
 
