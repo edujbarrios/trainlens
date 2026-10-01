@@ -11,6 +11,7 @@ from trainlens.metric_semantics import metric_bounds, metric_direction
 
 ParameterValue: TypeAlias = str | int | float | bool | None
 EstimatedCost = Literal["low", "medium", "high", "unknown"]
+ObjectiveDirection = Literal["min", "max"]
 
 _OBJECTIVE_PRIORITY = (
     "validation_loss",
@@ -33,6 +34,23 @@ class ExperimentRun:
     metrics: Mapping[str, float]
     parameters: Mapping[str, ParameterValue] = field(default_factory=dict)
     estimated_cost: EstimatedCost = "unknown"
+
+
+@dataclass(frozen=True)
+class ObjectiveSpec:
+    """One metric to optimize in a multiobjective experiment search."""
+
+    metric: str
+    direction: ObjectiveDirection | None = None
+
+
+@dataclass(frozen=True)
+class MetricConstraint:
+    """Hard metric requirement applied before Pareto ranking."""
+
+    metric: str
+    operator: Literal["<=", ">="]
+    threshold: float
 
 
 @dataclass(frozen=True)
@@ -68,10 +86,7 @@ def suggest_next_experiment(
 
     if not runs:
         raise ValueError("at least one experiment run is required")
-    if isinstance(minimum_improvement, bool) or not isinstance(minimum_improvement, int | float):
-        raise TypeError("minimum_improvement must be a number")
-    if not isfinite(minimum_improvement) or minimum_improvement <= 0:
-        raise ValueError("minimum_improvement must be finite and positive")
+    _validate_improvement(minimum_improvement)
     objective = objective_metric or _select_objective(runs)
     if objective is None:
         if any(name in run.metrics for run in runs for name in _OBJECTIVE_PRIORITY):
@@ -89,8 +104,10 @@ def suggest_next_experiment(
         raise ValueError(
             f"objective metric {objective!r} is missing or non-finite in every run"
         )
-    best = min(eligible, key=lambda run: run.metrics[objective]) if direction == "lower" else max(
-        eligible, key=lambda run: run.metrics[objective]
+    best = (
+        min(eligible, key=lambda run: run.metrics[objective])
+        if direction == "lower"
+        else max(eligible, key=lambda run: run.metrics[objective])
     )
     change, hypothesis, evidence, confidence = _propose_change(best, objective)
     keep_constant = tuple(sorted(name for name in best.parameters if name not in change))
@@ -112,6 +129,83 @@ def suggest_next_experiment(
         confidence=confidence,
         evidence=evidence,
         source_run=best.name,
+    )
+
+
+def pareto_front(
+    runs: Sequence[ExperimentRun],
+    objectives: Sequence[ObjectiveSpec],
+    *,
+    constraints: Sequence[MetricConstraint] = (),
+) -> tuple[ExperimentRun, ...]:
+    """Return non-dominated runs that satisfy all hard constraints."""
+
+    if not runs:
+        return ()
+    if not objectives:
+        raise ValueError("at least one objective is required")
+    directions = tuple(_objective_direction(objective) for objective in objectives)
+    eligible = [
+        run
+        for run in runs
+        if _has_objective_metrics(run, objectives) and _satisfies_constraints(run, constraints)
+    ]
+    frontier: list[ExperimentRun] = []
+    for index, candidate in enumerate(eligible):
+        dominated = any(
+            other_index != index
+            and _dominates(other, candidate, objectives, directions)
+            for other_index, other in enumerate(eligible)
+        )
+        if not dominated:
+            frontier.append(candidate)
+    return tuple(frontier)
+
+
+def suggest_multiobjective_experiment(
+    runs: Sequence[ExperimentRun],
+    objectives: Sequence[ObjectiveSpec],
+    *,
+    constraints: Sequence[MetricConstraint] = (),
+    minimum_improvement: float = 0.01,
+) -> NextExperimentRecommendation:
+    """Suggest a controlled follow-up from the balanced Pareto-efficient run."""
+
+    _validate_improvement(minimum_improvement)
+    frontier = pareto_front(runs, objectives, constraints=constraints)
+    if not frontier:
+        raise ValueError("no run satisfies the objectives and constraints")
+    source = _balanced_frontier_run(frontier, objectives)
+    primary = objectives[0]
+    primary_direction = _objective_direction(primary)
+    change, hypothesis, evidence, confidence = _propose_change(source, primary.metric)
+    criteria = tuple(
+        _criterion_for_objective(source, objective, minimum_improvement)
+        for objective in objectives
+    )
+    keep_constant = tuple(sorted(name for name in source.parameters if name not in change))
+    objective_names = ", ".join(objective.metric for objective in objectives)
+    constraint_evidence = tuple(
+        f"constraint {item.metric} {item.operator} {item.threshold:g}" for item in constraints
+    )
+    direction_text = "lower" if primary_direction == "lower" else "higher"
+    return NextExperimentRecommendation(
+        hypothesis=(
+            hypothesis
+            + f" The source run is Pareto-efficient; keep the trade-off while pushing "
+            f"{primary.metric} {direction_text}."
+        ),
+        changes=change,
+        keep_constant=keep_constant,
+        success_criteria=criteria,
+        estimated_cost=source.estimated_cost,
+        confidence=min(confidence, 0.65),
+        evidence=(
+            *evidence,
+            f"Pareto-efficient across: {objective_names}",
+            *constraint_evidence,
+        ),
+        source_run=source.name,
     )
 
 
@@ -153,6 +247,100 @@ def render_next_experiment(recommendation: NextExperimentRecommendation) -> str:
     lines.extend(["", "### Evidence"])
     lines.extend(f"- {item}" for item in recommendation.evidence)
     return "\n".join(lines).strip() + "\n"
+
+
+def _validate_improvement(value: float) -> None:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise TypeError("minimum_improvement must be a number")
+    if not isfinite(value) or value <= 0:
+        raise ValueError("minimum_improvement must be finite and positive")
+
+
+def _objective_direction(objective: ObjectiveSpec) -> Literal["lower", "higher"]:
+    if objective.direction == "min":
+        return "lower"
+    if objective.direction == "max":
+        return "higher"
+    inferred = metric_direction(objective.metric)
+    if inferred is None:
+        raise ValueError(
+            f"cannot infer whether {objective.metric!r} should increase or decrease; "
+            "set ObjectiveSpec.direction"
+        )
+    return inferred
+
+
+def _has_objective_metrics(run: ExperimentRun, objectives: Sequence[ObjectiveSpec]) -> bool:
+    return all(
+        objective.metric in run.metrics and _is_finite_metric(run.metrics[objective.metric])
+        for objective in objectives
+    )
+
+
+def _satisfies_constraints(
+    run: ExperimentRun,
+    constraints: Sequence[MetricConstraint],
+) -> bool:
+    for constraint in constraints:
+        value = run.metrics.get(constraint.metric)
+        if value is None or not _is_finite_metric(value):
+            return False
+        if constraint.operator == "<=" and value > constraint.threshold:
+            return False
+        if constraint.operator == ">=" and value < constraint.threshold:
+            return False
+    return True
+
+
+def _dominates(
+    left: ExperimentRun,
+    right: ExperimentRun,
+    objectives: Sequence[ObjectiveSpec],
+    directions: Sequence[Literal["lower", "higher"]],
+) -> bool:
+    no_worse = True
+    strictly_better = False
+    for objective, direction in zip(objectives, directions, strict=True):
+        left_value = left.metrics[objective.metric]
+        right_value = right.metrics[objective.metric]
+        if direction == "lower":
+            no_worse = no_worse and left_value <= right_value
+            strictly_better = strictly_better or left_value < right_value
+        else:
+            no_worse = no_worse and left_value >= right_value
+            strictly_better = strictly_better or left_value > right_value
+    return no_worse and strictly_better
+
+
+def _balanced_frontier_run(
+    frontier: Sequence[ExperimentRun],
+    objectives: Sequence[ObjectiveSpec],
+) -> ExperimentRun:
+    scores = [0] * len(frontier)
+    for objective in objectives:
+        direction = _objective_direction(objective)
+        order = sorted(
+            range(len(frontier)),
+            key=lambda index: frontier[index].metrics[objective.metric],
+            reverse=direction == "higher",
+        )
+        for rank, index in enumerate(order):
+            scores[index] += rank
+    best_index = min(range(len(frontier)), key=lambda index: scores[index])
+    return frontier[best_index]
+
+
+def _criterion_for_objective(
+    run: ExperimentRun,
+    objective: ObjectiveSpec,
+    improvement: float,
+) -> SuccessCriterion:
+    direction = _objective_direction(objective)
+    return SuccessCriterion(
+        metric=objective.metric,
+        operator="<=" if direction == "lower" else ">=",
+        target=_target(run.metrics[objective.metric], direction, improvement, objective.metric),
+    )
 
 
 def _select_objective(runs: Sequence[ExperimentRun]) -> str | None:
