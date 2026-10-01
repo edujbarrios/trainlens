@@ -9,6 +9,14 @@ from typing import Literal
 MetricDirection = Literal["lower", "higher"]
 
 
+def _normalize_token(name: str) -> str:
+    return "_".join(re.findall(r"[a-z0-9]+", name.lower()))
+
+
+def _metric_tokens(name: str) -> tuple[str, ...]:
+    return tuple(re.findall(r"[a-z0-9]+", name.lower()))
+
+
 @dataclass(frozen=True)
 class MetricSpec:
     """Optimization semantics for one metric family."""
@@ -69,7 +77,8 @@ class MetricRegistry:
             self._aliases[alias] = canonical
 
     def unregister(self, name: str) -> None:
-        canonical = self._aliases.get(_normalize_token(name), _normalize_token(name))
+        normalized_name = _normalize_token(name)
+        canonical = self._aliases.get(normalized_name, normalized_name)
         spec = self._specs.pop(canonical, None)
         if spec is None:
             return
@@ -113,7 +122,16 @@ def _register_defaults() -> None:
         "msle",
         "rmse",
     )
-    bounded_higher = ("accuracy", "acc", "auc", "f1", "precision", "recall", "map", "ndcg")
+    bounded_higher = (
+        "accuracy",
+        "acc",
+        "auc",
+        "f1",
+        "precision",
+        "recall",
+        "map",
+        "ndcg",
+    )
     for name in lower:
         _DEFAULT_REGISTRY.register(
             MetricSpec(name=name, direction="lower", lower_bound=0.0)
@@ -182,11 +200,3 @@ def metric_material_thresholds(name: str) -> tuple[float | None, float | None]:
     if spec is None:
         return None, None
     return spec.material_relative_delta, spec.material_absolute_delta
-
-
-def _normalize_token(name: str) -> str:
-    return "_".join(re.findall(r"[a-z0-9]+", name.lower()))
-
-
-def _metric_tokens(name: str) -> tuple[str, ...]:
-    return tuple(re.findall(r"[a-z0-9]+", name.lower()))
