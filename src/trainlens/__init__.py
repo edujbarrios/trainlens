@@ -19,12 +19,15 @@ from trainlens.experiments import (
 )
 from trainlens.export import render_report, write_report
 from trainlens.framework_callbacks import keras_callback, lightning_callback, transformers_callback
+from trainlens.llm.config import LLMConfig
+from trainlens.llm.openai_compatible import OpenAICompatibleProvider
 from trainlens.llm.prompts import (
     PromptOptions,
     TrainLensPrompt,
     get_trainlens_prompt,
     show_trainlens_prompts,
 )
+from trainlens.llm.provider import LLMProvider
 from trainlens.magic.extension import load_ipython_extension, unload_ipython_extension
 from trainlens.metric_semantics import (
     MetricRegistry,
@@ -62,6 +65,8 @@ __all__ = [
     "AnalysisResult",
     "EvidenceRef",
     "ExperimentRun",
+    "LLMConfig",
+    "LLMProvider",
     "LiveReport",
     "MetricConstraint",
     "MetricRegistry",
@@ -69,6 +74,7 @@ __all__ = [
     "MonitorConfig",
     "NextExperimentRecommendation",
     "ObjectiveSpec",
+    "OpenAICompatibleProvider",
     "ParameterChange",
     "PromptOptions",
     "Recommendation",
