@@ -13,6 +13,7 @@ from trainlens.introspection.selection import framework_source_for_model
 from trainlens.models.analysis import AnalysisResult
 from trainlens.models.metric import MetricSeries
 from trainlens.models.snapshot import NotebookSnapshot
+from trainlens.pipeline import analyze_snapshot
 from trainlens.security import sanitize_value
 from trainlens.training_profile import inspect_training_profile
 
@@ -41,6 +42,8 @@ def build_llm_notebook_context(
     """Capture and render notebook state as bounded LLM evidence."""
 
     snapshot = NotebookInspector().snapshot(namespace)
+    if deterministic_result is None:
+        deterministic_result = analyze_snapshot(snapshot, config=analysis_config)
     return build_llm_notebook_context_from_snapshot(
         snapshot,
         max_metric_points=max_metric_points,
