@@ -42,6 +42,7 @@ class TrainLensCallback:
         self.alerts: list[TrainingAlert] = []
         self.stop_requested = False
         self.model: Any | None = None
+        self._last_explained_step: int | None = None
 
     def set_model(self, model: Any) -> None:
         """Receive the active model from Keras without importing Keras."""
@@ -65,7 +66,9 @@ class TrainLensCallback:
             self.explain_every is not None
             and step % self.explain_every == 0
             and self.on_explain is not None
+            and self._last_explained_step != step
         ):
+            self._last_explained_step = step
             self.on_explain(self.monitor.observations[-1])
         return detected
 
