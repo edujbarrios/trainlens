@@ -10,7 +10,7 @@ from os import getenv
 @dataclass(frozen=True)
 class LLMConfig:
     base_url: str
-    api_key: str
+    api_key: str | None = None
     model: str = "auto"
     timeout_seconds: float = 120.0
 
@@ -20,11 +20,11 @@ class LLMConfig:
         api_key = getenv("TRAINLENS_LLM_API_KEY", "").strip()
         model = getenv("TRAINLENS_LLM_MODEL", "").strip()
         timeout_seconds = _timeout_from_env(getenv("TRAINLENS_LLM_TIMEOUT_SECONDS", "120"))
-        if not base_url or not api_key or not model:
+        if not base_url or not model:
             return None
         return cls(
             base_url=base_url.rstrip("/"),
-            api_key=api_key,
+            api_key=api_key or None,
             model=model,
             timeout_seconds=timeout_seconds,
         )

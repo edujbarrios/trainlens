@@ -17,6 +17,7 @@ from trainlens.llm.context import (
 )
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.llm.prompts import PromptOptions, ReportMode
+from trainlens.llm.provider import LLMProvider
 from trainlens.models.analysis import AnalysisResult
 from trainlens.pipeline import analyze_snapshot, snapshot_namespace
 
@@ -60,6 +61,7 @@ def build_llm_report(
     prompt_options: PromptOptions | None = None,
     include_values: bool = False,
     analysis_config: AnalysisConfig | None = None,
+    provider: LLMProvider | None = None,
 ) -> LiveReport:
     """Build an LLM-generated training report from notebook context."""
 
@@ -69,6 +71,7 @@ def build_llm_report(
         prompt_options=prompt_options,
         include_values=include_values,
         analysis_config=analysis_config,
+        provider=provider,
     )
 
 
@@ -79,6 +82,7 @@ def build_paper_report(
     prompt_options: PromptOptions | None = None,
     include_values: bool = False,
     analysis_config: AnalysisConfig | None = None,
+    provider: LLMProvider | None = None,
 ) -> LiveReport:
     """Build a scientific paper-style training report from notebook context."""
 
@@ -89,6 +93,7 @@ def build_paper_report(
         prompt_options=prompt_options,
         include_values=include_values,
         analysis_config=analysis_config,
+        provider=provider,
     )
 
 
@@ -99,6 +104,7 @@ def build_improvement_ideas(
     prompt_options: PromptOptions | None = None,
     include_values: bool = False,
     analysis_config: AnalysisConfig | None = None,
+    provider: LLMProvider | None = None,
 ) -> LiveReport:
     """Build an evidence-backed improvement plan from notebook context."""
 
@@ -109,6 +115,7 @@ def build_improvement_ideas(
         prompt_options=prompt_options,
         include_values=include_values,
         analysis_config=analysis_config,
+        provider=provider,
     )
 
 
@@ -120,6 +127,7 @@ def _build_report(
     prompt_options: PromptOptions | None,
     include_values: bool,
     analysis_config: AnalysisConfig | None,
+    provider: LLMProvider | None,
 ) -> LiveReport:
     report_namespace = _current_user_namespace() if namespace is None else namespace
     snapshot = snapshot_namespace(report_namespace)
@@ -134,6 +142,8 @@ def _build_report(
     explain_kwargs: dict[str, Any] = {"mode": mode, "require_provider": True}
     if prompt_options is not None:
         explain_kwargs["prompt_options"] = prompt_options
+    if provider is not None:
+        explain_kwargs["provider"] = provider
     return LiveReport(
         result=result,
         markdown=explain_with_llm(context.markdown, **explain_kwargs),
