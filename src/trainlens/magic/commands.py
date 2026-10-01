@@ -11,6 +11,7 @@ from typing import Any, cast
 from IPython.core.magic import Magics, line_magic, magics_class
 from IPython.display import Markdown, display
 
+from trainlens.analysis_config import AnalysisConfig
 from trainlens.llm.context import (
     build_llm_notebook_context,
     build_llm_notebook_context_from_snapshot,
@@ -24,8 +25,11 @@ from trainlens.storage.memory import InMemoryRunStore
 @dataclass(frozen=True)
 class _ExplainArguments:
     name: str | None = None
+    model: str | None = None
+    trainer: str | None = None
     no_llm: bool = False
     dry_run: bool = False
+    strict: bool = False
 
 
 @magics_class
@@ -41,12 +45,20 @@ class TrainLensMagics(Magics):
         args = _parse_explain_arguments(line)
         shell = cast(Any, self.shell)
         snapshot = snapshot_namespace(shell.user_ns)
-        context = build_llm_notebook_context_from_snapshot(snapshot)
+        config = AnalysisConfig(model=args.model, trainer=args.trainer, strict=args.strict)
         if args.dry_run:
+            context = build_llm_notebook_context_from_snapshot(
+                snapshot,
+                analysis_config=config,
+            )
             display(Markdown(context.markdown))
             return
 
-        result = analyze_snapshot(snapshot)
+        result = analyze_snapshot(snapshot, config=config)
+        context = build_llm_notebook_context_from_snapshot(
+            snapshot,
+            analysis_config=config,
+        )
         self.store.capture(result, name=args.name)
         if args.no_llm:
             display(Markdown(MarkdownRenderer().render(result)))
@@ -101,39 +113,72 @@ class TrainLensMagics(Magics):
 def _parse_explain_arguments(line: str) -> _ExplainArguments:
     tokens = shlex.split(line)
     name: str | None = None
+    model: str | None = None
+    trainer: str | None = None
     no_llm = False
     dry_run = False
+    strict = False
     index = 0
     while index < len(tokens):
         token = tokens[index]
-        if token == "--name":
+        if token in {"--name", "--model", "--trainer"}:
             index += 1
             if index >= len(tokens):
-                raise ValueError("--name requires a run label")
-            if name is not None:
-                raise ValueError("--name can only be provided once")
-            name = tokens[index]
-        elif token.startswith("--name="):
-            if name is not None:
-                raise ValueError("--name can only be provided once")
-            name = token.partition("=")[2]
-            if not name:
-                raise ValueError("--name requires a run label")
+                raise ValueError(f"{token} requires a value")
+            value = tokens[index]
+            if token == "--name":
+                if name is not None:
+                    raise ValueError("--name can only be provided once")
+                name = value
+            elif token == "--model":
+                if model is not None:
+                    raise ValueError("--model can only be provided once")
+                model = value
+            else:
+                if trainer is not None:
+                    raise ValueError("--trainer can only be provided once")
+                trainer = value
+        elif token.startswith(("--name=", "--model=", "--trainer=")):
+            prefix, _, value = token.partition("=")
+            if not value:
+                raise ValueError(f"{prefix} requires a value")
+            if prefix == "--name":
+                if name is not None:
+                    raise ValueError("--name can only be provided once")
+                name = value
+            elif prefix == "--model":
+                if model is not None:
+                    raise ValueError("--model can only be provided once")
+                model = value
+            else:
+                if trainer is not None:
+                    raise ValueError("--trainer can only be provided once")
+                trainer = value
         elif token == "--no-llm":
             no_llm = True
         elif token == "--dry-run":
             dry_run = True
+        elif token == "--strict":
+            strict = True
         else:
             raise ValueError(
                 f"Unknown argument {token!r}. Usage: %explain_training "
-                "[--name NAME] [--no-llm] [--dry-run]"
+                "[--name NAME] [--model MODEL] [--trainer TRAINER] "
+                "[--strict] [--no-llm] [--dry-run]"
             )
         index += 1
     if dry_run and (name is not None or no_llm):
         raise ValueError(
             "--dry-run previews context only and cannot be combined with --name or --no-llm"
         )
-    return _ExplainArguments(name=name, no_llm=no_llm, dry_run=dry_run)
+    return _ExplainArguments(
+        name=name,
+        model=model,
+        trainer=trainer,
+        no_llm=no_llm,
+        dry_run=dry_run,
+        strict=strict,
+    )
 
 
 def _parse_suggest_arguments(line: str) -> bool:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from trainlens.analysis_config import AnalysisConfig
 from trainlens.callbacks import TrainLensCallback
 from trainlens.comparison import compare_runs, render_run_comparison
 from trainlens.experiments import (
@@ -29,11 +30,13 @@ from trainlens.notebook import (
     build_paper_report,
     preview_notebook_context,
 )
+from trainlens.pipeline import analyze
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
 __version__ = "0.10.1"
 
 __all__ = [
+    "AnalysisConfig",
     "LiveReport",
     "ExperimentRun",
     "MonitorConfig",
@@ -47,6 +50,7 @@ __all__ = [
     "TrainLensMonitor",
     "TrainLensCallback",
     "__version__",
+    "analyze",
     "build_improvement_ideas",
     "build_llm_report",
     "build_paper_report",
