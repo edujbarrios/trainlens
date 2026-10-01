@@ -193,7 +193,7 @@ def _trainer_for_config(
             raise ValueError(
                 f"trainer variable {selector!r} was not found in the notebook snapshot"
             )
-        return snapshot.raw_namespace[selector]
+        return cast(object, snapshot.raw_namespace[selector])
     return selector
 
 
