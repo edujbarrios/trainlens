@@ -1,11 +1,22 @@
 from __future__ import annotations
 
+import pytest
+
 from trainlens import inspect_training_profile
 
 
 class FakeParameter:
     def __init__(self, *, requires_grad: bool) -> None:
         self.requires_grad = requires_grad
+
+
+class SizedParameter(FakeParameter):
+    def __init__(self, size: int, *, requires_grad: bool) -> None:
+        super().__init__(requires_grad=requires_grad)
+        self.size = size
+
+    def numel(self) -> int:
+        return self.size
 
 
 class FakeComponent:
@@ -63,8 +74,48 @@ class FakeLoraConfig:
     use_dora = True
 
 
+class SmallLoraConfig(FakeLoraConfig):
+    r = 4
+
+
+class LargeLoraConfig(FakeLoraConfig):
+    r = 32
+
+
 class FakePeftVLM(FakeVLM):
     peft_config = {"default": FakeLoraConfig()}
+
+
+class MultiAdapterModel(FakeVLM):
+    peft_config = {
+        "small": SmallLoraConfig(),
+        "large": LargeLoraConfig(),
+    }
+    active_adapter = "large"
+
+
+class PartialModel:
+    def parameters(self):
+        return iter(
+            (
+                SizedParameter(100, requires_grad=True),
+                SizedParameter(900, requires_grad=False),
+            )
+        )
+
+
+class FullModel:
+    def parameters(self):
+        return iter(
+            (
+                SizedParameter(400, requires_grad=True),
+                SizedParameter(600, requires_grad=True),
+            )
+        )
+
+
+class QuantizedModel(PartialModel):
+    is_loaded_in_4bit = True
 
 
 class BrokenComponent:
@@ -107,6 +158,7 @@ def test_extracts_peft_lora_configuration() -> None:
     assert profile.parameters["peft.lora_alpha"] == 32
     assert profile.parameters["peft.target_modules"] == ("q_proj", "v_proj")
     assert profile.parameters["peft.use_dora"] is True
+    assert profile.adapters == ("default",)
 
 
 def test_reads_common_notebook_aliases() -> None:
@@ -132,3 +184,40 @@ def test_broken_component_introspection_is_best_effort() -> None:
     assert profile.strategy == "vlm_projector_alignment"
     assert "vision_tower" not in profile.frozen_components
     assert profile.parameters["vlm.model_type"] == "llava"
+
+
+def test_detects_partial_finetuning_and_parameter_fraction() -> None:
+    profile = inspect_training_profile(PartialModel())
+
+    assert profile.strategy == "partial_finetune"
+    assert profile.trainable_parameters == 100
+    assert profile.total_parameters == 1000
+    assert profile.trainable_fraction == pytest.approx(0.1)
+    assert any("10.00%" in item for item in profile.observations)
+
+
+def test_detects_full_finetuning_from_parameter_counts() -> None:
+    profile = inspect_training_profile(FullModel())
+
+    assert profile.strategy == "full_finetune"
+    assert profile.trainable_parameters == 1000
+    assert profile.total_parameters == 1000
+    assert profile.trainable_fraction == pytest.approx(1.0)
+
+
+def test_tracks_multiple_peft_adapters_and_active_configuration() -> None:
+    profile = inspect_training_profile(MultiAdapterModel())
+
+    assert profile.strategy == "vlm_adapter_finetune"
+    assert profile.adapters == ("small", "large")
+    assert profile.active_adapters == ("large",)
+    assert profile.parameters["peft.r"] == 32
+    assert profile.parameters["peft.adapters"] == ("small", "large")
+    assert profile.parameters["peft.active_adapters"] == ("large",)
+
+
+def test_detects_quantized_training_configuration() -> None:
+    profile = inspect_training_profile(QuantizedModel())
+
+    assert profile.quantization == "4bit"
+    assert profile.parameters["training.quantization"] == "4bit"
