@@ -169,12 +169,22 @@ def _summary(
     lines: list[str] = []
     material_improvements = [item for item in improvements if item.magnitude == "material"]
     material_regressions = [item for item in regressions if item.magnitude == "material"]
+    material_unknown = [
+        item
+        for item in comparisons
+        if item.direction == "unknown" and item.magnitude == "material"
+    ]
     if material_improvements:
         names = ", ".join(item.name for item in material_improvements)
         lines.append(f"Material improvement detected in {names}.")
     if material_regressions:
         names = ", ".join(item.name for item in material_regressions)
         lines.append(f"Material regression detected in {names}.")
+    if material_unknown:
+        names = ", ".join(item.name for item in material_unknown)
+        lines.append(
+            f"Material change detected in {names}, but optimization direction is unknown."
+        )
     new_metrics = [item.name for item in comparisons if item.direction == "new"]
     removed_metrics = [item.name for item in comparisons if item.direction == "removed"]
     if new_metrics:

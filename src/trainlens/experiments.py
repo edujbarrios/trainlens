@@ -238,6 +238,8 @@ def _target(
 ) -> float:
     change = max(abs(value) * improvement, improvement if value == 0 else 0.0)
     lower_bound, upper_bound = metric_bounds(metric)
+    if upper_bound == 1.0 and value > 1.0:
+        upper_bound = 100.0 if value <= 100.0 else None
     target = value - change if direction == "lower" else value + change
     if lower_bound is not None:
         target = max(lower_bound, target)
