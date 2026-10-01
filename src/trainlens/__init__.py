@@ -36,7 +36,13 @@ from trainlens.metric_semantics import (
 from trainlens.models.analysis import AnalysisResult, EvidenceRef, Recommendation, Signal
 from trainlens.models.comparison import ParameterChange, TrajectoryComparison
 from trainlens.models.run import TrainingRun
-from trainlens.monitoring import MonitorConfig, TrainingAlert, TrainingObservation, TrainLensMonitor
+from trainlens.monitoring import (
+    AlertDetector,
+    MonitorConfig,
+    TrainingAlert,
+    TrainingObservation,
+    TrainLensMonitor,
+)
 from trainlens.notebook import (
     LiveReport,
     build_improvement_ideas,
@@ -51,6 +57,7 @@ from trainlens.training_profile import TrainingProfile, inspect_training_profile
 __version__ = "0.10.1"
 
 __all__ = [
+    "AlertDetector",
     "AnalysisConfig",
     "AnalysisResult",
     "EvidenceRef",
