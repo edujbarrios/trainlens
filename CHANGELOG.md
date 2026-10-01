@@ -2,6 +2,14 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.10.1 - 2026-10-01
+
+- report material metric changes even when optimization direction is unknown and preserve common 0–100 percentage scales in experiment success criteria
+- avoid no-op or backwards weight-decay recommendations when regularization is already configured
+- reuse one notebook snapshot in Python report builders and keep Hugging Face trainer configuration aligned with the selected model
+- recognize slash-, dash-, and space-separated loss aliases during live overfitting monitoring
+- emit callback explanations at most once per training step when frameworks provide repeated updates
+
 ## 0.10.0 - 2026-09-29
 
 - add public `TrainingProfile` and `inspect_training_profile()` APIs for dependency-light training-configuration introspection
