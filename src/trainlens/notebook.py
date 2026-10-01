@@ -13,7 +13,6 @@ from IPython import get_ipython
 from trainlens.analysis_config import AnalysisConfig
 from trainlens.llm.context import (
     LLMNotebookContext,
-    build_llm_notebook_context,
     build_llm_notebook_context_from_snapshot,
 )
 from trainlens.llm.enhancer import explain_with_llm
@@ -43,11 +42,14 @@ def preview_notebook_context(
     """Return the exact sanitized notebook context used for an LLM request."""
 
     report_namespace = _current_user_namespace() if namespace is None else namespace
-    return build_llm_notebook_context(
-        report_namespace,
+    snapshot = snapshot_namespace(report_namespace)
+    result = analyze_snapshot(snapshot, config=analysis_config)
+    return build_llm_notebook_context_from_snapshot(
+        snapshot,
         max_metric_points=max_metric_points,
         include_values=include_values,
         analysis_config=analysis_config,
+        deterministic_result=result,
     )
 
 
@@ -127,6 +129,7 @@ def _build_report(
         max_metric_points=max_metric_points,
         include_values=include_values,
         analysis_config=analysis_config,
+        deterministic_result=result,
     )
     explain_kwargs: dict[str, Any] = {"mode": mode, "require_provider": True}
     if prompt_options is not None:
