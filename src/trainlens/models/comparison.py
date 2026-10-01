@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from trainlens.models.run import RunValue
+
 ComparisonDirection = Literal["improved", "regressed", "unchanged", "new", "removed", "unknown"]
 ChangeMagnitude = Literal["none", "small", "material"]
 
@@ -31,6 +33,26 @@ class MetricComparison:
 
 
 @dataclass(frozen=True)
+class ParameterChange:
+    """One changed configuration value across two runs."""
+
+    name: str
+    baseline: RunValue
+    experiment: RunValue
+
+
+@dataclass(frozen=True)
+class TrajectoryComparison:
+    """Summary of full metric histories across two runs."""
+
+    name: str
+    baseline_best: float | None
+    experiment_best: float | None
+    baseline_observations: int
+    experiment_observations: int
+
+
+@dataclass(frozen=True)
 class RunComparison:
     """Structured comparison between a baseline and experiment run."""
 
@@ -41,9 +63,17 @@ class RunComparison:
     improvements: tuple[MetricComparison, ...] = ()
     regressions: tuple[MetricComparison, ...] = ()
     unchanged: tuple[MetricComparison, ...] = ()
+    parameter_changes: tuple[ParameterChange, ...] = ()
+    trajectories: tuple[TrajectoryComparison, ...] = ()
     notes: tuple[str, ...] = field(default_factory=tuple)
 
     def has_findings(self) -> bool:
-        """Return whether the comparison contains any metric evidence."""
+        """Return whether the comparison contains any experiment evidence."""
 
-        return bool(self.metrics or self.summary or self.notes)
+        return bool(
+            self.metrics
+            or self.summary
+            or self.parameter_changes
+            or self.trajectories
+            or self.notes
+        )
