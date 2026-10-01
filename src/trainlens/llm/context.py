@@ -122,11 +122,8 @@ def build_llm_notebook_context_from_snapshot(
         "",
     ]
 
-    # Keep deterministic findings first so the most important evidence survives a
-    # global character budget even in very large notebook namespaces.
-    if deterministic_result is not None:
-        lines.extend(_render_deterministic_findings(deterministic_result))
-
+    # Curves and deterministic findings are the highest-value evidence, so they are
+    # rendered before accessory notebook metadata when a global character budget applies.
     metric_items = sorted(metric_series.items())
     if metric_items:
         lines.extend(["## Metric Series", ""])
@@ -140,6 +137,9 @@ def build_llm_notebook_context_from_snapshot(
                 f"- ... {omitted} additional metric series omitted by ContextPolicy."
             )
         lines.append("")
+
+    if deterministic_result is not None:
+        lines.extend(_render_deterministic_findings(deterministic_result))
 
     if (
         training_profile.parameters
@@ -203,6 +203,30 @@ def build_llm_notebook_context_from_snapshot(
             )
         lines.append("")
 
+    if snapshot.variables:
+        lines.extend(["## Notebook Variables", ""])
+        for variable in snapshot.variables[: policy.max_variables]:
+            details = [f"type={variable.type_name}"]
+            if variable.module:
+                details.append(f"module={variable.module}")
+            if variable.shape is not None:
+                details.append(f"shape={variable.shape}")
+            if variable.length is not None:
+                details.append(f"length={variable.length}")
+            lines.append(f"- `{variable.name}`: " + ", ".join(details))
+            if (
+                include_values
+                and variable.value is not None
+                and variable.name not in metric_variable_names
+            ):
+                lines.append(f"  value: {variable.value!r}")
+        omitted = len(snapshot.variables) - policy.max_variables
+        if omitted > 0:
+            lines.append(
+                f"- ... {omitted} additional notebook variables omitted by ContextPolicy."
+            )
+        lines.append("")
+
     if candidates:
         lines.extend(["## Model Candidates", ""])
         for candidate in candidates[: policy.max_model_candidates]:
@@ -230,30 +254,6 @@ def build_llm_notebook_context_from_snapshot(
                 "",
             ]
         )
-
-    if snapshot.variables:
-        lines.extend(["## Notebook Variables", ""])
-        for variable in snapshot.variables[: policy.max_variables]:
-            details = [f"type={variable.type_name}"]
-            if variable.module:
-                details.append(f"module={variable.module}")
-            if variable.shape is not None:
-                details.append(f"shape={variable.shape}")
-            if variable.length is not None:
-                details.append(f"length={variable.length}")
-            lines.append(f"- `{variable.name}`: " + ", ".join(details))
-            if (
-                include_values
-                and variable.value is not None
-                and variable.name not in metric_variable_names
-            ):
-                lines.append(f"  value: {variable.value!r}")
-        omitted = len(snapshot.variables) - policy.max_variables
-        if omitted > 0:
-            lines.append(
-                f"- ... {omitted} additional notebook variables omitted by ContextPolicy."
-            )
-        lines.append("")
 
     markdown = "\n".join(lines).strip() + "\n"
     return LLMNotebookContext(
