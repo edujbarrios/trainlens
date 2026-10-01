@@ -10,11 +10,15 @@ from typing import Any
 
 from IPython import get_ipython
 
-from trainlens.llm.context import LLMNotebookContext, build_llm_notebook_context
+from trainlens.llm.context import (
+    LLMNotebookContext,
+    build_llm_notebook_context,
+    build_llm_notebook_context_from_snapshot,
+)
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.llm.prompts import PromptOptions, ReportMode
 from trainlens.models.analysis import AnalysisResult
-from trainlens.pipeline import explain_namespace
+from trainlens.pipeline import analyze_snapshot, snapshot_namespace
 
 
 @dataclass(frozen=True)
@@ -110,9 +114,10 @@ def _build_report(
     """Build one of the supported LLM-generated report modes."""
 
     report_namespace = _current_user_namespace() if namespace is None else namespace
-    result = explain_namespace(report_namespace)
-    context = build_llm_notebook_context(
-        report_namespace,
+    snapshot = snapshot_namespace(report_namespace)
+    result = analyze_snapshot(snapshot)
+    context = build_llm_notebook_context_from_snapshot(
+        snapshot,
         max_metric_points=max_metric_points,
         include_values=include_values,
     )

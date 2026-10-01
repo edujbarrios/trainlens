@@ -27,6 +27,7 @@ from trainlens.heuristics.vlm_training import (
     vlm_training_recommendations,
 )
 from trainlens.introspection.models import ModelCandidate
+from trainlens.introspection.selection import framework_source_for_model
 from trainlens.models.analysis import AnalysisResult, Recommendation
 from trainlens.models.snapshot import NotebookSnapshot
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
@@ -45,7 +46,7 @@ class TrainingSessionAnalyzer(Analyzer):
         framework = model.framework if model else _first_artifact_framework(snapshot)
         model_name = model.display_name if model else _first_artifact_model_name(snapshot)
         model_ref = model.object_ref if model else _first_artifact_model_ref(snapshot)
-        trainer = _first_artifact_source(snapshot, "huggingface")
+        trainer = framework_source_for_model(snapshot, "huggingface", model_ref)
         training_profile = inspect_training_profile(
             model_ref,
             trainer=trainer,
@@ -257,14 +258,4 @@ def _first_artifact_model_ref(snapshot: NotebookSnapshot) -> object | None:
     for artifact in snapshot.framework_artifacts:
         if artifact.model_ref is not None:
             return cast(object, artifact.model_ref)
-    return None
-
-
-def _first_artifact_source(snapshot: NotebookSnapshot, framework: str) -> object | None:
-    for artifact in snapshot.framework_artifacts:
-        if artifact.framework != framework:
-            continue
-        source = snapshot.raw_namespace.get(artifact.variable_name)
-        if source is not None:
-            return cast(object, source)
     return None
