@@ -26,19 +26,29 @@ preparado. La detección automática solo funciona en IPython/Jupyter.
 
 ### El proveedor LLM no está configurado
 
-Define valores no vacíos para `TRAINLENS_LLM_BASE_URL`,
-`TRAINLENS_LLM_API_KEY` y `TRAINLENS_LLM_MODEL`.
+Define valores no vacíos para `TRAINLENS_LLM_BASE_URL` y
+`TRAINLENS_LLM_MODEL`. Define `TRAINLENS_LLM_API_KEY` cuando el endpoint requiera
+autenticación; puede omitirse en servidores locales sin autenticación.
 
 ### Faltan métricas
 
-Mantén los historiales u objetos trainer en el espacio inspeccionado. Usa
-nombres convencionales y valores numéricos finitos. TrainLens no ejecuta el
-entrenamiento ni consulta servidores remotos de tracking.
+Mantén los historiales u objetos trainer en el espacio inspeccionado, o aporta
+métricas explícitas con `AnalysisConfig(metrics=...)`. Usa valores numéricos y
+finitos. TrainLens no ejecuta el entrenamiento ni consulta servidores remotos de
+tracking.
 
 ### La dirección de comparación es desconocida
 
-El nombre queda fuera del vocabulario integrado. El delta numérico sigue siendo
-válido; decide la dirección deseada en código específico del dominio.
+Registra semántica de dominio con `register_metric(MetricSpec(...))` cuando el
+nombre quede fuera del vocabulario integrado. Sin dirección registrada, el delta
+numérico sigue siendo válido, pero TrainLens no afirmará que sea mejora o
+regresión.
+
+### El contexto LLM aparece truncado
+
+`ContextPolicy` limita la evidencia saliente. Usa `preview_notebook_context()`
+para revisar el contexto sanitizado exacto y aumenta solo los presupuestos que
+necesites. Las omisiones y el truncado global se marcan explícitamente.
 
 ### Falla la exportación PDF
 
@@ -48,12 +58,16 @@ compleja, exporta Markdown o JSON y utiliza una herramienta especializada.
 ## Limitaciones actuales
 
 - API en fase alpha y requisito de Python 3.11+
-- Historial de magics en memoria, sin backend persistente ni interfaz colaborativa
-- Detección de frameworks y dirección métrica mediante heurísticas
-- Tres detectores en vivo, no un análisis estadístico de drift
-- Reglas deterministas, no búsqueda causal ni de hiperparámetros
-- Calidad y coste del texto LLM dependientes del proveedor
+- El historial de magics sigue en memoria, aunque los `TrainingRun` terminados
+  pueden guardarse y cargarse como JSON
+- La detección de frameworks sigue siendo heurística; usa `AnalysisConfig` para
+  seleccionar modelo/trainer explícitamente en notebooks ambiguos
+- El conjunto integrado de detectores en vivo es pequeño; se pueden añadir
+  detectores propios mediante la interfaz pública `AlertDetector`
+- Heurísticas deterministas de siguiente paso y Pareto, no inferencia causal ni
+  una búsqueda completa de hiperparámetros
+- Calidad, privacidad y coste del texto LLM dependientes del proveedor configurado
+  o inyectado
 
 Por ello TrainLens es ante todo una ayuda ligera para cuadernos y una capa de
 informes, no una plataforma MLOps completa.
-
