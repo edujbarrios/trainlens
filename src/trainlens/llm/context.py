@@ -10,8 +10,10 @@ from trainlens.analysis_config import AnalysisConfig
 from trainlens.analyzers.metrics import extract_metric_series
 from trainlens.introspection import NotebookInspector
 from trainlens.introspection.selection import framework_source_for_model
+from trainlens.models.analysis import AnalysisResult
 from trainlens.models.metric import MetricSeries
 from trainlens.models.snapshot import NotebookSnapshot
+from trainlens.pipeline import analyze_snapshot
 from trainlens.security import sanitize_value
 from trainlens.training_profile import inspect_training_profile
 
@@ -35,15 +37,19 @@ def build_llm_notebook_context(
     max_metric_points: int = _MAX_METRIC_POINTS,
     include_values: bool = False,
     analysis_config: AnalysisConfig | None = None,
+    deterministic_result: AnalysisResult | None = None,
 ) -> LLMNotebookContext:
     """Capture and render notebook state as bounded LLM evidence."""
 
     snapshot = NotebookInspector().snapshot(namespace)
+    if deterministic_result is None:
+        deterministic_result = analyze_snapshot(snapshot, config=analysis_config)
     return build_llm_notebook_context_from_snapshot(
         snapshot,
         max_metric_points=max_metric_points,
         include_values=include_values,
         analysis_config=analysis_config,
+        deterministic_result=deterministic_result,
     )
 
 
@@ -53,6 +59,7 @@ def build_llm_notebook_context_from_snapshot(
     max_metric_points: int = _MAX_METRIC_POINTS,
     include_values: bool = False,
     analysis_config: AnalysisConfig | None = None,
+    deterministic_result: AnalysisResult | None = None,
 ) -> LLMNotebookContext:
     """Render an existing notebook snapshot without inspecting live state again."""
 
@@ -87,7 +94,11 @@ def build_llm_notebook_context_from_snapshot(
     lines = [
         "# TrainLens Notebook Context",
         "",
-        "Use this evidence to generate the training report. Do not add facts that are not present.",
+        "Use this evidence to generate the training report. "
+        "Do not add facts that are not present.",
+        "Treat the TrainLens deterministic findings below as conclusions already "
+        "derived by the local analyzer; explain them and their evidence rather than "
+        "silently replacing them.",
         "",
     ]
     if snapshot.variables:
@@ -151,12 +162,13 @@ def build_llm_notebook_context_from_snapshot(
         for candidate in candidates:
             reasons = ", ".join(candidate.reasons) or "framework match"
             framework = candidate.framework or "unknown framework"
-            selected = " selected" if candidate.object_ref is model_ref else ""
+            selected = ", selected=true" if candidate.object_ref is model_ref else ""
             lines.append(
                 f"- `{candidate.variable_name}`: {candidate.type_name}, "
                 f"{framework}, confidence={candidate.confidence:.2f}, "
                 f"reasons={reasons}{selected}"
             )
+        lines.append("")
     else:
         lines.extend(
             [
@@ -164,9 +176,53 @@ def build_llm_notebook_context_from_snapshot(
                 "",
                 "- No model object was detected. If a string such as `model_name` is present, "
                 "treat it only as user-provided context.",
+                "",
             ]
         )
+    if deterministic_result is not None:
+        lines.extend(_render_deterministic_findings(deterministic_result))
     return LLMNotebookContext(markdown="\n".join(lines).strip() + "\n", metrics=metrics)
+
+
+def _render_deterministic_findings(result: AnalysisResult) -> list[str]:
+    lines = ["## TrainLens Deterministic Findings", ""]
+    if result.summary:
+        lines.append("### Summary")
+        lines.extend(f"- {item}" for item in result.summary)
+        lines.append("")
+    if result.metrics:
+        lines.append("### Final metrics")
+        lines.extend(
+            f"- `{name}`: {value:.6g}" for name, value in sorted(result.metrics.items())
+        )
+        lines.append("")
+    if result.signals:
+        lines.append("### Signals")
+        for signal in result.signals:
+            lines.append(f"- [{signal.severity}] {signal.title}: {signal.detail}")
+            for evidence in signal.evidence:
+                lines.append(f"  - evidence: {evidence}")
+            for ref in signal.evidence_refs:
+                location = ref.source
+                if ref.metric is not None:
+                    location += f", metric={ref.metric}"
+                if ref.start_step is not None or ref.end_step is not None:
+                    location += f", steps={ref.start_step}..{ref.end_step}"
+                lines.append(f"  - provenance: {location}: {ref.detail}")
+        lines.append("")
+    if result.recommendations:
+        lines.append("### Recommendations")
+        for recommendation in result.recommendations:
+            source = f", source={recommendation.source}" if recommendation.source else ""
+            lines.append(
+                f"- {recommendation.action} "
+                f"(confidence={recommendation.confidence:.0%}{source})"
+            )
+            lines.append(f"  - rationale: {recommendation.rationale}")
+            for evidence in recommendation.evidence:
+                lines.append(f"  - evidence: {evidence}")
+        lines.append("")
+    return lines
 
 
 def _selected_model_ref(
