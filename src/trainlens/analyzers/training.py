@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, cast
 
+from trainlens.analysis_config import AnalysisConfig
 from trainlens.analyzers.base import Analyzer
 from trainlens.analyzers.metrics import extract_metric_series, paired_metric
 from trainlens.analyzers.traces import extract_trace_events
@@ -38,24 +39,29 @@ class TrainingSessionAnalyzer(Analyzer):
 
     name = "training_session"
 
-    def analyze(self, snapshot: NotebookSnapshot, model: ModelCandidate | None) -> AnalysisResult:
+    def analyze(
+        self,
+        snapshot: NotebookSnapshot,
+        model: ModelCandidate | None,
+        *,
+        config: AnalysisConfig | None = None,
+    ) -> AnalysisResult:
         namespace = _namespace_with_framework_artifacts(snapshot)
+        if config is not None and config.metrics is not None:
+            namespace["trainlens_explicit_metrics"] = config.metrics
         metric_series = extract_metric_series(namespace)
         train_acc, validation_acc = paired_metric(metric_series, "accuracy")
         train_loss, validation_loss = paired_metric(metric_series, "loss")
         framework = model.framework if model else _first_artifact_framework(snapshot)
         model_name = model.display_name if model else _first_artifact_model_name(snapshot)
         model_ref = model.object_ref if model else _first_artifact_model_ref(snapshot)
-        trainer = framework_source_for_model(snapshot, "huggingface", model_ref)
+        trainer = _trainer_for_config(snapshot, config, model_ref)
         training_profile = inspect_training_profile(
             model_ref,
             trainer=trainer,
             namespace=snapshot.raw_namespace,
         )
-        result = AnalysisResult(
-            model_name=model_name,
-            framework=framework,
-        )
+        result = AnalysisResult(model_name=model_name, framework=framework)
         families = detect_foundation_architecture(model_ref, namespace)
 
         if model:
@@ -108,12 +114,16 @@ class TrainingSessionAnalyzer(Analyzer):
             result.summary.append(f"Foundation-model profile: {', '.join(families).upper()}.")
 
         result.trace.extend(extract_trace_events(namespace))
-
+        labels = (
+            config.labels
+            if config is not None and config.labels is not None
+            else _first_present(namespace, "y_train", "y", "labels", "target")
+        )
         for signal in (
             detect_overfitting(train_acc, validation_acc),
             detect_validation_instability(validation_acc),
             detect_convergence(validation_acc or train_acc),
-            detect_class_imbalance(_first_present(namespace, "y_train", "y", "labels", "target")),
+            detect_class_imbalance(labels),
             detect_loss_plateau(validation_loss or train_loss),
             detect_contrastive_misalignment(metric_series),
             detect_adapter_pressure(namespace),
@@ -129,9 +139,7 @@ class TrainingSessionAnalyzer(Analyzer):
 
         result.recommendations.extend(self._recommendations(result))
         result.recommendations.extend(foundation_recommendations(families, result.signals))
-        result.recommendations.extend(
-            vlm_training_recommendations(training_profile, vlm_signals)
-        )
+        result.recommendations.extend(vlm_training_recommendations(training_profile, vlm_signals))
         return result
 
     def _recommendations(self, result: AnalysisResult) -> list[Recommendation]:
@@ -142,8 +150,7 @@ class TrainingSessionAnalyzer(Analyzer):
                 Recommendation(
                     action="Tune regularization or depth-related hyperparameters.",
                     rationale=(
-                        "The validation gap suggests the model may be memorizing "
-                        "training examples."
+                        "The validation gap suggests the model may be memorizing training examples."
                     ),
                     confidence=0.78,
                 )
@@ -161,8 +168,7 @@ class TrainingSessionAnalyzer(Analyzer):
                 Recommendation(
                     action="Run a focused validation error analysis.",
                     rationale=(
-                        "Inspecting false positives and false negatives usually "
-                        "reveals the next useful experiment."
+                        "Inspecting false positives and false negatives usually reveals the next useful experiment."
                     ),
                     confidence=0.52,
                 )
@@ -170,10 +176,22 @@ class TrainingSessionAnalyzer(Analyzer):
         return recommendations
 
 
-def _append_training_profile_summary(
-    result: AnalysisResult,
-    profile: TrainingProfile,
-) -> None:
+def _trainer_for_config(
+    snapshot: NotebookSnapshot,
+    config: AnalysisConfig | None,
+    model_ref: object | None,
+) -> object | None:
+    if config is None or config.trainer is None:
+        return framework_source_for_model(snapshot, "huggingface", model_ref)
+    selector = config.trainer
+    if isinstance(selector, str):
+        if selector not in snapshot.raw_namespace:
+            raise ValueError(f"trainer variable {selector!r} was not found in the notebook snapshot")
+        return snapshot.raw_namespace[selector]
+    return selector
+
+
+def _append_training_profile_summary(result: AnalysisResult, profile: TrainingProfile) -> None:
     if not (
         profile.parameters
         or profile.trainable_components
@@ -186,9 +204,7 @@ def _append_training_profile_summary(
             "Training strategy appears to be " + profile.strategy.replace("_", " ") + "."
         )
     if profile.trainable_components:
-        result.summary.append(
-            f"Trainable components: {', '.join(profile.trainable_components)}."
-        )
+        result.summary.append(f"Trainable components: {', '.join(profile.trainable_components)}.")
     if profile.frozen_components:
         result.summary.append(f"Frozen components: {', '.join(profile.frozen_components)}.")
 
@@ -221,9 +237,7 @@ def _append_training_profile_summary(
 def _first_present(namespace: dict[str, object], *names: str) -> Iterable[Any] | None:
     for name in names:
         value = namespace.get(name)
-        if isinstance(value, Iterable) and not isinstance(
-            value, str | bytes | Mapping | Iterator
-        ):
+        if isinstance(value, Iterable) and not isinstance(value, str | bytes | Mapping | Iterator):
             return value
     return None
 
