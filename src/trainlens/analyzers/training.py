@@ -139,7 +139,9 @@ class TrainingSessionAnalyzer(Analyzer):
 
         result.recommendations.extend(self._recommendations(result))
         result.recommendations.extend(foundation_recommendations(families, result.signals))
-        result.recommendations.extend(vlm_training_recommendations(training_profile, vlm_signals))
+        result.recommendations.extend(
+            vlm_training_recommendations(training_profile, vlm_signals)
+        )
         return result
 
     def _recommendations(self, result: AnalysisResult) -> list[Recommendation]:
@@ -150,7 +152,8 @@ class TrainingSessionAnalyzer(Analyzer):
                 Recommendation(
                     action="Tune regularization or depth-related hyperparameters.",
                     rationale=(
-                        "The validation gap suggests the model may be memorizing training examples."
+                        "The validation gap suggests the model may be memorizing "
+                        "training examples."
                     ),
                     confidence=0.78,
                 )
@@ -168,7 +171,8 @@ class TrainingSessionAnalyzer(Analyzer):
                 Recommendation(
                     action="Run a focused validation error analysis.",
                     rationale=(
-                        "Inspecting false positives and false negatives usually reveals the next useful experiment."
+                        "Inspecting false positives and false negatives usually "
+                        "reveals the next useful experiment."
                     ),
                     confidence=0.52,
                 )
@@ -186,12 +190,17 @@ def _trainer_for_config(
     selector = config.trainer
     if isinstance(selector, str):
         if selector not in snapshot.raw_namespace:
-            raise ValueError(f"trainer variable {selector!r} was not found in the notebook snapshot")
+            raise ValueError(
+                f"trainer variable {selector!r} was not found in the notebook snapshot"
+            )
         return snapshot.raw_namespace[selector]
     return selector
 
 
-def _append_training_profile_summary(result: AnalysisResult, profile: TrainingProfile) -> None:
+def _append_training_profile_summary(
+    result: AnalysisResult,
+    profile: TrainingProfile,
+) -> None:
     if not (
         profile.parameters
         or profile.trainable_components
@@ -204,7 +213,9 @@ def _append_training_profile_summary(result: AnalysisResult, profile: TrainingPr
             "Training strategy appears to be " + profile.strategy.replace("_", " ") + "."
         )
     if profile.trainable_components:
-        result.summary.append(f"Trainable components: {', '.join(profile.trainable_components)}.")
+        result.summary.append(
+            f"Trainable components: {', '.join(profile.trainable_components)}."
+        )
     if profile.frozen_components:
         result.summary.append(f"Frozen components: {', '.join(profile.frozen_components)}.")
 
@@ -237,7 +248,9 @@ def _append_training_profile_summary(result: AnalysisResult, profile: TrainingPr
 def _first_present(namespace: dict[str, object], *names: str) -> Iterable[Any] | None:
     for name in names:
         value = namespace.get(name)
-        if isinstance(value, Iterable) and not isinstance(value, str | bytes | Mapping | Iterator):
+        if isinstance(value, Iterable) and not isinstance(
+            value, str | bytes | Mapping | Iterator
+        ):
             return value
     return None
 
