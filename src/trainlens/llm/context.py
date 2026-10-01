@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, cast
 
 from trainlens.analysis_config import AnalysisConfig
@@ -18,6 +18,26 @@ from trainlens.security import sanitize_value
 from trainlens.training_profile import inspect_training_profile
 
 _MAX_METRIC_POINTS = 12
+
+
+@dataclass(frozen=True)
+class ContextPolicy:
+    """Budgets that bound notebook evidence sent to an optional LLM provider."""
+
+    max_metric_points: int = _MAX_METRIC_POINTS
+    max_metric_series: int = 50
+    max_variables: int = 50
+    max_training_artifacts: int = 20
+    max_model_candidates: int = 20
+    max_chars: int = 65_536
+
+    def __post_init__(self) -> None:
+        _validate_limit("max_metric_points", self.max_metric_points, minimum=2)
+        _validate_limit("max_metric_series", self.max_metric_series, minimum=1)
+        _validate_limit("max_variables", self.max_variables, minimum=1)
+        _validate_limit("max_training_artifacts", self.max_training_artifacts, minimum=1)
+        _validate_limit("max_model_candidates", self.max_model_candidates, minimum=1)
+        _validate_limit("max_chars", self.max_chars, minimum=256)
 
 
 @dataclass(frozen=True)
@@ -38,6 +58,7 @@ def build_llm_notebook_context(
     include_values: bool = False,
     analysis_config: AnalysisConfig | None = None,
     deterministic_result: AnalysisResult | None = None,
+    context_policy: ContextPolicy | None = None,
 ) -> LLMNotebookContext:
     """Capture and render notebook state as bounded LLM evidence."""
 
@@ -50,6 +71,7 @@ def build_llm_notebook_context(
         include_values=include_values,
         analysis_config=analysis_config,
         deterministic_result=deterministic_result,
+        context_policy=context_policy,
     )
 
 
@@ -60,13 +82,11 @@ def build_llm_notebook_context_from_snapshot(
     include_values: bool = False,
     analysis_config: AnalysisConfig | None = None,
     deterministic_result: AnalysisResult | None = None,
+    context_policy: ContextPolicy | None = None,
 ) -> LLMNotebookContext:
     """Render an existing notebook snapshot without inspecting live state again."""
 
-    if isinstance(max_metric_points, bool) or not isinstance(max_metric_points, int):
-        raise TypeError("max_metric_points must be an integer")
-    if max_metric_points < 2:
-        raise ValueError("max_metric_points must be at least 2 to preserve metric endpoints.")
+    policy = _resolve_context_policy(max_metric_points, context_policy)
 
     inspector = NotebookInspector()
     candidates = inspector.find_models(snapshot)
@@ -101,41 +121,26 @@ def build_llm_notebook_context_from_snapshot(
         "silently replacing them.",
         "",
     ]
-    if snapshot.variables:
-        lines.extend(["## Notebook Variables", ""])
-        for variable in snapshot.variables:
-            details = [f"type={variable.type_name}"]
-            if variable.module:
-                details.append(f"module={variable.module}")
-            if variable.shape is not None:
-                details.append(f"shape={variable.shape}")
-            if variable.length is not None:
-                details.append(f"length={variable.length}")
-            lines.append(f"- `{variable.name}`: " + ", ".join(details))
-            if (
-                include_values
-                and variable.value is not None
-                and variable.name not in metric_variable_names
-            ):
-                lines.append(f"  value: {variable.value!r}")
-        lines.append("")
-    if metric_series:
+
+    # Curves and deterministic findings are the highest-value evidence, so they are
+    # rendered before accessory notebook metadata when a global character budget applies.
+    metric_items = sorted(metric_series.items())
+    if metric_items:
         lines.extend(["## Metric Series", ""])
-        for name, series in sorted(metric_series.items()):
-            lines.append(f"- `{name}`: {_render_metric_series(series, max_metric_points)}")
-        lines.append("")
-    training_artifacts = [
-        artifact for artifact in snapshot.framework_artifacts if artifact.training_parameters
-    ]
-    if training_artifacts:
-        lines.extend(["## Training Parameters", ""])
-        for artifact in training_artifacts:
+        for name, series in metric_items[: policy.max_metric_series]:
             lines.append(
-                f"- `{artifact.variable_name}` ({artifact.type_name}, {artifact.framework})"
+                f"- `{name}`: {_render_metric_series(series, policy.max_metric_points)}"
             )
-            for name, value in sorted(artifact.training_parameters.items()):
-                lines.append(f"  - `{name}`: {sanitize_value(name, value)!r}")
+        omitted = len(metric_items) - policy.max_metric_series
+        if omitted > 0:
+            lines.append(
+                f"- ... {omitted} additional metric series omitted by ContextPolicy."
+            )
         lines.append("")
+
+    if deterministic_result is not None:
+        lines.extend(_render_deterministic_findings(deterministic_result))
+
     if (
         training_profile.parameters
         or training_profile.trainable_components
@@ -179,9 +184,52 @@ def build_llm_notebook_context_from_snapshot(
         for name, value in sorted(training_profile.parameters.items()):
             lines.append(f"- `{name}`: {sanitize_value(name, value)!r}")
         lines.append("")
+
+    training_artifacts = [
+        artifact for artifact in snapshot.framework_artifacts if artifact.training_parameters
+    ]
+    if training_artifacts:
+        lines.extend(["## Training Parameters", ""])
+        for artifact in training_artifacts[: policy.max_training_artifacts]:
+            lines.append(
+                f"- `{artifact.variable_name}` ({artifact.type_name}, {artifact.framework})"
+            )
+            for name, value in sorted(artifact.training_parameters.items()):
+                lines.append(f"  - `{name}`: {sanitize_value(name, value)!r}")
+        omitted = len(training_artifacts) - policy.max_training_artifacts
+        if omitted > 0:
+            lines.append(
+                f"- ... {omitted} additional training artifacts omitted by ContextPolicy."
+            )
+        lines.append("")
+
+    if snapshot.variables:
+        lines.extend(["## Notebook Variables", ""])
+        for variable in snapshot.variables[: policy.max_variables]:
+            details = [f"type={variable.type_name}"]
+            if variable.module:
+                details.append(f"module={variable.module}")
+            if variable.shape is not None:
+                details.append(f"shape={variable.shape}")
+            if variable.length is not None:
+                details.append(f"length={variable.length}")
+            lines.append(f"- `{variable.name}`: " + ", ".join(details))
+            if (
+                include_values
+                and variable.value is not None
+                and variable.name not in metric_variable_names
+            ):
+                lines.append(f"  value: {variable.value!r}")
+        omitted = len(snapshot.variables) - policy.max_variables
+        if omitted > 0:
+            lines.append(
+                f"- ... {omitted} additional notebook variables omitted by ContextPolicy."
+            )
+        lines.append("")
+
     if candidates:
         lines.extend(["## Model Candidates", ""])
-        for candidate in candidates:
+        for candidate in candidates[: policy.max_model_candidates]:
             reasons = ", ".join(candidate.reasons) or "framework match"
             framework = candidate.framework or "unknown framework"
             selected = ", selected=true" if candidate.object_ref is model_ref else ""
@@ -189,6 +237,11 @@ def build_llm_notebook_context_from_snapshot(
                 f"- `{candidate.variable_name}`: {candidate.type_name}, "
                 f"{framework}, confidence={candidate.confidence:.2f}, "
                 f"reasons={reasons}{selected}"
+            )
+        omitted = len(candidates) - policy.max_model_candidates
+        if omitted > 0:
+            lines.append(
+                f"- ... {omitted} additional model candidates omitted by ContextPolicy."
             )
         lines.append("")
     else:
@@ -201,9 +254,45 @@ def build_llm_notebook_context_from_snapshot(
                 "",
             ]
         )
-    if deterministic_result is not None:
-        lines.extend(_render_deterministic_findings(deterministic_result))
-    return LLMNotebookContext(markdown="\n".join(lines).strip() + "\n", metrics=metrics)
+
+    markdown = "\n".join(lines).strip() + "\n"
+    return LLMNotebookContext(
+        markdown=_apply_char_budget(markdown, policy.max_chars),
+        metrics=metrics,
+    )
+
+
+def _resolve_context_policy(
+    max_metric_points: int,
+    context_policy: ContextPolicy | None,
+) -> ContextPolicy:
+    if isinstance(max_metric_points, bool) or not isinstance(max_metric_points, int):
+        raise TypeError("max_metric_points must be an integer")
+    if max_metric_points < 2:
+        raise ValueError("max_metric_points must be at least 2 to preserve metric endpoints.")
+    if context_policy is None:
+        return ContextPolicy(max_metric_points=max_metric_points)
+    if max_metric_points != _MAX_METRIC_POINTS:
+        return replace(context_policy, max_metric_points=max_metric_points)
+    return context_policy
+
+
+def _validate_limit(name: str, value: int, *, minimum: int) -> None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be an integer")
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+
+
+def _apply_char_budget(markdown: str, max_chars: int) -> str:
+    if len(markdown) <= max_chars:
+        return markdown
+    marker = (
+        "\n\n> TrainLens context truncated by ContextPolicy "
+        f"at {max_chars} characters.\n"
+    )
+    available = max_chars - len(marker)
+    return markdown[:available].rstrip() + marker
 
 
 def _render_deterministic_findings(result: AnalysisResult) -> list[str]:

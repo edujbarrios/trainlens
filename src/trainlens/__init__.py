@@ -20,6 +20,7 @@ from trainlens.experiments import (
 from trainlens.export import render_report, write_report
 from trainlens.framework_callbacks import keras_callback, lightning_callback, transformers_callback
 from trainlens.llm.config import LLMConfig
+from trainlens.llm.context import ContextPolicy
 from trainlens.llm.openai_compatible import OpenAICompatibleProvider
 from trainlens.llm.prompts import (
     PromptOptions,
@@ -63,6 +64,7 @@ __all__ = [
     "AlertDetector",
     "AnalysisConfig",
     "AnalysisResult",
+    "ContextPolicy",
     "EvidenceRef",
     "ExperimentRun",
     "LLMConfig",
