@@ -11,6 +11,17 @@ Severity = Literal["info", "warning", "critical"]
 
 
 @dataclass(frozen=True)
+class EvidenceRef:
+    """Structured provenance for a deterministic TrainLens finding."""
+
+    source: str
+    detail: str
+    metric: str | None = None
+    start_step: int | float | None = None
+    end_step: int | float | None = None
+
+
+@dataclass(frozen=True)
 class Signal:
     """A detected training behavior or risk."""
 
@@ -18,6 +29,7 @@ class Signal:
     detail: str
     severity: Severity = "info"
     evidence: tuple[str, ...] = ()
+    evidence_refs: tuple[EvidenceRef, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -27,6 +39,8 @@ class Recommendation:
     action: str
     rationale: str
     confidence: float = 0.5
+    evidence: tuple[str, ...] = ()
+    source: str | None = None
 
 
 @dataclass
