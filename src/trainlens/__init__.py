@@ -56,6 +56,12 @@ from trainlens.notebook import (
     preview_notebook_context,
 )
 from trainlens.pipeline import analyze
+from trainlens.prompt_recipes import (
+    controlled_experiment_prompt,
+    improvement_plan_prompt,
+    scientific_report_prompt,
+    training_diagnosis_prompt,
+)
 from trainlens.runs import load_run, save_run, training_run_from_analysis
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
@@ -98,9 +104,11 @@ __all__ = [
     "build_llm_report",
     "build_paper_report",
     "compare_runs",
+    "controlled_experiment_prompt",
     "default_metric_registry",
     "experiment_config",
     "get_trainlens_prompt",
+    "improvement_plan_prompt",
     "inspect_training_profile",
     "keras_callback",
     "lightning_callback",
@@ -114,9 +122,11 @@ __all__ = [
     "render_report",
     "render_run_comparison",
     "save_run",
+    "scientific_report_prompt",
     "show_trainlens_prompts",
     "suggest_multiobjective_experiment",
     "suggest_next_experiment",
+    "training_diagnosis_prompt",
     "training_run_from_analysis",
     "transformers_callback",
     "unload_ipython_extension",
