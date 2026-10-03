@@ -2,6 +2,13 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.12.0 - 2026-10-03
+
+- make `RunComparison` render itself as Markdown in Jupyter and expose `to_markdown()` for the same notebook-friendly representation in regular Python
+- replace the README's configuration-heavy first example with a two-cell, local-only comparison quickstart that requires no LLM provider or API key
+- add a Colab-ready `examples/quickstart.ipynb` so new users can try TrainLens from the README with minimal setup
+- refresh project and citation metadata around TrainLens' notebook-first, local-analysis workflow
+
 ## 0.11.0 - 2026-10-01
 
 - add public `AnalysisConfig` controls for explicit model/trainer selection, strict ambiguity handling, and authoritative metric/label evidence across deterministic analysis and LLM context
