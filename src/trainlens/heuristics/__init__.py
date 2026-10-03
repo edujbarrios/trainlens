@@ -11,6 +11,7 @@ from trainlens.heuristics.foundation import (
 from trainlens.heuristics.metrics import (
     detect_convergence,
     detect_overfitting,
+    detect_test_shift,
     detect_validation_instability,
 )
 
@@ -22,6 +23,7 @@ __all__ = [
     "detect_foundation_architecture",
     "detect_loss_plateau",
     "detect_overfitting",
+    "detect_test_shift",
     "detect_validation_instability",
     "foundation_recommendations",
 ]
