@@ -77,3 +77,15 @@ class RunComparison:
             or self.trajectories
             or self.notes
         )
+
+    def to_markdown(self) -> str:
+        """Render the comparison as Markdown."""
+
+        from trainlens.comparison import render_run_comparison
+
+        return render_run_comparison(self)
+
+    def _repr_markdown_(self) -> str:
+        """Render comparisons automatically in Markdown-capable notebooks."""
+
+        return self.to_markdown()
