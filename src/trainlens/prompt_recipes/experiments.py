@@ -16,16 +16,22 @@ def improvement_plan_prompt(
     rules: tuple[str, ...] = (
         "Tie every proposed change to supplied evidence.",
         "Separate low-cost checks from expensive retraining changes.",
-        "Do not change multiple experimental variables without justification.",
+        "Prefer one-variable-at-a-time changes unless a dependency requires otherwise.",
+        "Do not guess missing hyperparameter values; identify missing evidence explicitly.",
+        "Do not recommend a change that contradicts deterministic TrainLens findings.",
     ),
     focus_areas: tuple[str, ...] = (
         "highest-impact changes",
-        "experiment cost",
-        "evidence to collect",
+        "experiment cost and risk",
+        "expected metric effect",
+        "evidence still missing",
     ),
     return_instructions: tuple[str, ...] = (
         "Rank improvements by expected information value and cost.",
-        "Include a measurable success criterion for each proposed experiment.",
+        "For each improvement include evidence, proposed change, rationale, expected effect, "
+        "risk or cost, confidence, and a measurable success criterion.",
+        "End with one recommended next run that changes the smallest useful set of variables.",
+        "List the metrics or artifacts that should be collected to evaluate that run.",
     ),
 ) -> PromptOptions:
     """Return a fully customizable improvement-planning recipe."""
