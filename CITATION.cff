@@ -2,9 +2,9 @@ cff-version: 1.2.0
 message: "If you use TrainLens in research, please cite it using this metadata."
 type: software
 title: "TrainLens"
-version: "0.12.0"
+version: "0.13.0"
 date-released: "2026-10-03"
-abstract: "TrainLens is a notebook-first toolkit for comparing machine-learning training runs, monitoring training, planning experiments, exporting reports, and optionally explaining deterministic findings with an OpenAI-compatible model."
+abstract: "TrainLens is a notebook-first toolkit for comparing machine-learning training runs, monitoring training, planning experiments, exporting reports, and optionally generating transparent, evidence-grounded explanations and improvement plans with an OpenAI-compatible model."
 authors:
   - family-names: "Barrios"
     given-names: "Eduardo J."
