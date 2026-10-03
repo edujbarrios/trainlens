@@ -78,24 +78,26 @@ def extract_metric_series(namespace: Mapping[str, Any]) -> dict[str, MetricSerie
     candidates: dict[str, MetricSeries] = {}
     for name, value in namespace.items():
         if _looks_like_history_name(name):
-            candidates.update(_series_from_mapping(value))
+            candidates.update(
+                _series_from_mapping(value, default_split=_container_split(name))
+            )
         candidates.update(_series_from_named_value(name, value))
-    for key in (
-        "history",
-        "training_history",
-        "metrics",
-        "train_metrics",
-        "validation_metrics",
-        "val_metrics",
-        "eval_metrics",
-        "test_metrics",
-        "testing_metrics",
-        "holdout_metrics",
-        "pytorch_metrics",
-        "callback_metrics",
-        "logged_metrics",
+    for key, split in (
+        ("history", None),
+        ("training_history", "train"),
+        ("metrics", None),
+        ("train_metrics", "train"),
+        ("validation_metrics", "validation"),
+        ("val_metrics", "validation"),
+        ("eval_metrics", "validation"),
+        ("test_metrics", "test"),
+        ("testing_metrics", "test"),
+        ("holdout_metrics", "test"),
+        ("pytorch_metrics", None),
+        ("callback_metrics", None),
+        ("logged_metrics", None),
     ):
-        candidates.update(_series_from_mapping(namespace.get(key)))
+        candidates.update(_series_from_mapping(namespace.get(key), default_split=split))
     return candidates
 
 
@@ -150,6 +152,17 @@ def _looks_like_history_name(name: str) -> bool:
     )
 
 
+def _container_split(name: str) -> MetricSplit | None:
+    normalized = name.lower().replace("-", "_").replace("/", "_")
+    if normalized.startswith(_TRAIN_PREFIXES) or normalized == "training_history":
+        return "train"
+    if normalized.startswith(_VALIDATION_PREFIXES):
+        return "validation"
+    if normalized.startswith(_TEST_PREFIXES):
+        return "test"
+    return None
+
+
 def _series_from_named_value(name: str, value: Any) -> dict[str, MetricSeries]:
     if _looks_like_log_history(value):
         return _series_from_log_history(value)
@@ -163,7 +176,9 @@ def _series_from_named_value(name: str, value: Any) -> dict[str, MetricSeries]:
     return {normalized: MetricSeries(name=normalized, values=tuple(numeric), split=split)}
 
 
-def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
+def _series_from_mapping(
+    value: Any, *, default_split: MetricSplit | None = None
+) -> dict[str, MetricSeries]:
     for attribute in ("history", "metrics", "log_history"):
         nested = _safe_getattr(value, attribute, _MISSING)
         if nested is not _MISSING:
@@ -175,11 +190,14 @@ def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
         return {}
     found: dict[str, MetricSeries] = {}
     for key, raw_values in value.items():
+        normalized, split = _normalize_name(str(key))
+        if split is None and default_split is not None:
+            normalized = f"{default_split}_{normalized}"
+            split = default_split
         history_values = _history_values(raw_values)
         if history_values is not None:
             numeric = _coerce_floats(history_values)
             if numeric:
-                normalized, split = _normalize_name(str(key))
                 found[normalized] = MetricSeries(
                     name=normalized, values=tuple(numeric), split=split
                 )
@@ -187,7 +205,6 @@ def _series_from_mapping(value: Any) -> dict[str, MetricSeries]:
             numeric_value = _coerce_float(raw_values)
             if numeric_value is None:
                 continue
-            normalized, split = _normalize_name(str(key))
             found[normalized] = MetricSeries(
                 name=normalized, values=(numeric_value,), split=split
             )
