@@ -21,7 +21,7 @@ from trainlens.export import render_report, write_report
 from trainlens.framework_callbacks import keras_callback, lightning_callback, transformers_callback
 from trainlens.llm.config import LLMConfig
 from trainlens.llm.context import ContextPolicy
-from trainlens.llm.openai_compatible import OpenAICompatibleProvider
+from trainlens.llm.openai_compatible import LLMRequestPreview, OpenAICompatibleProvider
 from trainlens.llm.prompts import (
     PromptOptions,
     TrainLensPrompt,
@@ -52,6 +52,7 @@ from trainlens.notebook import (
     build_improvement_ideas,
     build_llm_report,
     build_paper_report,
+    preview_llm_request,
     preview_notebook_context,
 )
 from trainlens.pipeline import analyze
@@ -69,6 +70,7 @@ __all__ = [
     "ExperimentRun",
     "LLMConfig",
     "LLMProvider",
+    "LLMRequestPreview",
     "LiveReport",
     "MetricConstraint",
     "MetricRegistry",
@@ -105,6 +107,7 @@ __all__ = [
     "load_ipython_extension",
     "load_run",
     "pareto_front",
+    "preview_llm_request",
     "preview_notebook_context",
     "register_metric",
     "render_next_experiment",
