@@ -56,6 +56,7 @@ from trainlens.notebook import (
     preview_notebook_context,
 )
 from trainlens.pipeline import analyze
+from trainlens.plotting import TrainingCurve, plot_training_curves, training_curves
 from trainlens.prompt_recipes import (
     controlled_experiment_prompt,
     improvement_plan_prompt,
@@ -94,6 +95,7 @@ __all__ = [
     "TrainLensMonitor",
     "TrainLensPrompt",
     "TrainingAlert",
+    "TrainingCurve",
     "TrainingObservation",
     "TrainingProfile",
     "TrainingRun",
@@ -115,6 +117,7 @@ __all__ = [
     "load_ipython_extension",
     "load_run",
     "pareto_front",
+    "plot_training_curves",
     "preview_llm_request",
     "preview_notebook_context",
     "register_metric",
@@ -126,6 +129,7 @@ __all__ = [
     "show_trainlens_prompts",
     "suggest_multiobjective_experiment",
     "suggest_next_experiment",
+    "training_curves",
     "training_diagnosis_prompt",
     "training_run_from_analysis",
     "transformers_callback",
