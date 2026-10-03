@@ -1,10 +1,10 @@
 # TrainLens
 
-**Understand, compare, and document model-training runs from Jupyter.**
+**See what changed between training runs without leaving your notebook.**
 
-TrainLens reads the metrics and model objects already present in a notebook. It
-can compare runs, detect common training problems, export reports, and use an
-optional OpenAI-compatible LLM to explain the available evidence.
+TrainLens is a lightweight Python library for comparing training runs, spotting common
+training problems, planning the next experiment, exporting results, and optionally asking
+an OpenAI-compatible model to explain the evidence.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
@@ -13,213 +13,113 @@ optional OpenAI-compatible LLM to explain the available evidence.
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
 
-## Install
+## Try it in a notebook in 20 seconds
 
-```bash
-pip install trainlens
-```
+<a href="https://colab.research.google.com/github/edujbarrios/trainlens/blob/main/examples/quickstart.ipynb">
+  <img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg">
+</a>
 
-## Small example
-
-Suppose you trained a spam classifier on 2,000 short messages: 1,000 spam and
-1,000 legitimate messages. Every run uses the same 80/20 split and random seed;
-each experiment changes one design choice relative to the baseline. This single
-Jupyter cell compares model quality and inference speed, then asks TrainLens to
-explain the trade-offs:
+First cell:
 
 ```python
-import os
-from getpass import getpass
-
-from trainlens import (
-    PromptOptions,
-    build_paper_report,
-    compare_runs,
-    render_run_comparison,
-)
-
-# 1. Select any OpenAI-compatible endpoint and the model used for the report.
-# Remote provider example:
-os.environ["TRAINLENS_LLM_BASE_URL"] = "https://api.openai.com/v1"
-os.environ["TRAINLENS_LLM_MODEL"] = "your-model"
-os.environ["TRAINLENS_LLM_API_KEY"] = getpass("LLM API key: ")
-
-# Local model example with Ollama (use these values instead of the ones above):
-# os.environ["TRAINLENS_LLM_BASE_URL"] = "http://localhost:11434/v1"
-# os.environ["TRAINLENS_LLM_MODEL"] = "llama3.2"
-# No API key is required when the local endpoint does not require authentication.
-# LM Studio, vLLM, and llama.cpp also work when their OpenAI-compatible
-# server is running.
-
-# 2. Keep completed run evidence in the notebook.
-experiments = [
-    (
-        "experiment 1 | baseline",
-        {
-            "validation_loss": 0.52,
-            "accuracy": 0.84,
-            "f1": 0.82,
-            "latency_ms": 8.1,
-        },
-    ),
-    (
-        "experiment 2 | lower learning rate",
-        {
-            "validation_loss": 0.47,
-            "accuracy": 0.87,
-            "f1": 0.86,
-            "latency_ms": 8.1,
-        },
-    ),
-    (
-        "experiment 3 | add dropout",
-        {
-            "validation_loss": 0.45,
-            "accuracy": 0.88,
-            "f1": 0.89,
-            "latency_ms": 8.2,
-        },
-    ),
-    (
-        "experiment 4 | smaller hidden layer",
-        {
-            "validation_loss": 0.58,
-            "accuracy": 0.82,
-            "f1": 0.80,
-            "latency_ms": 5.6,
-        },
-    ),
-]
-
-# These named series become part of the TrainLens notebook context.
-experiment_validation_loss = [metrics["validation_loss"] for _, metrics in experiments]
-experiment_accuracy = [metrics["accuracy"] for _, metrics in experiments]
-experiment_f1 = [metrics["f1"] for _, metrics in experiments]
-experiment_latency_ms = [metrics["latency_ms"] for _, metrics in experiments]
-
-# 3. Compare every run with the baseline using deterministic TrainLens analysis.
-baseline_name, baseline_metrics = experiments[0]
-for experiment_name, experiment_metrics in experiments[1:]:
-    comparison = compare_runs(
-        baseline_metrics,
-        experiment_metrics,
-        baseline_name=baseline_name,
-        experiment_name=experiment_name,
-    )
-    print(render_run_comparison(comparison))
-
-# 4. Ask the selected LLM for a concise, evidence-first TrainLens diagnosis.
-prompt_options = PromptOptions(
-    prompt_name="training_diagnosis",
-    objective=(
-        "Compare quality and latency across all four experiments, identify the "
-        "best quality run and fastest run, and propose one controlled next experiment."
-    ),
-    tone="short, clear, and evidence-first",
-)
-report = build_paper_report(globals(), prompt_options=prompt_options)
-print(report.markdown)
+%pip install -q trainlens
 ```
 
-TrainLens recognizes that lower loss and latency are improvements, while higher
-accuracy and F1 are improvements. The results make the trade-off visible:
-experiment 3 has the best model quality, but experiment 4 is faster at the cost
-of worse predictive metrics. The final call sends a minimized, redacted notebook
-context to the configured model for a short diagnosis.
-
-The LLM workflow requires an OpenAI-compatible HTTP endpoint, but it does not
-have to be an external service. You can use a remote provider or a locally
-running model through Ollama, LM Studio, vLLM, or llama.cpp. Local comparison,
-monitoring, experiment planning, and export remain deterministic and make no
-LLM request.
-
-## Explicit analysis and bounded LLM context
-
-TrainLens 0.11 adds explicit selection for notebooks that contain multiple
-models/trainers, plus a global policy for outbound LLM evidence:
+Second cell:
 
 ```python
-from trainlens import AnalysisConfig, ContextPolicy, build_paper_report
+from trainlens import compare_runs
 
-report = build_paper_report(
-    globals(),
-    analysis_config=AnalysisConfig(
-        model="model_v2",
-        trainer="trainer_v2",
-        strict=True,
-    ),
-    context_policy=ContextPolicy(
-        max_variables=20,
-        max_metric_series=20,
-        max_chars=32_000,
-    ),
+compare_runs(
+    {"loss": 0.52, "accuracy": 0.84},
+    {"loss": 0.41, "accuracy": 0.89},
+    baseline_name="baseline",
+    experiment_name="new run",
 )
 ```
 
-`AnalysisConfig` can also provide authoritative metrics or labels. `ContextPolicy`
-emits explicit omission/truncation notices when a budget is reached. Optional LLM
-reports are grounded in the deterministic `AnalysisResult` and its evidence
-provenance; the provider is used to explain that local analysis rather than to
-replace it.
+That is enough. In Jupyter, TrainLens renders the result as Markdown automatically:
 
-You can also inject any object implementing the public `LLMProvider` protocol,
-or construct `OpenAICompatibleProvider(LLMConfig(...))` directly instead of
-using environment variables.
+> **Summary**
+> - Material improvement detected in accuracy, loss.
+>
+> | Metric | Baseline | Experiment | Delta | Direction |
+> | --- | ---: | ---: | ---: | --- |
+> | accuracy | 0.84 | 0.89 | +0.05 | improved |
+> | loss | 0.52 | 0.41 | -0.11 | improved |
 
-## Privacy when using an LLM
+No model provider, API key, callback, or experiment tracker is required for local comparison.
 
-TrainLens minimizes outbound notebook data by default. LLM reports include
-recognized metric series, useful framework/training parameters, model evidence,
-and basic variable metadata such as type, shape, or length. The literal contents
-of unrelated strings, scalars, lists, tuples, dictionaries, and sets are not sent
-by default. Default `ContextPolicy` limits also bound the number of evidence
-items and total rendered context size.
+## A few useful snippets
 
-If a report deliberately needs those sanitized literal values, opt in explicitly:
+Keep the structured result when you want to inspect it in code:
 
 ```python
-report = build_paper_report(globals(), include_values=True)
+comparison = compare_runs(old_metrics, new_metrics)
+comparison.improvements
+comparison.regressions
 ```
 
-Secret redaction still applies when literal values are enabled. Keep credentials
-out of the notebook namespace whenever possible; redaction is defense in depth,
-not a secret-management system.
+Render the same comparison anywhere Markdown is useful:
 
-Notebook-derived evidence is also kept out of the trusted system-instruction
-message sent to OpenAI-compatible providers. It is transmitted separately as
-untrusted data, with explicit instructions that instruction-like text found in
-notebook evidence must not override TrainLens' report rules. This reduces prompt-
-injection risk but does not make arbitrary external data inherently trustworthy.
+```python
+markdown = comparison.to_markdown()
+print(markdown)
+```
 
-> [!CAUTION]
-> **Human oversight required:** TrainLens is intended to support understanding
-> training results and making better-informed decisions—not to replace a human
-> reviewer. LLM-generated explanations can contain errors, omissions, or biases
-> inherited from a model's training data and design. Treat every recommendation
-> as assistance for the programmer, verify it against the underlying evidence,
-> and do not use it as the sole basis for consequential decisions.
+Export a comparison to another format:
 
-## Documentation
+```python
+from trainlens import render_report
 
-The complete guide covers notebook setup, framework adapters, the Python API,
-monitoring, prompts, privacy, exports, and troubleshooting:
+html = render_report(comparison, format="html")
+json_text = render_report(comparison, format="json")
+```
 
-- [English documentation](docs/en/README.md)
+TrainLens also understands richer `TrainingRun` objects, including metric trajectories and
+configuration changes, when you need more than two dictionaries.
+
+## What else can TrainLens do?
+
+- **Compare runs** with metric-aware improvement/regression semantics.
+- **Inspect notebook training context** without wiring a full MLOps stack.
+- **Monitor training** with built-in and extensible alert detectors.
+- **Plan the next experiment** with constraints, objectives, and Pareto-aware helpers.
+- **Save and load portable runs** for repeatable comparisons.
+- **Export reports** to Markdown, JSON, HTML, and optional PDF.
+- **Use an optional LLM** to explain deterministic TrainLens findings through any
+  OpenAI-compatible endpoint, including local servers.
+
+The local analysis features are deterministic and do not make an LLM request.
+
+## Want the deeper API?
+
+The README intentionally stays small. The versioned docs contain the advanced workflows:
+
+- [Getting started](docs/en/getting-started.md)
+- [Notebook workflows](docs/en/notebooks.md)
+- [Python API](docs/en/python-api.md)
+- [Monitoring](docs/en/monitoring.md)
+- [LLM setup and privacy](docs/en/llm-and-privacy.md)
+- [Exports and troubleshooting](docs/en/exports-and-troubleshooting.md)
 - [Documentación en español](docs/es/README.md)
-- [Documentation index](docs/README.md)
 
-A dedicated documentation website is planned. Until it is published, the
-versioned Markdown files in `docs/` are the canonical guide.
+## Privacy
+
+LLM support is optional. When enabled, TrainLens minimizes and bounds notebook evidence,
+redacts secrets, and keeps notebook-derived evidence separate from trusted system
+instructions. Treat generated explanations as assistance and verify them against the
+underlying training evidence.
 
 ## Scope
 
-TrainLens is a lightweight notebook reporting layer, not a full MLOps platform.
-It works best for small research workflows where experiment context lives in
-Python variables and conclusions should remain easy to review.
+TrainLens is a lightweight notebook reporting and experiment-understanding layer, not a
+full MLOps platform. It is designed for research and small-to-medium workflows where the
+important training context already lives in Python and Jupyter.
 
 ## Contributing and license
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute and
-[SECURITY.md](SECURITY.md) to report vulnerabilities.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute and [SECURITY.md](SECURITY.md) to
+report vulnerabilities.
 
 TrainLens is licensed under the [Apache License 2.0](LICENSE).

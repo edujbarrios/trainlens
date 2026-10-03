@@ -122,6 +122,22 @@ def test_render_run_comparison_outputs_markdown_table() -> None:
     assert "| validation_loss | 0.5 | 0.4 | -0.1 | -20.0% | improved | material |" in markdown
 
 
+def test_run_comparison_renders_itself_as_markdown_in_notebooks() -> None:
+    comparison = compare_runs(
+        {"loss": 0.52, "accuracy": 0.84},
+        {"loss": 0.41, "accuracy": 0.89},
+        baseline_name="baseline",
+        experiment_name="new run",
+    )
+
+    markdown = comparison.to_markdown()
+
+    assert markdown == render_run_comparison(comparison)
+    assert comparison._repr_markdown_() == markdown
+    assert "**Experiment:** new run" in markdown
+    assert "| accuracy | 0.84 | 0.89 | +0.05 | +6.0% | improved | material |" in markdown
+
+
 def test_render_report_exports_run_comparison_json_and_html() -> None:
     comparison = compare_runs({"loss": 1.0}, {"loss": 0.8})
 
