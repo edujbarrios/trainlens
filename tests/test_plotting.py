@@ -1,5 +1,6 @@
-import matplotlib
+import pytest
 
+matplotlib = pytest.importorskip("matplotlib")
 matplotlib.use("Agg")
 
 from trainlens import plot_training_curves, training_curves
