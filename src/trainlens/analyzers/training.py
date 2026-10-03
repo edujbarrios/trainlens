@@ -7,12 +7,13 @@ from typing import Any, cast
 
 from trainlens.analysis_config import AnalysisConfig
 from trainlens.analyzers.base import Analyzer
-from trainlens.analyzers.metrics import extract_metric_series, paired_metric
+from trainlens.analyzers.metrics import extract_metric_series, metric_splits
 from trainlens.analyzers.traces import extract_trace_events
 from trainlens.heuristics import (
     detect_class_imbalance,
     detect_convergence,
     detect_overfitting,
+    detect_test_shift,
     detect_validation_instability,
 )
 from trainlens.heuristics.features import infer_feature_names, top_features
@@ -30,12 +31,13 @@ from trainlens.heuristics.vlm_training import (
 from trainlens.introspection.models import ModelCandidate
 from trainlens.introspection.selection import framework_source_for_model
 from trainlens.models.analysis import AnalysisResult, Recommendation
+from trainlens.models.metric import MetricSeries
 from trainlens.models.snapshot import NotebookSnapshot
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
 
 class TrainingSessionAnalyzer(Analyzer):
-    """Combines model, metric, dataset, and feature signals."""
+    """Combines model, metric, dataset, split, and fine-tuning signals."""
 
     name = "training_session"
 
@@ -50,8 +52,14 @@ class TrainingSessionAnalyzer(Analyzer):
         if config is not None and config.metrics is not None:
             namespace["trainlens_explicit_metrics"] = config.metrics
         metric_series = extract_metric_series(namespace)
-        train_acc, validation_acc = paired_metric(metric_series, "accuracy")
-        train_loss, validation_loss = paired_metric(metric_series, "loss")
+        accuracy = metric_splits(metric_series, "accuracy")
+        loss = metric_splits(metric_series, "loss")
+        train_acc = accuracy.get("train")
+        validation_acc = accuracy.get("validation")
+        test_acc = accuracy.get("test")
+        train_loss = loss.get("train")
+        validation_loss = loss.get("validation")
+        test_loss = loss.get("test")
         framework = model.framework if model else _first_artifact_framework(snapshot)
         model_name = model.display_name if model else _first_artifact_model_name(snapshot)
         model_ref = model.object_ref if model else _first_artifact_model_ref(snapshot)
@@ -88,28 +96,16 @@ class TrainingSessionAnalyzer(Analyzer):
                 )
 
         _append_training_profile_summary(result, training_profile)
-
-        if train_acc and train_acc.last is not None:
-            result.metrics["train_accuracy"] = train_acc.last
-            if train_acc.delta is not None:
-                result.summary.append(
-                    f"Training accuracy changed from {train_acc.first:.3f} to {train_acc.last:.3f}."
-                )
-        if validation_acc and validation_acc.last is not None:
-            result.metrics["validation_accuracy"] = validation_acc.last
-        if train_loss and train_loss.last is not None:
-            result.metrics["train_loss"] = train_loss.last
-            if train_loss.first is not None and train_loss.delta is not None:
-                result.summary.append(
-                    f"Training loss changed from {train_loss.first:.3f} to {train_loss.last:.3f}."
-                )
-        if validation_loss and validation_loss.last is not None:
-            result.metrics["validation_loss"] = validation_loss.last
-            if validation_loss.first is not None and validation_loss.delta is not None:
-                result.summary.append(
-                    "Validation loss changed from "
-                    f"{validation_loss.first:.3f} to {validation_loss.last:.3f}."
-                )
+        _record_latest_metrics(result, metric_series)
+        _append_common_metric_summary(
+            result,
+            train_acc=train_acc,
+            validation_acc=validation_acc,
+            test_acc=test_acc,
+            train_loss=train_loss,
+            validation_loss=validation_loss,
+            test_loss=test_loss,
+        )
         if families:
             result.summary.append(f"Foundation-model profile: {', '.join(families).upper()}.")
 
@@ -119,10 +115,17 @@ class TrainingSessionAnalyzer(Analyzer):
             if config is not None and config.labels is not None
             else _first_present(namespace, "y_train", "y", "labels", "target")
         )
+        overfitting = detect_overfitting(train_acc, validation_acc) or detect_overfitting(
+            train_loss, validation_loss
+        )
+        test_shift = detect_test_shift(validation_acc, test_acc) or detect_test_shift(
+            validation_loss, test_loss
+        )
         for signal in (
-            detect_overfitting(train_acc, validation_acc),
-            detect_validation_instability(validation_acc),
-            detect_convergence(validation_acc or train_acc),
+            overfitting,
+            test_shift,
+            detect_validation_instability(validation_acc or validation_loss),
+            detect_convergence(validation_acc or validation_loss or train_acc or train_loss),
             detect_class_imbalance(labels),
             detect_loss_plateau(validation_loss or train_loss),
             detect_contrastive_misalignment(metric_series),
@@ -150,12 +153,29 @@ class TrainingSessionAnalyzer(Analyzer):
         if "Possible overfitting" in titles:
             recommendations.append(
                 Recommendation(
-                    action="Tune regularization or depth-related hyperparameters.",
+                    action=(
+                        "Compare the best validation checkpoint with stronger regularization, "
+                        "earlier stopping, or a lower-capacity fine-tuning setup."
+                    ),
                     rationale=(
-                        "The validation gap suggests the model may be memorizing "
-                        "training examples."
+                        "A material train/validation gap suggests the model fits the training "
+                        "split better than it generalizes."
                     ),
                     confidence=0.78,
+                )
+            )
+        if "Test split underperforms validation" in titles:
+            recommendations.append(
+                Recommendation(
+                    action=(
+                        "Keep the test split untouched and inspect validation/test distribution "
+                        "differences before tuning further."
+                    ),
+                    rationale=(
+                        "A held-out test degradation can reflect validation over-selection, "
+                        "split mismatch, or distribution shift."
+                    ),
+                    confidence=0.76,
                 )
             )
         if "Class imbalance detected" in titles:
@@ -164,6 +184,19 @@ class TrainingSessionAnalyzer(Analyzer):
                     action="Try stratified splitting, class weights, or resampling.",
                     rationale="Minority-class performance can be hidden by aggregate accuracy.",
                     confidence=0.74,
+                )
+            )
+        has_validation = any(name.startswith("validation_") for name in result.metrics)
+        has_test = any(name.startswith("test_") for name in result.metrics)
+        if has_validation and not has_test:
+            recommendations.append(
+                Recommendation(
+                    action="Evaluate the selected checkpoint once on a held-out test split.",
+                    rationale=(
+                        "Validation metrics were detected, but no final test metrics were found. "
+                        "A separate test split helps estimate generalization after model selection."
+                    ),
+                    confidence=0.68,
                 )
             )
         if not recommendations:
@@ -178,6 +211,56 @@ class TrainingSessionAnalyzer(Analyzer):
                 )
             )
         return recommendations
+
+
+def _record_latest_metrics(
+    result: AnalysisResult, metric_series: Mapping[str, MetricSeries]
+) -> None:
+    """Promote every detected final metric into the structured analysis result."""
+
+    for name, series in sorted(metric_series.items()):
+        if series.last is None:
+            continue
+        output_name = name
+        if series.split is None and (
+            f"validation_{name}" in metric_series or f"test_{name}" in metric_series
+        ):
+            output_name = f"train_{name}"
+        result.metrics[output_name] = series.last
+
+
+def _append_common_metric_summary(
+    result: AnalysisResult,
+    *,
+    train_acc: MetricSeries | None,
+    validation_acc: MetricSeries | None,
+    test_acc: MetricSeries | None,
+    train_loss: MetricSeries | None,
+    validation_loss: MetricSeries | None,
+    test_loss: MetricSeries | None,
+) -> None:
+    if train_acc and train_acc.last is not None and train_acc.delta is not None:
+        result.summary.append(
+            f"Training accuracy changed from {train_acc.first:.3f} to {train_acc.last:.3f}."
+        )
+    if validation_acc and validation_acc.last is not None:
+        result.summary.append(f"Final validation accuracy: {validation_acc.last:.3f}.")
+    if test_acc and test_acc.last is not None:
+        result.summary.append(f"Held-out test accuracy: {test_acc.last:.3f}.")
+    if train_loss and train_loss.last is not None and train_loss.delta is not None:
+        result.summary.append(
+            f"Training loss changed from {train_loss.first:.3f} to {train_loss.last:.3f}."
+        )
+    if validation_loss and validation_loss.last is not None:
+        if validation_loss.delta is not None:
+            result.summary.append(
+                "Validation loss changed from "
+                f"{validation_loss.first:.3f} to {validation_loss.last:.3f}."
+            )
+        else:
+            result.summary.append(f"Final validation loss: {validation_loss.last:.3f}.")
+    if test_loss and test_loss.last is not None:
+        result.summary.append(f"Held-out test loss: {test_loss.last:.3f}.")
 
 
 def _trainer_for_config(
