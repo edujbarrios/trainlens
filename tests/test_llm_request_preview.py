@@ -28,7 +28,7 @@ def test_preview_llm_request_combines_prompt_and_sanitized_notebook_evidence() -
     assert "Find the safest next experiment" in preview.system_prompt
     assert "evidence, proposed change, rationale, expected effect" in preview.system_prompt
     assert "validation_loss" in preview.user_prompt
-    assert "Deterministic TrainLens Findings" in preview.user_prompt
+    assert "TrainLens Deterministic Findings" in preview.user_prompt
 
 
 def test_preview_llm_request_can_resolve_provider_from_environment(monkeypatch) -> None:
