@@ -2,6 +2,15 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.13.0 - 2026-10-03
+
+- add `OpenAICompatibleProvider.from_values()` and `from_env()` convenience constructors for shorter remote and local LLM setup
+- add `LLMRequestPreview`, `OpenAICompatibleProvider.preview()`, and notebook-level `preview_llm_request()` so users can inspect the exact system prompt, sanitized evidence, endpoint, model, and JSON payload before any network request
+- make the real OpenAI-compatible request reuse the same preview builder, keeping inspected prompts and on-wire payloads aligned while excluding credentials from previews
+- strengthen the reusable improvement-plan prompt so every recommendation includes supporting evidence, a concrete change, rationale, expected effect, cost or risk, confidence, and a measurable success criterion, followed by one controlled next run
+- expose common scientific, diagnosis, improvement, and controlled-experiment prompt recipes directly from the top-level `trainlens` package
+- document an end-to-end LLM improvement workflow in the README and English/Spanish guides, including remote/local provider loading, prompt definition, request preview, and report generation
+
 ## 0.12.0 - 2026-10-03
 
 - make `RunComparison` render itself as Markdown in Jupyter and expose `to_markdown()` for the same notebook-friendly representation in regular Python
