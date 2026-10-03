@@ -2,6 +2,16 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.14.0 - 2026-10-03
+
+- make train, validation, and held-out test first-class metric splits, including split-aware metric containers and scalar test metrics
+- promote final fine-tuning metrics such as F1, precision, recall, and perplexity into structured analysis results
+- make train/validation overfitting detection direction-aware, including loss-only training histories, and add cautious validation-to-test degradation diagnostics
+- recommend a final held-out test evaluation when validation results exist but test results are missing
+- add `training_curves()` and optional `plot_training_curves()` through the new `trainlens[plots]` extra
+- replace the minimal README/Colab entry point with a realistic fine-tuning walkthrough covering plots, local diagnosis, safe LLM API-key entry, exact prompt preview, explanations, and evidence-backed next experiments
+- document train/validation/test workflows and plotting in English and Spanish
+
 ## 0.13.0 - 2026-10-03
 
 - add `OpenAICompatibleProvider.from_values()` and `from_env()` convenience constructors for shorter remote and local LLM setup
