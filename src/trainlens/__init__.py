@@ -58,7 +58,7 @@ from trainlens.pipeline import analyze
 from trainlens.runs import load_run, save_run, training_run_from_analysis
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 __all__ = [
     "AlertDetector",
