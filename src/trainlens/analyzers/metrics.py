@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from math import isfinite
 from typing import Any, Literal
 
+from trainlens.metric_semantics import metric_direction
 from trainlens.models.metric import MetricSeries
 
 MetricSplit = Literal["train", "validation", "test"]
@@ -166,14 +167,31 @@ def _container_split(name: str) -> MetricSplit | None:
 def _series_from_named_value(name: str, value: Any) -> dict[str, MetricSeries]:
     if _looks_like_log_history(value):
         return _series_from_log_history(value)
-    values = _history_values(value)
-    if values is None:
-        return {}
-    numeric = _coerce_floats(values)
-    if not numeric:
-        return {}
     normalized, split = _normalize_name(name)
-    return {normalized: MetricSeries(name=normalized, values=tuple(numeric), split=split)}
+    values = _history_values(value)
+    if values is not None:
+        numeric = _coerce_floats(values)
+        if not numeric:
+            return {}
+        return {normalized: MetricSeries(name=normalized, values=tuple(numeric), split=split)}
+    if not _looks_like_scalar_metric_name(name):
+        return {}
+    numeric_value = _coerce_float(value)
+    if numeric_value is None:
+        return {}
+    return {
+        normalized: MetricSeries(name=normalized, values=(numeric_value,), split=split)
+    }
+
+
+def _looks_like_scalar_metric_name(name: str) -> bool:
+    lower = name.lower().replace(" ", "_")
+    normalized = lower.replace("/", "_").replace("-", "_")
+    base = _base_metric_name(normalized)
+    has_split_prefix = normalized.startswith(
+        (*_TRAIN_PREFIXES, *_VALIDATION_PREFIXES, *_TEST_PREFIXES)
+    )
+    return lower in _ALIASES or has_split_prefix or metric_direction(base) is not None
 
 
 def _series_from_mapping(
