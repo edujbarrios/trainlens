@@ -223,7 +223,9 @@ def _record_latest_metrics(
             continue
         output_name = name
         if series.split is None and (
-            f"validation_{name}" in metric_series or f"test_{name}" in metric_series
+            name in {"loss", "accuracy"}
+            or f"validation_{name}" in metric_series
+            or f"test_{name}" in metric_series
         ):
             output_name = f"train_{name}"
         result.metrics[output_name] = series.last
