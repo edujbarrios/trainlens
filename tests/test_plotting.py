@@ -1,9 +1,9 @@
 import pytest
 
+from trainlens import plot_training_curves, training_curves
+
 matplotlib = pytest.importorskip("matplotlib")
 matplotlib.use("Agg")
-
-from trainlens import plot_training_curves, training_curves
 
 
 def _namespace() -> dict[str, object]:
