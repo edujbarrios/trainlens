@@ -4,18 +4,27 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from math import isfinite
-from typing import Any
+from typing import Any, Literal
 
 from trainlens.models.metric import MetricSeries
 
+MetricSplit = Literal["train", "validation", "test"]
+
 _TRAIN_PREFIXES = ("train_", "training_")
 _VALIDATION_PREFIXES = ("val_", "valid_", "validation_", "eval_")
+_TEST_PREFIXES = ("test_", "testing_", "holdout_")
 _MAX_ARRAY_LIKE_POINTS = 100_000
 _MISSING = object()
 _ALIASES = {
     "loss/train": "train_loss",
     "loss/eval": "validation_loss",
+    "loss/val": "validation_loss",
+    "loss/validation": "validation_loss",
+    "loss/test": "test_loss",
     "eval/loss": "validation_loss",
+    "validation/loss": "validation_loss",
+    "test/loss": "test_loss",
+    "holdout/loss": "test_loss",
     "train/loss": "train_loss",
     "eval_loss": "validation_loss",
     "train_loss": "train_loss",
@@ -26,31 +35,46 @@ _ALIASES = {
     "valid_loss": "validation_loss",
     "valid_losses": "validation_loss",
     "validation_losses": "validation_loss",
+    "test_losses": "test_loss",
+    "testing_loss": "test_loss",
+    "testing_losses": "test_loss",
+    "holdout_loss": "test_loss",
+    "holdout_losses": "test_loss",
     "perplexity": "perplexity",
     "eval_perplexity": "validation_perplexity",
     "validation_perplexity": "validation_perplexity",
+    "test_perplexity": "test_perplexity",
     "clip_loss": "contrastive_loss",
     "image_text_loss": "contrastive_loss",
     "itc_loss": "contrastive_loss",
     "retrieval_recall": "retrieval_recall",
     "recall@1": "recall_at_1",
     "eval_recall@1": "validation_recall_at_1",
+    "test_recall@1": "test_recall_at_1",
     "fad": "frechet_audio_distance",
     "frechet_audio_distance": "frechet_audio_distance",
     "eval_fad": "validation_frechet_audio_distance",
     "eval_frechet_audio_distance": "validation_frechet_audio_distance",
+    "test_fad": "test_frechet_audio_distance",
+    "test_frechet_audio_distance": "test_frechet_audio_distance",
     "clap_score": "clap_score",
     "eval_clap_score": "validation_clap_score",
+    "test_clap_score": "test_clap_score",
     "stft_loss": "stft_loss",
     "eval_stft_loss": "validation_stft_loss",
+    "test_stft_loss": "test_stft_loss",
     "mel_loss": "mel_loss",
     "eval_mel_loss": "validation_mel_loss",
+    "test_mel_loss": "test_mel_loss",
     "spectral_convergence": "spectral_convergence",
     "eval_spectral_convergence": "validation_spectral_convergence",
+    "test_spectral_convergence": "test_spectral_convergence",
 }
 
 
 def extract_metric_series(namespace: Mapping[str, Any]) -> dict[str, MetricSeries]:
+    """Extract normalized metric histories and scalar results from a namespace."""
+
     candidates: dict[str, MetricSeries] = {}
     for name, value in namespace.items():
         if _looks_like_history_name(name):
@@ -63,6 +87,10 @@ def extract_metric_series(namespace: Mapping[str, Any]) -> dict[str, MetricSerie
         "train_metrics",
         "validation_metrics",
         "val_metrics",
+        "eval_metrics",
+        "test_metrics",
+        "testing_metrics",
+        "holdout_metrics",
         "pytorch_metrics",
         "callback_metrics",
         "logged_metrics",
@@ -71,12 +99,36 @@ def extract_metric_series(namespace: Mapping[str, Any]) -> dict[str, MetricSerie
     return candidates
 
 
+def metric_splits(
+    series: Mapping[str, MetricSeries], base_name: str
+) -> dict[MetricSplit, MetricSeries]:
+    """Return train/validation/test series for one normalized metric family.
+
+    Unprefixed histories such as Keras ``accuracy`` or Hugging Face ``loss`` are
+    treated as training observations when a split-aware view is requested.
+    """
+
+    normalized = _base_metric_name(base_name)
+    found: dict[MetricSplit, MetricSeries] = {}
+    train = series.get(f"train_{normalized}") or series.get(normalized)
+    validation = series.get(f"validation_{normalized}") or series.get(f"val_{normalized}")
+    test = series.get(f"test_{normalized}")
+    if train is not None:
+        found["train"] = train
+    if validation is not None:
+        found["validation"] = validation
+    if test is not None:
+        found["test"] = test
+    return found
+
+
 def paired_metric(
-    series: dict[str, MetricSeries], base_name: str
+    series: Mapping[str, MetricSeries], base_name: str
 ) -> tuple[MetricSeries | None, MetricSeries | None]:
-    train = series.get(f"train_{base_name}") or series.get(base_name)
-    validation = series.get(f"validation_{base_name}") or series.get(f"val_{base_name}")
-    return train, validation
+    """Backward-compatible train/validation lookup for one metric family."""
+
+    splits = metric_splits(series, base_name)
+    return splits.get("train"), splits.get("validation")
 
 
 def _looks_like_history_name(name: str) -> bool:
@@ -84,7 +136,15 @@ def _looks_like_history_name(name: str) -> bool:
     return (
         "history" in lower
         or "log" in lower
-        or lower in {"metrics", "losses", "accuracies", "callback_metrics", "logged_metrics"}
+        or lower
+        in {
+            "metrics",
+            "losses",
+            "accuracies",
+            "callback_metrics",
+            "logged_metrics",
+            "test_metrics",
+        }
         or lower.endswith("_metrics")
         or lower.endswith(("_loss", "_losses", "_accuracy", "_accuracies"))
     )
@@ -242,6 +302,8 @@ def _split_from_name(name: str) -> str | None:
         return "train"
     if name.startswith("validation_"):
         return "validation"
+    if name.startswith("test_"):
+        return "test"
     return None
 
 
@@ -279,15 +341,19 @@ def _safe_getattr(value: Any, name: str, default: Any = None) -> Any:
         return default
 
 
+def _base_metric_name(name: str) -> str:
+    normalized = name.lower().replace(" ", "_").replace("/", "_").replace("-", "_")
+    for prefix in (*_TRAIN_PREFIXES, *_VALIDATION_PREFIXES, *_TEST_PREFIXES):
+        if normalized.startswith(prefix):
+            return normalized.removeprefix(prefix)
+    return normalized
+
+
 def _normalize_name(name: str) -> tuple[str, str | None]:
     lower = name.lower().replace(" ", "_")
     if lower in _ALIASES:
         aliased = _ALIASES[lower]
-        if aliased.startswith("train_"):
-            return aliased, "train"
-        if aliased.startswith("validation_"):
-            return aliased, "validation"
-        return aliased, None
+        return aliased, _split_from_name(aliased)
     lower = lower.replace("/", "_").replace("-", "_")
     for prefix in _TRAIN_PREFIXES:
         if lower.startswith(prefix):
@@ -295,4 +361,7 @@ def _normalize_name(name: str) -> tuple[str, str | None]:
     for prefix in _VALIDATION_PREFIXES:
         if lower.startswith(prefix):
             return f"validation_{lower.removeprefix(prefix)}", "validation"
+    for prefix in _TEST_PREFIXES:
+        if lower.startswith(prefix):
+            return f"test_{lower.removeprefix(prefix)}", "test"
     return lower, None
