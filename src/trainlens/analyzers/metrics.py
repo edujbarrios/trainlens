@@ -195,7 +195,7 @@ def _looks_like_scalar_metric_name(name: str) -> bool:
 
 
 def _series_from_mapping(
-    value: Any, *, default_split: MetricSplit | None = None
+    value: Any, *, default_split: str | None = None
 ) -> dict[str, MetricSeries]:
     for attribute in ("history", "metrics", "log_history"):
         nested = _safe_getattr(value, attribute, _MISSING)
