@@ -122,6 +122,35 @@ triple-quoted multiline text, keep it indented with the surrounding Python, and 
 removes the common indentation and outer blank space before the prompt is used. This avoids
 repeating quotes and implicit string concatenation on every line.
 
+For prompts that are longer, reused across notebooks, or easier to review separately, keep
+them in UTF-8 `.md` files and load them directly:
+
+```markdown
+# prompts/improvement_plan.md
+
+Explain what happened during this fine-tuning run and propose the three highest-value next experiments.
+
+Use the test split only as final generalization evidence; do not tune to it.
+
+Prefer:
+- controlled experiments
+- low-cost changes first
+- measurable hypotheses and success criteria
+```
+
+```python
+from trainlens import load_prompt
+
+prompt = improvement_plan_prompt(
+    objective=load_prompt("prompts/improvement_plan.md"),
+    model_family="LLM fine-tuning with PEFT/LoRA",
+)
+```
+
+`load_prompt()` preserves Markdown structure and relative indentation, strips only outer
+whitespace, and rejects non-`.md` paths so prompt files stay explicit and easy to version.
+The repository also includes `examples/prompts/improvement_plan.md` as a ready-to-copy example.
+
 The improvement recipe asks for the evidence behind every idea, the proposed change,
 expected effect, cost/risk, confidence, a measurable success criterion, and one concrete
 next run. Missing hyperparameters must be reported as missing rather than invented.
@@ -203,6 +232,7 @@ configuration changes.
 - **Compare runs** with metric-aware improvement/regression semantics.
 - **Monitor training** with built-in and extensible alert detectors.
 - **Plan controlled next experiments** with objectives, constraints, and Pareto-aware helpers.
+- **Author prompts inline or in Markdown files** with `prompt_text()` and `load_prompt()`.
 - **Save and load portable runs** for repeatable comparisons.
 - **Export reports** to Markdown, JSON, HTML, and optional PDF.
 - **Use an optional LLM** to explain deterministic findings and propose evidence-backed next
