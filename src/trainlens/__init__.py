@@ -64,6 +64,7 @@ from trainlens.prompt_recipes import (
     training_diagnosis_prompt,
 )
 from trainlens.runs import load_run, save_run, training_run_from_analysis
+from trainlens.text import prompt_text
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
 __version__ = "0.14.0"
@@ -120,6 +121,7 @@ __all__ = [
     "plot_training_curves",
     "preview_llm_request",
     "preview_notebook_context",
+    "prompt_text",
     "register_metric",
     "render_next_experiment",
     "render_report",
