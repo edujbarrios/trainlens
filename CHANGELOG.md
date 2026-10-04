@@ -2,6 +2,15 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.14.2 - 2026-10-04
+
+- add public `load_prompt()` so reusable prompt instructions can live in UTF-8 `.md` files instead of being embedded in Python or notebook cells
+- preserve Markdown structure and relative indentation when loading prompt files while removing only surrounding whitespace
+- reject non-`.md` paths explicitly so accidental file loads fail early and prompt files remain easy to identify and version
+- add `examples/prompts/improvement_plan.md` plus README and Colab quickstart examples for file-based prompt authoring
+- add focused tests for Markdown loading through both string and `Path` inputs, case-insensitive `.md` suffixes, formatting preservation, and invalid extensions
+- update the README release badge for 0.14.2
+
 ## 0.14.1 - 2026-10-04
 
 - solve the prompt-authoring friction caused by splitting long LLM instructions into many adjacent quoted strings: add public `prompt_text()` so users can write normal indented triple-quoted text and have TrainLens remove common code indentation and surrounding blank space before use
