@@ -96,14 +96,16 @@ llm = OpenAICompatibleProvider.from_values(
 ### 2. Tell the LLM exactly what kind of training analysis you want
 
 ```python
-from trainlens import improvement_plan_prompt
+from trainlens import improvement_plan_prompt, prompt_text
 
 prompt = improvement_plan_prompt(
-    objective=(
-        "Explain what happened during this fine-tuning run and propose the three "
-        "highest-value next experiments. Use the test split only as final generalization "
-        "evidence; do not tune to it. Prefer controlled, low-cost changes first."
-    ),
+    objective=prompt_text("""
+        Explain what happened during this fine-tuning run and propose the three
+        highest-value next experiments.
+
+        Use the test split only as final generalization evidence; do not tune to it.
+        Prefer controlled, low-cost changes first.
+    """),
     model_family="LLM fine-tuning with PEFT/LoRA",
     focus_areas=(
         "train/validation generalization gap",
@@ -114,6 +116,11 @@ prompt = improvement_plan_prompt(
     ),
 )
 ```
+
+`prompt_text()` is a small convenience for long notebook instructions: write normal
+triple-quoted multiline text, keep it indented with the surrounding Python, and TrainLens
+removes the common indentation and outer blank space before the prompt is used. This avoids
+repeating quotes and implicit string concatenation on every line.
 
 The improvement recipe asks for the evidence behind every idea, the proposed change,
 expected effect, cost/risk, confidence, a measurable success criterion, and one concrete
