@@ -64,7 +64,7 @@ from trainlens.prompt_recipes import (
     training_diagnosis_prompt,
 )
 from trainlens.runs import load_run, save_run, training_run_from_analysis
-from trainlens.text import prompt_text
+from trainlens.text import load_prompt, prompt_text
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
 __version__ = "0.14.1"
@@ -116,6 +116,7 @@ __all__ = [
     "keras_callback",
     "lightning_callback",
     "load_ipython_extension",
+    "load_prompt",
     "load_run",
     "pareto_front",
     "plot_training_curves",
