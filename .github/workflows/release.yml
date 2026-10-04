@@ -134,15 +134,27 @@ jobs:
     env:
       RELEASE_TAG: ${{ needs.build.outputs.tag }}
     steps:
+      - uses: actions/checkout@v6
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
           if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             echo "GitHub release ${RELEASE_TAG} already exists."
           else
-            gh release create "${RELEASE_TAG}" \
-              --repo "${GITHUB_REPOSITORY}" \
-              --title "TrainLens ${RELEASE_TAG#v}" \
-              --generate-notes
+            VERSION="${RELEASE_TAG#v}"
+            NOTES_FILE=".github/release-notes/${VERSION}.md"
+
+            if [[ -f "${NOTES_FILE}" ]]; then
+              gh release create "${RELEASE_TAG}" \
+                --repo "${GITHUB_REPOSITORY}" \
+                --title "TrainLens ${VERSION}" \
+                --notes-file "${NOTES_FILE}"
+            else
+              gh release create "${RELEASE_TAG}" \
+                --repo "${GITHUB_REPOSITORY}" \
+                --title "TrainLens ${VERSION}" \
+                --generate-notes
+            fi
           fi

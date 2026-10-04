@@ -2,6 +2,14 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.14.1 - 2026-10-04
+
+- solve the prompt-authoring friction caused by splitting long LLM instructions into many adjacent quoted strings: add public `prompt_text()` so users can write normal indented triple-quoted text and have TrainLens remove common code indentation and surrounding blank space before use
+- preserve relative indentation inside multiline prompt text, keeping lists and nested structure readable
+- update the README and Colab quickstart to use the new multiline prompt workflow
+- add focused tests for multiline dedenting and whitespace cleanup
+- allow releases to use version-specific notes files so the GitHub release can explain the user-facing problem and solution instead of relying only on generated PR titles
+
 ## 0.14.0 - 2026-10-03
 
 - make train, validation, and held-out test first-class metric splits, including split-aware metric containers and scalar test metrics
