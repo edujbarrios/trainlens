@@ -76,8 +76,8 @@ alpha and target modules, quantization, learning rates, and multimodal/VLM setti
 ## Explain the dataset behind the metrics
 
 Model results are easier to interpret when the dataset is part of the evidence. `explain_dataset()`
-creates a deterministic aggregate profile without requiring pandas, Hugging Face Datasets, or an
-external service:
+creates a deterministic aggregate profile without requiring pandas, Hugging Face Datasets, Pillow,
+NumPy, PyTorch, or an external service:
 
 ```python
 from trainlens import explain_dataset
@@ -94,26 +94,37 @@ dataset_context = explain_dataset(
 dataset_context
 ```
 
-The inputs can be mappings of columns, sequences of row mappings, pandas-like objects, or
-Hugging Face-like datasets. TrainLens summarizes evidence such as:
+Besides tabular and text data, TrainLens understands image-centered datasets and multimodal
+image+text / image+tabular inputs. It can inspect PIL-like images, image-shaped arrays or tensors,
+Hugging Face-style image values, image paths, and multiple images per row through metadata only.
 
-```text
-- number of rows in each split
-- numeric, categorical, text and boolean feature types
-- missing-value rates and cardinality
-- numeric ranges / means and average text length
-- target class distribution or continuous-target range
-- split schema differences
-- material target-distribution differences across splits
+```python
+vlm_context = explain_dataset(
+    {
+        "image": images,
+        "caption": captions,
+        "label": labels,
+    },
+    target="label",
+    name="train",
+)
+
+print(vlm_context.is_multimodal)
+print(vlm_context.modality_summaries[0].modalities)  # ('image', 'text')
 ```
 
-The explanation is deliberately aggregate-only: feature rows are not included in the profile.
-It can reveal context that matters when interpreting a model result—for example a heavily
-imbalanced target or a train/validation distribution difference—but TrainLens does **not** claim
-that those properties caused the observed model behavior.
+For image features, TrainLens can summarize image counts, available width/height ranges, aspect
+ratios, channel counts, modes, formats, images per row, variable dimensions, and material
+resolution differences across splits. It never renders pixels, image bytes, private paths, or
+filenames into the explanation.
+
+The same profile still includes row counts, missingness, cardinality, target distributions,
+numeric/text feature statistics, schema differences, and cross-split observations. All of this
+is descriptive evidence: TrainLens can flag a resolution or class-distribution difference, but it
+does **not** claim that the dataset property caused the observed model behavior.
 
 You can use the profile on its own or explicitly attach it to an LLM explanation. TrainLens
-never silently adds the raw dataset to an outbound request.
+never silently adds the raw dataset or underlying images to an outbound request.
 
 ## Turn the diagnosis into an experiment decision
 
@@ -260,8 +271,9 @@ Open the full notebook to run this end to end:
 ## What TrainLens can do
 
 - **Analyze train / validation / test evidence** without collapsing their roles.
-- **Explain datasets locally** with aggregate split, schema, missingness, cardinality, feature,
-  target-balance, and cross-split evidence without exposing raw feature rows.
+- **Explain tabular, image, and multimodal datasets locally** with aggregate split, schema,
+  missingness, target-balance, image dimensions/modalities, and cross-split evidence without
+  exposing raw rows, pixels, image bytes, or private file paths.
 - **Inspect fine-tuning configuration** across common Hugging Face, PEFT/LoRA, Keras,
   Lightning, PyTorch-style, and VLM workflows through dependency-light introspection.
 - **Plot and monitor training** with learning curves, alerts, and framework callbacks.
@@ -312,9 +324,10 @@ required metrics, so TrainLens evidence can participate directly in CI.
 ## Privacy and scope
 
 Local model and dataset analysis does not make an LLM request. Dataset explanations are aggregate
-profiles and do not contain raw feature rows. When LLM support is enabled, TrainLens bounds and
-redacts notebook evidence, and dataset context is only included when a `DatasetExplanation` is
-explicitly supplied. Generated explanations should still be verified against the underlying data.
+profiles and do not contain raw feature rows, pixels, image bytes, or private image paths. When
+LLM support is enabled, TrainLens bounds and redacts notebook evidence, and dataset context is
+only included when a `DatasetExplanation` is explicitly supplied. Generated explanations should
+still be verified against the underlying data.
 
 TrainLens is an experiment-understanding layer, not a full MLOps platform, tracker, profiler,
 or causal diagnosis system. It is designed for research and small-to-medium workflows where
