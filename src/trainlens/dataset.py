@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence, Sized
 from dataclasses import dataclass
 from math import isnan
 from numbers import Real
@@ -394,19 +394,19 @@ def _tabular_columns(dataset: object) -> tuple[tuple[str, tuple[object, ...]], .
 
     rows = _row_sequence(dataset)
     if rows is not None:
-        names: list[str] = []
+        row_names: list[str] = []
         for row in rows:
             for key in row:
                 if not isinstance(key, str) or not key:
                     raise ValueError("dataset row keys must be non-empty strings")
-                if key not in names:
-                    names.append(key)
-        return tuple((name, tuple(row.get(name) for row in rows)) for name in names)
+                if key not in row_names:
+                    row_names.append(key)
+        return tuple((name, tuple(row.get(name) for row in rows)) for name in row_names)
 
-    names = _column_names(dataset)
-    if names is not None:
+    column_names = _column_names(dataset)
+    if column_names is not None:
         columns = []
-        for name in names:
+        for name in column_names:
             try:
                 values = dataset[name]  # type: ignore[index]
             except (KeyError, TypeError, AttributeError) as exc:
@@ -430,7 +430,7 @@ def _column_names(dataset: object) -> tuple[str, ...] | None:
         except TypeError:
             continue
         if names and all(isinstance(item, str) and item for item in names):
-            return names
+            return tuple(item for item in names if isinstance(item, str))
     return None
 
 
@@ -452,18 +452,15 @@ def _sequence_values(value: object, *, column_name: str) -> tuple[object, ...]:
         raise TypeError(f"dataset column {column_name!r} must be a sequence of values")
     if isinstance(value, Sequence):
         return tuple(value)
-    try:
-        return tuple(value)  # type: ignore[arg-type]
-    except TypeError as exc:
-        raise TypeError(f"dataset column {column_name!r} must be iterable") from exc
+    if isinstance(value, Iterable):
+        return tuple(value)
+    raise TypeError(f"dataset column {column_name!r} must be iterable")
 
 
 def _is_sequence_like(value: object) -> bool:
     if isinstance(value, str | bytes | bytearray | Mapping):
         return False
-    if isinstance(value, Sequence):
-        return True
-    return hasattr(value, "__iter__") and hasattr(value, "__len__")
+    return isinstance(value, Iterable) and isinstance(value, Sized)
 
 
 def _feature_kind(values: tuple[object, ...]) -> DatasetFeatureKind:
@@ -471,7 +468,7 @@ def _feature_kind(values: tuple[object, ...]) -> DatasetFeatureKind:
         return "unknown"
     if all(isinstance(value, bool) for value in values):
         return "boolean"
-    if all(isinstance(value, Real) and not isinstance(value, bool) for value in values):
+    if all(isinstance(value, Real) for value in values):
         return "numeric"
     if all(isinstance(value, str) for value in values):
         unique = _unique_count(values) or 0
@@ -486,7 +483,7 @@ def _feature_kind(values: tuple[object, ...]) -> DatasetFeatureKind:
 def _numeric_values(values: tuple[object, ...]) -> tuple[float, ...]:
     output: list[float] = []
     for value in values:
-        if isinstance(value, Real) and not isinstance(value, bool):
+        if isinstance(value, Real):
             numeric = float(value)
             if not isnan(numeric):
                 output.append(numeric)
@@ -514,7 +511,7 @@ def _safe_label(value: object) -> str:
 def _is_missing(value: object) -> bool:
     if value is None:
         return True
-    if isinstance(value, Real) and not isinstance(value, bool):
+    if isinstance(value, Real):
         try:
             return isnan(float(value))
         except (TypeError, ValueError, OverflowError):
