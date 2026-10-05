@@ -11,7 +11,9 @@ from typing import Any, cast
 from IPython import get_ipython
 
 from trainlens.analysis_config import AnalysisConfig
+from trainlens.dataset import DatasetExplanation, DatasetFeatureSummary, DatasetTargetSummary
 from trainlens.llm.context import ContextPolicy, build_llm_notebook_context_from_snapshot
+from trainlens.llm.dataset_context import append_dataset_explanation
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.llm.prompts import PromptOptions
 from trainlens.llm.provider import LLMProvider
@@ -75,8 +77,12 @@ class VerifiedImprovementPlan:
         )
 
 
-def evidence_catalog(result: AnalysisResult) -> tuple[LLMEvidenceItem, ...]:
-    """Build stable evidence IDs from a deterministic :class:`AnalysisResult`."""
+def evidence_catalog(
+    result: AnalysisResult,
+    *,
+    dataset_explanation: DatasetExplanation | None = None,
+) -> tuple[LLMEvidenceItem, ...]:
+    """Build stable evidence IDs from deterministic model and dataset analysis."""
 
     items: list[LLMEvidenceItem] = []
     for index, summary in enumerate(result.summary, start=1):
@@ -104,6 +110,8 @@ def evidence_catalog(result: AnalysisResult) -> tuple[LLMEvidenceItem, ...]:
                     "; ".join(parts),
                 )
             )
+    if dataset_explanation is not None:
+        items.extend(_dataset_evidence(dataset_explanation))
     return tuple(items)
 
 
@@ -115,6 +123,7 @@ def build_verified_improvement_plan(
     context_policy: ContextPolicy | None = None,
     max_metric_points: int = 12,
     include_values: bool = False,
+    dataset_explanation: DatasetExplanation | None = None,
 ) -> VerifiedImprovementPlan:
     """Generate a structured improvement plan and verify every evidence citation."""
 
@@ -129,7 +138,12 @@ def build_verified_improvement_plan(
         deterministic_result=result,
         context_policy=context_policy,
     )
-    evidence = evidence_catalog(result)
+    context = append_dataset_explanation(
+        context,
+        dataset_explanation=dataset_explanation,
+        context_policy=context_policy,
+    )
+    evidence = evidence_catalog(result, dataset_explanation=dataset_explanation)
     evidence_markdown = _render_evidence_catalog(evidence)
     prompt_options = PromptOptions(
         objective=(
@@ -197,6 +211,86 @@ def parse_verified_improvement_plan(
     if not recommendations:
         raise ValueError("verified improvement plan must contain at least one recommendation")
     return VerifiedImprovementPlan(tuple(recommendations), evidence, response)
+
+
+def _dataset_evidence(explanation: DatasetExplanation) -> tuple[LLMEvidenceItem, ...]:
+    items: list[LLMEvidenceItem] = []
+    for split_index, split in enumerate(explanation.splits, start=1):
+        prefix = f"dataset:split:{split_index}"
+        items.append(
+            LLMEvidenceItem(
+                f"{prefix}:rows",
+                f"split={split.name}; rows={split.row_count}",
+            )
+        )
+        for feature_index, feature in enumerate(split.features, start=1):
+            items.append(
+                LLMEvidenceItem(
+                    f"{prefix}:feature:{feature_index}",
+                    _feature_evidence_detail(split.name, feature),
+                )
+            )
+        if split.target is not None:
+            items.append(
+                LLMEvidenceItem(
+                    f"{prefix}:target",
+                    _target_evidence_detail(split.name, split.target),
+                )
+            )
+        for observation_index, observation in enumerate(split.observations, start=1):
+            items.append(
+                LLMEvidenceItem(
+                    f"{prefix}:observation:{observation_index}",
+                    observation,
+                )
+            )
+    for observation_index, observation in enumerate(explanation.observations, start=1):
+        items.append(
+            LLMEvidenceItem(
+                f"dataset:observation:{observation_index}",
+                observation,
+            )
+        )
+    return tuple(items)
+
+
+def _feature_evidence_detail(split_name: str, feature: DatasetFeatureSummary) -> str:
+    parts = [
+        f"split={split_name}",
+        f"feature={feature.name}",
+        f"kind={feature.kind}",
+        f"missing={feature.missing}/{feature.count}",
+    ]
+    if feature.unique is not None:
+        parts.append(f"unique={feature.unique}")
+    if feature.minimum is not None and feature.maximum is not None:
+        parts.append(f"range={feature.minimum:.8g}..{feature.maximum:.8g}")
+    if feature.mean is not None:
+        parts.append(f"mean={feature.mean:.8g}")
+    if feature.average_length is not None:
+        parts.append(f"average_length={feature.average_length:.8g}")
+    return "; ".join(parts)
+
+
+def _target_evidence_detail(split_name: str, target: DatasetTargetSummary) -> str:
+    parts = [
+        f"split={split_name}",
+        f"target={target.name}",
+        f"kind={target.kind}",
+        f"missing={target.missing}/{target.count}",
+    ]
+    if target.unique is not None:
+        parts.append(f"unique={target.unique}")
+    if target.minimum is not None and target.maximum is not None:
+        parts.append(f"range={target.minimum:.8g}..{target.maximum:.8g}")
+    if target.mean is not None:
+        parts.append(f"mean={target.mean:.8g}")
+    if target.classes:
+        distribution = ", ".join(
+            f"{item.label}:{item.fraction:.1%}" for item in target.classes
+        )
+        parts.append(f"class_distribution={distribution}")
+    return "; ".join(parts)
 
 
 def _render_evidence_catalog(evidence: tuple[LLMEvidenceItem, ...]) -> str:
