@@ -66,6 +66,7 @@ from trainlens.prompt_recipes import (
     scientific_report_prompt,
     training_diagnosis_prompt,
 )
+from trainlens.provenance import RunProvenance, capture_provenance, fingerprint_data
 from trainlens.repeats import (
     GroupComparison,
     MetricAggregate,
@@ -75,6 +76,7 @@ from trainlens.repeats import (
     compare_run_groups,
     parameter_effects,
 )
+from trainlens.resources import ResourceProfile, attach_resource_profile, profile_resources
 from trainlens.runs import load_run, save_run, training_run_from_analysis
 from trainlens.text import load_prompt, prompt_text
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
@@ -109,8 +111,10 @@ __all__ = [
     "ProjectEntry",
     "PromptOptions",
     "Recommendation",
+    "ResourceProfile",
     "RunGroup",
     "RunLeaderboard",
+    "RunProvenance",
     "Signal",
     "SuccessCriterion",
     "TrainLensCallback",
@@ -125,14 +129,17 @@ __all__ = [
     "__version__",
     "aggregate_runs",
     "analyze",
+    "attach_resource_profile",
     "build_improvement_ideas",
     "build_llm_report",
     "build_paper_report",
+    "capture_provenance",
     "compare_run_groups",
     "compare_runs",
     "controlled_experiment_prompt",
     "default_metric_registry",
     "experiment_config",
+    "fingerprint_data",
     "get_trainlens_prompt",
     "improvement_plan_prompt",
     "inspect_training_profile",
@@ -147,6 +154,7 @@ __all__ = [
     "plot_training_curves",
     "preview_llm_request",
     "preview_notebook_context",
+    "profile_resources",
     "prompt_text",
     "register_metric",
     "render_next_experiment",
