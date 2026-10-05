@@ -2,6 +2,16 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.16.0 - 2026-10-05
+
+- add provider-free Agent Mode so Claude, Codex, Cursor, and other already-running agents can use TrainLens as a deterministic evidence layer without TrainLens-side API keys or model calls
+- add public `AgentContext`, `build_agent_context()`, and `build_agent_context_from_run()` APIs with bounded Markdown/JSON context, stable evidence IDs, agent instructions, and a machine-readable output schema
+- add `verify_agent_plan()` to validate structured external-agent recommendations against deterministic TrainLens evidence IDs
+- add `trainlens agent-context` and `trainlens verify-agent-plan` for terminal-first AutoResearch and Skill workflows using portable `TrainingRun` JSON files
+- include portable-run parameters and notes as citeable evidence while preserving existing metric-derived findings
+- document the recommended evidence → hypothesis → controlled experiment → evidence loop and add a reusable `examples/agent-skill/SKILL.md` template
+- keep the existing optional OpenAI-compatible provider workflow fully available and backwards compatible
+
 ## 0.15.1 - 2026-10-05
 
 - extend `explain_dataset()` with dependency-light support for image and image-centered multimodal datasets
@@ -258,5 +268,3 @@ All notable changes to TrainLens will be documented here.
 - notebook-only Markdown reporting with no GUI or image dashboard surface
 - foundation-model fine-tuning profile detection for LLMs, CLIP, ViTs, projectors, and VLMs
 - contrastive, adapter-rank, loss-plateau, and projector-alignment recommendations
-- parameterized Jinja2 prompt templates for OpenAI-compatible ML/DL result explanations
-- sensitive data redaction for prompt and notebook snapshot safety
