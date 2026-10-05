@@ -23,10 +23,14 @@ class FakeStructuredProvider:
             "recommendations": [
                 {
                     "action": "Run one controlled follow-up experiment.",
-                    "rationale": "Use the deterministic TrainLens evidence before changing more variables.",
+                    "rationale": (
+                        "Use deterministic TrainLens evidence before changing more variables."
+                    ),
                     "evidence_ids": [evidence_id],
                     "confidence": 0.8,
-                    "success_criterion": "Improve the cited metric without a new material regression.",
+                    "success_criterion": (
+                        "Improve the cited metric without a new material regression."
+                    ),
                 }
             ]
         }
@@ -65,9 +69,18 @@ def test_evidence_catalog_has_stable_metric_signal_and_reference_ids() -> None:
 
 def test_parser_flags_evidence_ids_that_were_not_supplied() -> None:
     evidence = (LLMEvidenceItem("metric:f1", "f1=0.82"),)
-    response = """```json
-{"recommendations":[{"action":"Try A","rationale":"Because B","evidence_ids":["metric:f1","invented:1"],"confidence":0.7,"success_criterion":"f1 improves"}]}
-```"""
+    payload = {
+        "recommendations": [
+            {
+                "action": "Try A",
+                "rationale": "Because B",
+                "evidence_ids": ["metric:f1", "invented:1"],
+                "confidence": 0.7,
+                "success_criterion": "f1 improves",
+            }
+        ]
+    }
+    response = f"```json\n{json.dumps(payload)}\n```"
 
     plan = parse_verified_improvement_plan(response, evidence=evidence)
 
@@ -78,10 +91,20 @@ def test_parser_flags_evidence_ids_that_were_not_supplied() -> None:
 
 def test_parser_rejects_invalid_structured_fields() -> None:
     evidence = (LLMEvidenceItem("metric:f1", "f1=0.82"),)
-    response = """{"recommendations":[{"action":"Try A","rationale":"Because B","evidence_ids":["metric:f1"],"confidence":2,"success_criterion":"f1 improves"}]}"""
+    payload = {
+        "recommendations": [
+            {
+                "action": "Try A",
+                "rationale": "Because B",
+                "evidence_ids": ["metric:f1"],
+                "confidence": 2,
+                "success_criterion": "f1 improves",
+            }
+        ]
+    }
 
     with pytest.raises(ValueError, match="between 0 and 1"):
-        parse_verified_improvement_plan(response, evidence=evidence)
+        parse_verified_improvement_plan(json.dumps(payload), evidence=evidence)
 
 
 def test_build_verified_plan_uses_real_deterministic_evidence_catalog() -> None:
