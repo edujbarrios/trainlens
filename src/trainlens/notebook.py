@@ -11,11 +11,13 @@ from typing import Any
 from IPython import get_ipython
 
 from trainlens.analysis_config import AnalysisConfig
+from trainlens.dataset import DatasetExplanation
 from trainlens.llm.context import (
     ContextPolicy,
     LLMNotebookContext,
     build_llm_notebook_context_from_snapshot,
 )
+from trainlens.llm.dataset_context import append_dataset_explanation
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.llm.openai_compatible import LLMRequestPreview, OpenAICompatibleProvider
 from trainlens.llm.prompts import PromptOptions, ReportMode
@@ -42,6 +44,7 @@ def preview_notebook_context(
     include_values: bool = False,
     analysis_config: AnalysisConfig | None = None,
     context_policy: ContextPolicy | None = None,
+    dataset_explanation: DatasetExplanation | None = None,
 ) -> LLMNotebookContext:
     """Return the exact sanitized notebook context used for an LLM request."""
 
@@ -51,6 +54,7 @@ def preview_notebook_context(
         include_values=include_values,
         analysis_config=analysis_config,
         context_policy=context_policy,
+        dataset_explanation=dataset_explanation,
     )
     return context
 
@@ -65,6 +69,7 @@ def preview_llm_request(
     analysis_config: AnalysisConfig | None = None,
     provider: OpenAICompatibleProvider | None = None,
     context_policy: ContextPolicy | None = None,
+    dataset_explanation: DatasetExplanation | None = None,
 ) -> LLMRequestPreview:
     """Preview the exact OpenAI-compatible prompt and evidence without a network call."""
 
@@ -75,6 +80,7 @@ def preview_llm_request(
         include_values=include_values,
         analysis_config=analysis_config,
         context_policy=context_policy,
+        dataset_explanation=dataset_explanation,
     )
     return active_provider.preview(
         context.markdown,
@@ -92,6 +98,7 @@ def build_llm_report(
     analysis_config: AnalysisConfig | None = None,
     provider: LLMProvider | None = None,
     context_policy: ContextPolicy | None = None,
+    dataset_explanation: DatasetExplanation | None = None,
 ) -> LiveReport:
     """Build an LLM-generated training report from notebook context."""
 
@@ -103,6 +110,7 @@ def build_llm_report(
         analysis_config=analysis_config,
         provider=provider,
         context_policy=context_policy,
+        dataset_explanation=dataset_explanation,
     )
 
 
@@ -115,6 +123,7 @@ def build_paper_report(
     analysis_config: AnalysisConfig | None = None,
     provider: LLMProvider | None = None,
     context_policy: ContextPolicy | None = None,
+    dataset_explanation: DatasetExplanation | None = None,
 ) -> LiveReport:
     """Build a scientific paper-style training report from notebook context."""
 
@@ -127,6 +136,7 @@ def build_paper_report(
         analysis_config=analysis_config,
         provider=provider,
         context_policy=context_policy,
+        dataset_explanation=dataset_explanation,
     )
 
 
@@ -139,8 +149,9 @@ def build_improvement_ideas(
     analysis_config: AnalysisConfig | None = None,
     provider: LLMProvider | None = None,
     context_policy: ContextPolicy | None = None,
+    dataset_explanation: DatasetExplanation | None = None,
 ) -> LiveReport:
-    """Build an evidence-backed improvement plan from notebook context."""
+    """Build an evidence-backed improvement plan from notebook and dataset context."""
 
     return _build_report(
         namespace,
@@ -151,6 +162,7 @@ def build_improvement_ideas(
         analysis_config=analysis_config,
         provider=provider,
         context_policy=context_policy,
+        dataset_explanation=dataset_explanation,
     )
 
 
@@ -164,6 +176,7 @@ def _build_report(
     analysis_config: AnalysisConfig | None,
     provider: LLMProvider | None,
     context_policy: ContextPolicy | None,
+    dataset_explanation: DatasetExplanation | None,
 ) -> LiveReport:
     result, context = _prepare_report_context(
         namespace,
@@ -171,6 +184,7 @@ def _build_report(
         include_values=include_values,
         analysis_config=analysis_config,
         context_policy=context_policy,
+        dataset_explanation=dataset_explanation,
     )
     explain_kwargs: dict[str, Any] = {"mode": mode, "require_provider": True}
     if prompt_options is not None:
@@ -190,6 +204,7 @@ def _prepare_report_context(
     include_values: bool,
     analysis_config: AnalysisConfig | None,
     context_policy: ContextPolicy | None,
+    dataset_explanation: DatasetExplanation | None,
 ) -> tuple[AnalysisResult, LLMNotebookContext]:
     report_namespace = _current_user_namespace() if namespace is None else namespace
     snapshot = snapshot_namespace(report_namespace)
@@ -202,7 +217,11 @@ def _prepare_report_context(
         deterministic_result=result,
         context_policy=context_policy,
     )
-    return result, context
+    return result, append_dataset_explanation(
+        context,
+        dataset_explanation=dataset_explanation,
+        context_policy=context_policy,
+    )
 
 
 def _current_user_namespace() -> Mapping[str, Any]:
