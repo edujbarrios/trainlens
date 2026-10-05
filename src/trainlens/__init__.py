@@ -33,6 +33,14 @@ from trainlens.llm.prompts import (
     show_trainlens_prompts,
 )
 from trainlens.llm.provider import LLMProvider
+from trainlens.llm.verified import (
+    LLMEvidenceItem,
+    VerifiedImprovementPlan,
+    VerifiedLLMRecommendation,
+    build_verified_improvement_plan,
+    evidence_catalog,
+    parse_verified_improvement_plan,
+)
 from trainlens.magic.extension import load_ipython_extension, unload_ipython_extension
 from trainlens.metric_semantics import (
     MetricRegistry,
@@ -97,6 +105,7 @@ __all__ = [
     "ExperimentRun",
     "GroupComparison",
     "LLMConfig",
+    "LLMEvidenceItem",
     "LLMProvider",
     "LLMRequestPreview",
     "LeaderboardRow",
@@ -130,6 +139,8 @@ __all__ = [
     "TrainingProfile",
     "TrainingRun",
     "TrajectoryComparison",
+    "VerifiedImprovementPlan",
+    "VerifiedLLMRecommendation",
     "__version__",
     "aggregate_runs",
     "analyze",
@@ -137,11 +148,13 @@ __all__ = [
     "build_improvement_ideas",
     "build_llm_report",
     "build_paper_report",
+    "build_verified_improvement_plan",
     "capture_provenance",
     "compare_run_groups",
     "compare_runs",
     "controlled_experiment_prompt",
     "default_metric_registry",
+    "evidence_catalog",
     "experiment_config",
     "fingerprint_data",
     "get_trainlens_prompt",
@@ -155,6 +168,7 @@ __all__ = [
     "load_run",
     "parameter_effects",
     "pareto_front",
+    "parse_verified_improvement_plan",
     "plot_training_curves",
     "preview_llm_request",
     "preview_notebook_context",
