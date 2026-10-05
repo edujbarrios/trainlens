@@ -4,8 +4,9 @@
 
 TrainLens is a lightweight, notebook-first toolkit for understanding ML training runs and
 small experiment histories. It keeps train, validation, and held-out test evidence distinct,
-compares runs with metric-aware semantics, and helps turn observations into controlled next
-experiments. Core analysis is local and deterministic; LLM support is optional.
+compares runs with metric-aware semantics, explains aggregate dataset context, and helps turn
+observations into controlled next experiments. Core analysis is local and deterministic; LLM
+support is optional.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
@@ -21,7 +22,8 @@ experiments. Core analysis is local and deterministic; LLM support is optional.
 </p>
 
 The Colab is the fastest way to see the complete workflow: **training curves → deterministic
-diagnosis → fine-tuning context → optional sanitized LLM review → concrete next experiments**.
+diagnosis → dataset and fine-tuning context → optional sanitized LLM review → concrete next
+experiments**.
 
 ## See the full workflow in a few cells
 
@@ -71,6 +73,48 @@ On real fine-tuning notebooks, the same analysis can also inspect supported mode
 objects for details such as trainable versus frozen parameters, PEFT adapters, LoRA rank,
 alpha and target modules, quantization, learning rates, and multimodal/VLM settings.
 
+## Explain the dataset behind the metrics
+
+Model results are easier to interpret when the dataset is part of the evidence. `explain_dataset()`
+creates a deterministic aggregate profile without requiring pandas, Hugging Face Datasets, or an
+external service:
+
+```python
+from trainlens import explain_dataset
+
+dataset_context = explain_dataset(
+    {
+        "train": train_dataset,
+        "validation": validation_dataset,
+        "test": test_dataset,
+    },
+    target="label",
+)
+
+dataset_context
+```
+
+The inputs can be mappings of columns, sequences of row mappings, pandas-like objects, or
+Hugging Face-like datasets. TrainLens summarizes evidence such as:
+
+```text
+- number of rows in each split
+- numeric, categorical, text and boolean feature types
+- missing-value rates and cardinality
+- numeric ranges / means and average text length
+- target class distribution or continuous-target range
+- split schema differences
+- material target-distribution differences across splits
+```
+
+The explanation is deliberately aggregate-only: feature rows are not included in the profile.
+It can reveal context that matters when interpreting a model result—for example a heavily
+imbalanced target or a train/validation distribution difference—but TrainLens does **not** claim
+that those properties caused the observed model behavior.
+
+You can use the profile on its own or explicitly attach it to an LLM explanation. TrainLens
+never silently adds the raw dataset to an outbound request.
+
 ## Turn the diagnosis into an experiment decision
 
 A useful training analysis should answer **what should I try next?**, not just describe a
@@ -114,6 +158,7 @@ into evidence such as:
 - validation loss improved until the late stage, then degraded
 - training kept improving while validation stopped improving
 - held-out test performance is weaker than the best validation behavior
+- the target is imbalanced and validation has a different observed class mix
 - checkpoint selection should use validation evidence, not the test split
 - the next run should change one controlled parameter and define a measurable success criterion
 ```
@@ -146,12 +191,14 @@ prompt = improvement_plan_prompt(
         highest-value next experiments.
 
         Use the test split only as final generalization evidence; do not tune to it.
+        Use dataset properties as context, not as proof of causation.
         Prefer controlled, low-cost changes first.
     """),
     model_family="LLM fine-tuning with PEFT/LoRA",
     focus_areas=(
         "train/validation generalization gap",
         "validation-to-test degradation",
+        "dataset imbalance or split differences",
         "checkpoint selection and early stopping",
         "learning-rate schedule",
         "regularization and adapter capacity",
@@ -169,13 +216,14 @@ preview = preview_llm_request(
     mode="improvement_ideas",
     provider=llm,
     prompt_options=prompt,
+    dataset_explanation=dataset_context,
 )
 
 print(preview.system_prompt)
-print(preview.user_prompt)  # sanitized notebook evidence
+print(preview.user_prompt)  # sanitized notebook + aggregate dataset evidence
 ```
 
-Then generate an evidence-backed explanation and experiment plan:
+Then generate an evidence-backed explanation and experiment plan using the same context:
 
 ```python
 from trainlens import build_improvement_ideas
@@ -184,18 +232,24 @@ report = build_improvement_ideas(
     globals(),
     provider=llm,
     prompt_options=prompt,
+    dataset_explanation=dataset_context,
 )
 
 report
 ```
 
-For machine-checkable workflows, TrainLens also supports structured plans whose evidence IDs
-are verified against the deterministic analysis rather than accepting invented citations:
+For machine-checkable workflows, TrainLens also supports structured plans whose model and
+dataset evidence IDs are verified against deterministic TrainLens evidence rather than accepting
+invented citations:
 
 ```python
 from trainlens import build_verified_improvement_plan
 
-plan = build_verified_improvement_plan(globals(), provider=llm)
+plan = build_verified_improvement_plan(
+    globals(),
+    provider=llm,
+    dataset_explanation=dataset_context,
+)
 print(plan.recommendations)
 print(plan.unsupported_evidence_ids)
 ```
@@ -206,6 +260,8 @@ Open the full notebook to run this end to end:
 ## What TrainLens can do
 
 - **Analyze train / validation / test evidence** without collapsing their roles.
+- **Explain datasets locally** with aggregate split, schema, missingness, cardinality, feature,
+  target-balance, and cross-split evidence without exposing raw feature rows.
 - **Inspect fine-tuning configuration** across common Hugging Face, PEFT/LoRA, Keras,
   Lightning, PyTorch-style, and VLM workflows through dependency-light introspection.
 - **Plot and monitor training** with learning curves, alerts, and framework callbacks.
@@ -224,7 +280,7 @@ Open the full notebook to run this end to end:
 - **Gate regressions in CI** with the `trainlens` command-line interface.
 - **Extend analysis** with process-local analyzer plugins.
 - **Use optional LLMs** with request previewing, privacy controls, reusable prompt recipes,
-  and evidence-verified structured plans.
+  aggregate dataset context, and evidence-verified structured plans.
 - **Export reports** to Markdown, JSON, HTML, and optional PDF.
 
 ## Compare or gate runs from the CLI
@@ -242,6 +298,7 @@ required metrics, so TrainLens evidence can participate directly in CI.
 ## Documentation
 
 - [Getting started](docs/en/getting-started.md)
+- [Dataset-aware analysis](docs/en/dataset-context.md)
 - [Experiment workflows](docs/en/experiment-workflows.md)
 - [Notebook workflows](docs/en/notebooks.md)
 - [Python API](docs/en/python-api.md)
@@ -254,9 +311,10 @@ required metrics, so TrainLens evidence can participate directly in CI.
 
 ## Privacy and scope
 
-Local analysis does not make an LLM request. When LLM support is enabled, TrainLens bounds
-and redacts notebook evidence and keeps notebook-derived content separate from trusted
-instructions. Generated explanations should still be verified against the underlying data.
+Local model and dataset analysis does not make an LLM request. Dataset explanations are aggregate
+profiles and do not contain raw feature rows. When LLM support is enabled, TrainLens bounds and
+redacts notebook evidence, and dataset context is only included when a `DatasetExplanation` is
+explicitly supplied. Generated explanations should still be verified against the underlying data.
 
 TrainLens is an experiment-understanding layer, not a full MLOps platform, tracker, profiler,
 or causal diagnosis system. It is designed for research and small-to-medium workflows where
