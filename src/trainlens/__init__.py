@@ -8,6 +8,14 @@ from trainlens.analyzers.registry import AnalyzerRegistry, register_analyzer, un
 from trainlens.callbacks import TrainLensCallback
 from trainlens.checkpoints import CheckpointSelection, select_checkpoint
 from trainlens.comparison import compare_runs, render_run_comparison
+from trainlens.dataset import (
+    DatasetClassBalance,
+    DatasetExplanation,
+    DatasetFeatureSummary,
+    DatasetSplitSummary,
+    DatasetTargetSummary,
+    explain_dataset,
+)
 from trainlens.experiments import (
     ExperimentRun,
     MetricConstraint,
@@ -101,6 +109,11 @@ __all__ = [
     "AnalyzerRegistry",
     "CheckpointSelection",
     "ContextPolicy",
+    "DatasetClassBalance",
+    "DatasetExplanation",
+    "DatasetFeatureSummary",
+    "DatasetSplitSummary",
+    "DatasetTargetSummary",
     "EvidenceRef",
     "ExperimentRun",
     "GroupComparison",
@@ -156,6 +169,7 @@ __all__ = [
     "default_metric_registry",
     "evidence_catalog",
     "experiment_config",
+    "explain_dataset",
     "fingerprint_data",
     "get_trainlens_prompt",
     "improvement_plan_prompt",
