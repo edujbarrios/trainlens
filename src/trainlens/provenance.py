@@ -7,7 +7,7 @@ import json
 import platform as platform_module
 import subprocess
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
@@ -25,11 +25,7 @@ class RunProvenance:
     git_dirty: bool | None = None
     seed: int | None = None
     dataset_fingerprint: str | None = None
-    packages: Mapping[str, str] = None  # type: ignore[assignment]
-
-    def __post_init__(self) -> None:
-        if self.packages is None:
-            object.__setattr__(self, "packages", {})
+    packages: Mapping[str, str] = field(default_factory=dict)
 
     def as_metadata(self, *, prefix: str = "provenance") -> dict[str, RunValue]:
         """Flatten provenance into scalar metadata accepted by :class:`TrainingRun`."""
