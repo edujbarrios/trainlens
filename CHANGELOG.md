@@ -2,6 +2,17 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.15.1 - 2026-10-05
+
+- extend `explain_dataset()` with dependency-light support for image and image-centered multimodal datasets
+- recognize PIL-like images, image-shaped arrays/tensors, common image paths, Hugging Face-style image values, and multiple images per row without adding heavy runtime dependencies
+- add `DatasetImageSummary`, `DatasetModalitySummary`, and `MultimodalDatasetExplanation` for aggregate visual and modality evidence
+- summarize image counts, dimensions, aspect ratios, channels, modes, formats, images per row, and material cross-split image-size differences
+- detect image+text and image+tabular splits as multimodal while preserving existing behavior for non-visual datasets
+- keep visual context privacy-preserving by excluding pixels, image bytes, private paths, and filenames from rendered or outbound dataset evidence
+- verify image features and visual observations participate in stable evidence IDs used by structured improvement plans
+- document image and multimodal workflows in the README, dataset guide, and a dependency-free runnable example
+
 ## 0.15.0 - 2026-10-05
 
 - add public `explain_dataset()` for local, deterministic dataset explanations without adding pandas or Hugging Face runtime dependencies
