@@ -2,9 +2,9 @@ cff-version: 1.2.0
 message: "If you use TrainLens in research, please cite it using this metadata."
 type: software
 title: "TrainLens"
-version: "0.14.3"
+version: "0.15.0"
 date-released: "2026-10-05"
-abstract: "TrainLens is a notebook-first toolkit that turns machine-learning training runs into evidence for comparison, diagnosis, reproducibility, and controlled next experiments, with local project storage, repeated-run analysis, checkpoint selection, CI gates, and optional evidence-verified LLM improvement plans."
+abstract: "TrainLens is a notebook-first toolkit that turns machine-learning datasets and training runs into evidence for comparison, diagnosis, reproducibility, and controlled next experiments, with deterministic dataset explanations, local project storage, repeated-run analysis, checkpoint selection, CI gates, and optional evidence-verified LLM improvement plans."
 authors:
   - family-names: "Barrios"
     given-names: "Eduardo J."
@@ -16,5 +16,6 @@ keywords:
   - "fine-tuning"
   - "Jupyter"
   - "training runs"
+  - "dataset analysis"
   - "experiment comparison"
   - "research tooling"

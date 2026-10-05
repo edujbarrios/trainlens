@@ -2,6 +2,18 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.15.0 - 2026-10-05
+
+- add public `explain_dataset()` for local, deterministic dataset explanations without adding pandas or Hugging Face runtime dependencies
+- summarize split sizes, feature kinds, missingness, cardinality, numeric ranges and means, average text lengths, supervised target distributions, and continuous-target ranges
+- compare named splits for feature-schema differences and material target-distribution changes while keeping observations explicitly descriptive rather than causal
+- keep dataset profiles aggregate-only so raw feature rows are not included in rendered explanations
+- allow an explicit `DatasetExplanation` to be attached to notebook-context previews, paper reports, improvement plans, and structured verified plans
+- keep dataset context bounded by `ContextPolicy` and never silently add the underlying raw dataset to an optional LLM request
+- add stable evidence IDs for dataset splits, features, targets, and observations so structured LLM recommendations can cite dataset facts and unsupported citations remain detectable
+- expand the README and documentation around dataset-aware model interpretation, including privacy and causal-interpretation limits
+- update the Colab quickstart to demonstrate dataset explanation, training diagnosis, request preview, and evidence-backed next-experiment planning end to end
+
 ## 0.14.3 - 2026-10-05
 
 - add a local-first `Project` store for portable training runs, names, and tags under `.trainlens`
