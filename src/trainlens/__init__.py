@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from trainlens.analysis_config import AnalysisConfig
+from trainlens.analyzers.base import Analyzer
+from trainlens.analyzers.registry import AnalyzerRegistry, register_analyzer, unregister_analyzer
 from trainlens.callbacks import TrainLensCallback
 from trainlens.checkpoints import CheckpointSelection, select_checkpoint
 from trainlens.comparison import compare_runs, render_run_comparison
@@ -87,6 +89,8 @@ __all__ = [
     "AlertDetector",
     "AnalysisConfig",
     "AnalysisResult",
+    "Analyzer",
+    "AnalyzerRegistry",
     "CheckpointSelection",
     "ContextPolicy",
     "EvidenceRef",
@@ -156,6 +160,7 @@ __all__ = [
     "preview_notebook_context",
     "profile_resources",
     "prompt_text",
+    "register_analyzer",
     "register_metric",
     "render_next_experiment",
     "render_report",
@@ -171,6 +176,7 @@ __all__ = [
     "training_run_from_analysis",
     "transformers_callback",
     "unload_ipython_extension",
+    "unregister_analyzer",
     "unregister_metric",
     "write_report",
 ]

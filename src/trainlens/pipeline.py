@@ -29,13 +29,21 @@ def analyze_snapshot(
 
     Automatic selection remains the backwards-compatible default. Callers that
     need reproducibility can provide an :class:`AnalysisConfig` with explicit
-    model/trainer/metric evidence or enable strict ambiguity checking.
+    model/trainer/metric evidence, a registered analyzer, or strict ambiguity
+    checking.
     """
 
     inspector = NotebookInspector()
     candidates = inspector.find_models(snapshot)
     model = _select_model(snapshot, candidates, config)
-    analyzer = default_registry().get("training_session")
+    analyzer_name = "training_session" if config is None else config.analyzer
+    try:
+        analyzer = default_registry().get(analyzer_name)
+    except KeyError as exc:
+        available = ", ".join(item.name for item in default_registry().all())
+        raise ValueError(
+            f"analyzer {analyzer_name!r} is not registered; available analyzers: {available}"
+        ) from exc
     return analyzer.analyze(snapshot, model, config=config)
 
 

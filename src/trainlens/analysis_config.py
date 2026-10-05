@@ -9,12 +9,13 @@ from typing import Any
 
 @dataclass(frozen=True)
 class AnalysisConfig:
-    """Control which notebook objects TrainLens analyzes.
+    """Control which notebook objects and analyzer TrainLens uses.
 
     ``model`` and ``trainer`` may be either notebook variable names or concrete
     objects. ``metrics`` and ``labels`` let callers provide authoritative
-    evidence without relying on notebook-name inference. Set ``strict=True`` to
-    reject ambiguous automatic model selection instead of silently choosing the
+    evidence without relying on notebook-name inference. ``analyzer`` selects a
+    built-in or registered plugin analyzer. Set ``strict=True`` to reject
+    ambiguous automatic model selection instead of silently choosing the
     highest-confidence candidate.
     """
 
@@ -23,3 +24,4 @@ class AnalysisConfig:
     metrics: Mapping[str, Any] | None = None
     labels: Iterable[Any] | None = None
     strict: bool = False
+    analyzer: str = "training_session"
