@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import PurePath
 from statistics import fmean
-from typing import cast
+from typing import TypeGuard, cast
 
 from trainlens.dataset import (
     DatasetExplanation,
@@ -22,8 +22,8 @@ from trainlens.dataset import (
     _tabular_columns,
     _target_observations,
     _validate_limit,
-    explain_dataset as _explain_tabular_dataset,
 )
+from trainlens.dataset import explain_dataset as _explain_tabular_dataset
 
 _IMAGE_EXTENSIONS = {
     ".avif",
@@ -208,19 +208,19 @@ def _summarize_split(
     image_summaries: list[DatasetImageSummary] = []
     for column_name, values in feature_items[:max_features]:
         image_summary = _summarize_image_feature(column_name, values)
-        if image_summary is not None:
-            feature_summaries.append(
-                DatasetFeatureSummary(
-                    name=column_name,
-                    kind=cast(DatasetFeatureKind, "image"),
-                    count=len(values),
-                    missing=len(values) - image_summary.rows_with_images,
-                    unique=None,
-                )
-            )
-            image_summaries.append(image_summary)
-        else:
+        if image_summary is None:
             feature_summaries.append(_summarize_feature(column_name, values))
+            continue
+        feature_summaries.append(
+            DatasetFeatureSummary(
+                name=column_name,
+                kind=cast(DatasetFeatureKind, "image"),
+                count=len(values),
+                missing=len(values) - image_summary.rows_with_images,
+                unique=None,
+            )
+        )
+        image_summaries.append(image_summary)
 
     features = tuple(feature_summaries)
     observations: list[str] = []
@@ -255,10 +255,9 @@ def _summarize_split(
         image_features=tuple(image_summaries),
     )
     if modality_summary.is_multimodal:
+        other_modalities = " and ".join(item for item in modalities if item != "image")
         observations.append(
-            f"Split `{name}` combines image data with "
-            + " and ".join(item for item in modalities if item != "image")
-            + " features."
+            f"Split `{name}` combines image data with {other_modalities} features."
         )
 
     split = DatasetSplitSummary(
@@ -292,11 +291,11 @@ def _summarize_image_feature(
     ratios = tuple(
         item.width / item.height
         for item in images
-        if item.width is not None and item.height not in (None, 0)
+        if item.width is not None and item.height is not None and item.height > 0
     )
     channels = tuple(sorted({item.channels for item in images if item.channels is not None}))
-    modes = tuple(sorted({item.mode for item in images if item.mode}))
-    formats = tuple(sorted({item.format for item in images if item.format}))
+    modes = tuple(sorted({item.mode for item in images if item.mode is not None}))
+    formats = tuple(sorted({item.format for item in images if item.format is not None}))
     images_per_row = tuple(len(row) for row in rows)
     metadata_count = sum(
         1 for item in images if item.width is not None and item.height is not None
@@ -329,7 +328,9 @@ def _image_items(value: object) -> tuple[_ImageMetadata, ...]:
     metadata = _image_metadata(value)
     if metadata is not None:
         return (metadata,)
-    if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray | Mapping):
+    if isinstance(value, Sequence) and not isinstance(
+        value, str | bytes | bytearray | Mapping
+    ):
         if not value:
             return ()
         output: list[_ImageMetadata] = []
@@ -357,7 +358,9 @@ def _image_metadata(value: object) -> _ImageMetadata | None:
             shape_metadata = _metadata_from_shape(array)
             if shape_metadata is not None:
                 return shape_metadata
-        if isinstance(path, str) and (_format_from_path(path) is not None or raw_bytes is not None):
+        if isinstance(path, str) and (
+            _format_from_path(path) is not None or raw_bytes is not None
+        ):
             return _ImageMetadata(format=_format_from_path(path))
         if raw_bytes is not None and "path" in value:
             return _ImageMetadata()
@@ -392,8 +395,8 @@ def _metadata_from_pil_like(value: object) -> _ImageMetadata | None:
             if bands:
                 channels = len(bands)
     return _ImageMetadata(
-        width=int(width),
-        height=int(height),
+        width=width,
+        height=height,
         channels=channels,
         mode=mode,
         format=image_format,
@@ -444,7 +447,7 @@ def _channels_from_mode(mode: str | None) -> int | None:
     return None
 
 
-def _positive_int(value: object) -> bool:
+def _positive_int(value: object) -> TypeGuard[int]:
     return isinstance(value, int) and not isinstance(value, bool) and value > 0
 
 
@@ -452,7 +455,7 @@ def _feature_modalities(features: tuple[DatasetFeatureSummary, ...]) -> tuple[st
     modalities: list[str] = []
     for feature in features:
         modality: str | None
-        if feature.kind == "image":
+        if str(feature.kind) == "image":
             modality = "image"
         elif feature.kind == "text":
             modality = "text"
@@ -548,7 +551,8 @@ def _render_modality_evidence(summaries: tuple[DatasetModalitySummary, ...]) -> 
             continue
         lines.extend(["", f"### Split: {summary.split_name}"])
         lines.append("- modalities: " + " + ".join(summary.modalities))
-        lines.append(f"- image-centered multimodal: {'yes' if summary.is_multimodal else 'no'}")
+        multimodal = "yes" if summary.is_multimodal else "no"
+        lines.append(f"- image-centered multimodal: {multimodal}")
         for image in summary.image_features:
             details = [
                 f"rows_with_images={image.rows_with_images}/{image.row_count}",
