@@ -2,15 +2,20 @@
 
 **TrainLens turns training runs into evidence: what changed, what went wrong, and what experiment to run next.**
 
-TrainLens is a lightweight, notebook-first toolkit for understanding ML training runs and
-small experiment histories. It keeps train, validation, and held-out test evidence distinct,
-compares runs with metric-aware semantics, explains aggregate dataset context, and helps turn
-observations into controlled next experiments. Core analysis is local and deterministic; LLM
-support is optional.
+TrainLens is a lightweight, notebook-first toolkit for understanding ML training runs and small
+experiment histories. It keeps train, validation, and held-out test evidence distinct, compares
+runs with metric-aware semantics, explains aggregate dataset context, and helps turn observations
+into controlled next experiments. Core analysis is local and deterministic; LLM support is
+optional.
+
+**New in 0.16.0: TrainLens can be used as the evidence layer inside AutoResearch-style skills and
+coding agents.** Claude, Codex, Cursor, or another already-running agent can consume deterministic
+TrainLens context, reason with its own model, and return a structured experiment plan. In Agent
+Mode, TrainLens makes **no LLM call**, needs **no provider SDK**, and requires **no API key**.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/0.15.1/"><img alt="PyPI 0.15.1" src="https://img.shields.io/badge/pypi-0.15.1-blue?logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/0.16.0/"><img alt="PyPI 0.16.0" src="https://img.shields.io/badge/pypi-0.16.0-blue?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
@@ -21,20 +26,23 @@ support is optional.
   </a>
 </p>
 
-The Colab is the fastest way to see the complete workflow: **training curves → deterministic
-diagnosis → dataset and fine-tuning context → optional sanitized LLM review → concrete next
-experiments**.
+## Install
 
-## See the full workflow in a few cells
-
-Install TrainLens in a normal notebook. No tracking server or hosted service is required.
-
-```python
-%pip install -q "trainlens[plots]"
+```bash
+pip install trainlens
 ```
 
-Start from the objects you already have after training. TrainLens understands common metric
-aliases and keeps training, validation, and held-out test evidence in their proper roles.
+For plots:
+
+```bash
+pip install "trainlens[plots]"
+```
+
+No tracking server or hosted TrainLens service is required.
+
+## Analyze a training run locally
+
+Start from the objects you already have after training:
 
 ```python
 history = {
@@ -53,7 +61,7 @@ test_metrics = {
 }
 ```
 
-Analyze the notebook state locally and plot the learning curves:
+Analyze the notebook state and plot learning curves:
 
 ```python
 from trainlens import analyze, plot_training_curves, render_report
@@ -63,21 +71,14 @@ plot_training_curves(globals())
 print(render_report(analysis))
 ```
 
-From this small example, TrainLens has enough evidence to reason about more than a final
-score. It can preserve the final test metrics, identify a widening train/validation gap,
-notice late validation degradation, compare validation behavior with held-out test behavior,
-and keep the test split out of tuning decisions. If there is no test result yet, it can instead
-surface that final held-out evaluation is still missing.
-
-On real fine-tuning notebooks, the same analysis can also inspect supported model and trainer
-objects for details such as trainable versus frozen parameters, PEFT adapters, LoRA rank,
-alpha and target modules, quantization, learning rates, and multimodal/VLM settings.
+TrainLens can preserve final test metrics, identify widening train/validation gaps, notice late
+validation degradation, inspect common fine-tuning configuration, and keep held-out test evidence
+out of tuning decisions.
 
 ## Explain the dataset behind the metrics
 
-Model results are easier to interpret when the dataset is part of the evidence. `explain_dataset()`
-creates a deterministic aggregate profile without requiring pandas, Hugging Face Datasets, Pillow,
-NumPy, PyTorch, or an external service:
+`explain_dataset()` creates a deterministic aggregate profile without requiring pandas, Hugging
+Face Datasets, Pillow, NumPy, PyTorch, or an external service:
 
 ```python
 from trainlens import explain_dataset
@@ -90,47 +91,87 @@ dataset_context = explain_dataset(
     },
     target="label",
 )
-
-dataset_context
 ```
 
-Besides tabular and text data, TrainLens understands image-centered datasets and multimodal
-image+text / image+tabular inputs. It can inspect PIL-like images, image-shaped arrays or tensors,
-Hugging Face-style image values, image paths, and multiple images per row through metadata only.
+TrainLens understands tabular, text, image, and image-centered multimodal datasets. Visual context
+is metadata-only: pixels, image bytes, private paths, and filenames are not rendered into the
+dataset explanation.
+
+## Agent Mode: use TrainLens inside AutoResearch skills
+
+Agent Mode separates **evidence** from **reasoning**:
+
+```text
+training state / portable run
+            │
+            ▼
+        TrainLens
+  deterministic analysis
+            │
+            ▼
+       AgentContext
+ metrics · signals · evidence IDs
+ training profile · dataset context
+ instructions · output schema
+            │
+            ▼
+ Claude / Codex / Cursor / other agent
+       agent-owned reasoning
+            │
+            ▼
+      structured plan
+            │
+            ▼
+        TrainLens
+   evidence-ID verification
+```
+
+The agent is already the model runtime. TrainLens does not call another model behind it.
 
 ```python
-vlm_context = explain_dataset(
-    {
-        "image": images,
-        "caption": captions,
-        "label": labels,
-    },
-    target="label",
-    name="train",
+from trainlens import build_agent_context, verify_agent_plan
+
+context = build_agent_context(
+    globals(),
+    dataset_explanation=dataset_context,
 )
 
-print(vlm_context.is_multimodal)
-print(vlm_context.modality_summaries[0].modalities)  # ('image', 'text')
+# Give this bounded context to the coding/research agent that is already running.
+print(context.to_markdown())
+
+# The external agent returns JSON matching context.output_schema.
+plan = verify_agent_plan(agent_response, context=context)
+print(plan.is_fully_supported)
+print(plan.unsupported_evidence_ids)
 ```
 
-For image features, TrainLens can summarize image counts, available width/height ranges, aspect
-ratios, channel counts, modes, formats, images per row, variable dimensions, and material
-resolution differences across splits. It never renders pixels, image bytes, private paths, or
-filenames into the explanation.
+`verify_agent_plan()` verifies that recommendations cite real deterministic TrainLens evidence.
+It does not claim that a recommendation is scientifically correct; the agent and human reviewer
+still own experimental judgment.
 
-The same profile still includes row counts, missingness, cardinality, target distributions,
-numeric/text feature statistics, schema differences, and cross-split observations. All of this
-is descriptive evidence: TrainLens can flag a resolution or class-distribution difference, but it
-does **not** claim that the dataset property caused the observed model behavior.
+### Agent Mode from the terminal
 
-You can use the profile on its own or explicitly attach it to an LLM explanation. TrainLens
-never silently adds the raw dataset or underlying images to an outbound request.
+Skills and coding agents often work from files rather than live notebook memory. TrainLens can
+build context from a portable `TrainingRun` JSON:
 
-## Turn the diagnosis into an experiment decision
+```bash
+trainlens agent-context candidate.json --format json > agent-context.json
+```
 
-A useful training analysis should answer **what should I try next?**, not just describe a
-curve. TrainLens can preserve runs, select checkpoints from validation evidence, compare
-experiments, and build a small local experiment history.
+The agent reads `agent-context.json`, reasons using its own model, and writes `plan.json`. Then:
+
+```bash
+trainlens verify-agent-plan plan.json --context agent-context.json
+```
+
+This workflow requires no `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or TrainLens-specific LLM
+configuration. See [Agent Mode](docs/en/agent-mode.md) and the
+[example Agent Skill](examples/agent-skill/SKILL.md).
+
+## Turn diagnosis into controlled experiments
+
+TrainLens can preserve runs, select checkpoints from validation evidence, compare experiments,
+and build a small local experiment history:
 
 ```python
 from trainlens import Project, select_checkpoint
@@ -152,36 +193,17 @@ print(selection.best_value)
 print(selection.suggested_patience)
 ```
 
-As runs accumulate, TrainLens can rank them with objectives and constraints, mark
-Pareto-efficient configurations, aggregate repeated seeds, compare observed improvements with
-between-run variability, and estimate parameter effects only from controlled pairs that differ
-in one recorded parameter.
+As runs accumulate, TrainLens can rank them with objectives and constraints, mark Pareto-efficient
+configurations, aggregate repeated seeds, compare observed improvements with between-run
+variability, and estimate parameter effects from controlled pairs.
 
-That means a notebook can evolve from:
+## Optional: let TrainLens call an LLM directly
 
-```text
-"run finished; val_loss=0.55"
-```
-
-into evidence such as:
-
-```text
-- validation loss improved until the late stage, then degraded
-- training kept improving while validation stopped improving
-- held-out test performance is weaker than the best validation behavior
-- the target is imbalanced and validation has a different observed class mix
-- checkpoint selection should use validation evidence, not the test split
-- the next run should change one controlled parameter and define a measurable success criterion
-```
-
-## Optional: ask an LLM without hiding the evidence
-
-The LLM layer is downstream of TrainLens' deterministic analysis. You choose the provider, and
-you can inspect the exact sanitized evidence before any request is sent.
+Agent Mode does not replace the existing provider integration. If you want TrainLens itself to
+request a generated explanation, you can still inject an OpenAI-compatible provider:
 
 ```python
 from getpass import getpass
-
 from trainlens import OpenAICompatibleProvider
 
 llm = OpenAICompatibleProvider.from_values(
@@ -191,33 +213,7 @@ llm = OpenAICompatibleProvider.from_values(
 )
 ```
 
-Define what kind of analysis you want in normal prose:
-
-```python
-from trainlens import improvement_plan_prompt, prompt_text
-
-prompt = improvement_plan_prompt(
-    objective=prompt_text("""
-        Explain what happened during this fine-tuning run and propose the three
-        highest-value next experiments.
-
-        Use the test split only as final generalization evidence; do not tune to it.
-        Use dataset properties as context, not as proof of causation.
-        Prefer controlled, low-cost changes first.
-    """),
-    model_family="LLM fine-tuning with PEFT/LoRA",
-    focus_areas=(
-        "train/validation generalization gap",
-        "validation-to-test degradation",
-        "dataset imbalance or split differences",
-        "checkpoint selection and early stopping",
-        "learning-rate schedule",
-        "regularization and adapter capacity",
-    ),
-)
-```
-
-Preview the request first. This step performs no network call:
+Preview the exact sanitized request before sending it:
 
 ```python
 from trainlens import preview_llm_request
@@ -226,90 +222,54 @@ preview = preview_llm_request(
     globals(),
     mode="improvement_ideas",
     provider=llm,
-    prompt_options=prompt,
     dataset_explanation=dataset_context,
 )
 
 print(preview.system_prompt)
-print(preview.user_prompt)  # sanitized notebook + aggregate dataset evidence
+print(preview.user_prompt)
 ```
 
-Then generate an evidence-backed explanation and experiment plan using the same context:
-
-```python
-from trainlens import build_improvement_ideas
-
-report = build_improvement_ideas(
-    globals(),
-    provider=llm,
-    prompt_options=prompt,
-    dataset_explanation=dataset_context,
-)
-
-report
-```
-
-For machine-checkable workflows, TrainLens also supports structured plans whose model and
-dataset evidence IDs are verified against deterministic TrainLens evidence rather than accepting
-invented citations:
-
-```python
-from trainlens import build_verified_improvement_plan
-
-plan = build_verified_improvement_plan(
-    globals(),
-    provider=llm,
-    dataset_explanation=dataset_context,
-)
-print(plan.recommendations)
-print(plan.unsupported_evidence_ids)
-```
-
-Open the full notebook to run this end to end:
-[**TrainLens quickstart in Google Colab**](https://colab.research.google.com/github/edujbarrios/trainlens/blob/main/examples/quickstart.ipynb).
+For machine-checkable provider workflows, `build_verified_improvement_plan()` continues to use
+the same stable deterministic evidence IDs as Agent Mode.
 
 ## What TrainLens can do
 
 - **Analyze train / validation / test evidence** without collapsing their roles.
-- **Explain tabular, image, and multimodal datasets locally** with aggregate split, schema,
-  missingness, target-balance, image dimensions/modalities, and cross-split evidence without
-  exposing raw rows, pixels, image bytes, or private file paths.
-- **Inspect fine-tuning configuration** across common Hugging Face, PEFT/LoRA, Keras,
-  Lightning, PyTorch-style, and VLM workflows through dependency-light introspection.
+- **Prepare provider-free AgentContext** for AutoResearch-style skills and coding agents.
+- **Verify structured agent plans** against stable deterministic evidence IDs.
+- **Explain tabular, image, and multimodal datasets locally** with aggregate privacy-preserving
+  context.
+- **Inspect fine-tuning configuration** across common Hugging Face, PEFT/LoRA, Keras, Lightning,
+  PyTorch-style, and VLM workflows through dependency-light introspection.
 - **Plot and monitor training** with learning curves, alerts, and framework callbacks.
-- **Select checkpoints deterministically** from training/validation trajectories while
-  rejecting held-out test metrics for tuning.
-- **Compare experiments** pairwise or through multi-run leaderboards with objectives,
-  constraints, and Pareto fronts.
-- **Reason about repeated runs** with mean/spread summaries and conservative signal-to-noise
-  comparisons rather than overclaiming statistical significance.
+- **Select checkpoints deterministically** from training/validation trajectories.
+- **Compare experiments** pairwise or through multi-run leaderboards, objectives, constraints,
+  and Pareto fronts.
+- **Reason about repeated runs** with mean/spread summaries and conservative comparisons.
 - **Estimate parameter effects** from controlled one-parameter run pairs.
-- **Capture reproducibility evidence** such as Git revision, seed, environment, package
-  versions, and dataset fingerprints.
-- **Track resource and cost metrics** such as duration, throughput, memory, and estimated
-  cost so they can participate in experiment objectives.
+- **Capture reproducibility evidence** such as Git revision, seed, environment, package versions,
+  and dataset fingerprints.
+- **Track resource and cost metrics** such as duration, throughput, memory, and estimated cost.
 - **Store runs locally** with `Project`, or save/load portable run JSON directly.
 - **Gate regressions in CI** with the `trainlens` command-line interface.
 - **Extend analysis** with process-local analyzer plugins.
-- **Use optional LLMs** with request previewing, privacy controls, reusable prompt recipes,
-  aggregate dataset context, and evidence-verified structured plans.
+- **Use optional LLMs** with request previewing, privacy controls, prompt recipes, and
+  evidence-verified structured plans.
 - **Export reports** to Markdown, JSON, HTML, and optional PDF.
 
-## Compare or gate runs from the CLI
-
-Portable runs are useful outside notebooks too:
+## CLI
 
 ```bash
 trainlens compare baseline.json candidate.json
 trainlens check candidate.json --against baseline.json --require 'f1>=0.85'
+trainlens agent-context candidate.json --format json
+trainlens verify-agent-plan plan.json --context agent-context.json
 ```
-
-`trainlens check` exits non-zero on material regressions, failed metric gates, or missing
-required metrics, so TrainLens evidence can participate directly in CI.
 
 ## Documentation
 
 - [Getting started](docs/en/getting-started.md)
+- [Agent Mode and AutoResearch skills](docs/en/agent-mode.md)
 - [Dataset-aware analysis](docs/en/dataset-context.md)
 - [Experiment workflows](docs/en/experiment-workflows.md)
 - [Notebook workflows](docs/en/notebooks.md)
@@ -323,15 +283,17 @@ required metrics, so TrainLens evidence can participate directly in CI.
 
 ## Privacy and scope
 
-Local model and dataset analysis does not make an LLM request. Dataset explanations are aggregate
-profiles and do not contain raw feature rows, pixels, image bytes, or private image paths. When
-LLM support is enabled, TrainLens bounds and redacts notebook evidence, and dataset context is
-only included when a `DatasetExplanation` is explicitly supplied. Generated explanations should
-still be verified against the underlying data.
+Local model and dataset analysis does not make an LLM request. Agent Mode also makes no LLM
+request: it only prepares bounded evidence for an already-running external agent and verifies the
+returned evidence references. Dataset explanations are aggregate profiles and do not contain raw
+feature rows, pixels, image bytes, or private image paths.
 
-TrainLens is an experiment-understanding layer, not a full MLOps platform, tracker, profiler,
-or causal diagnosis system. It is designed for research and small-to-medium workflows where
-the important training context already lives in Python and Jupyter.
+When direct LLM support is enabled, TrainLens bounds and redacts notebook evidence, and dataset
+context is only included when a `DatasetExplanation` is explicitly supplied.
+
+TrainLens is an experiment-understanding and evidence layer, not a full MLOps platform, tracker,
+profiler, AutoML engine, or causal diagnosis system. Generated or agent-proposed conclusions
+should always be checked against the underlying data and experimental design.
 
 ## Contributing and license
 

@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from trainlens.agent import (
+    AgentContext,
+    build_agent_context,
+    build_agent_context_from_run,
+    verify_agent_plan,
+)
 from trainlens.analysis_config import AnalysisConfig
 from trainlens.analyzers.base import Analyzer
 from trainlens.analyzers.registry import AnalyzerRegistry, register_analyzer, unregister_analyzer
@@ -104,9 +110,10 @@ from trainlens.runs import load_run, save_run, training_run_from_analysis
 from trainlens.text import load_prompt, prompt_text
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
 
-__version__ = "0.15.1"
+__version__ = "0.16.0"
 
 __all__ = [
+    "AgentContext",
     "AlertDetector",
     "AnalysisConfig",
     "AnalysisResult",
@@ -166,6 +173,8 @@ __all__ = [
     "aggregate_runs",
     "analyze",
     "attach_resource_profile",
+    "build_agent_context",
+    "build_agent_context_from_run",
     "build_improvement_ideas",
     "build_llm_report",
     "build_paper_report",
@@ -214,5 +223,6 @@ __all__ = [
     "unload_ipython_extension",
     "unregister_analyzer",
     "unregister_metric",
+    "verify_agent_plan",
     "write_report",
 ]
