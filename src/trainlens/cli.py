@@ -128,11 +128,12 @@ def _passes(value: float, operator: str, threshold: float) -> bool:
 
 
 def _final_metrics(run: TrainingRun) -> dict[str, float]:
-    return {
-        series.name: series.last
-        for series in run.metrics
-        if series.last is not None
-    }
+    output: dict[str, float] = {}
+    for series in run.metrics:
+        value = series.last
+        if value is not None:
+            output[series.name] = value
+    return output
 
 
 def _format_value(value: float | None) -> str:
