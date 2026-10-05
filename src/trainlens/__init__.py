@@ -19,6 +19,7 @@ from trainlens.experiments import (
 )
 from trainlens.export import render_report, write_report
 from trainlens.framework_callbacks import keras_callback, lightning_callback, transformers_callback
+from trainlens.leaderboard import LeaderboardRow, RunLeaderboard, leaderboard
 from trainlens.llm.config import LLMConfig
 from trainlens.llm.context import ContextPolicy
 from trainlens.llm.openai_compatible import LLMRequestPreview, OpenAICompatibleProvider
@@ -80,6 +81,7 @@ __all__ = [
     "LLMConfig",
     "LLMProvider",
     "LLMRequestPreview",
+    "LeaderboardRow",
     "LiveReport",
     "MetricConstraint",
     "MetricRegistry",
@@ -93,6 +95,7 @@ __all__ = [
     "ProjectEntry",
     "PromptOptions",
     "Recommendation",
+    "RunLeaderboard",
     "Signal",
     "SuccessCriterion",
     "TrainLensCallback",
@@ -117,6 +120,7 @@ __all__ = [
     "improvement_plan_prompt",
     "inspect_training_profile",
     "keras_callback",
+    "leaderboard",
     "lightning_callback",
     "load_ipython_extension",
     "load_prompt",
