@@ -110,7 +110,9 @@ def _series_from_source(source: CheckpointSource, metric: str) -> MetricSeries:
 def _reject_test_selection(series: MetricSeries, metric: str) -> None:
     normalized = metric.lower().replace("-", "_").replace("/", "_")
     if series.split == "test" or normalized == "test" or normalized.startswith("test_"):
-        raise ValueError("checkpoint selection must use training/validation evidence, not test metrics")
+        raise ValueError(
+            "checkpoint selection must use training/validation evidence, not test metrics"
+        )
 
 
 def _resolve_direction(
