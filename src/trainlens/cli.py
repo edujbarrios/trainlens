@@ -1,12 +1,14 @@
-"""Small command-line interface for comparing and gating portable runs."""
+"""Small command-line interface for portable runs, CI gates, and agent workflows."""
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 from collections.abc import Sequence
 from pathlib import Path
 
+from trainlens.agent import AgentContext, build_agent_context_from_run, verify_agent_plan
 from trainlens.comparison import compare_runs, render_run_comparison
 from trainlens.models.run import TrainingRun
 from trainlens.runs import load_run
@@ -26,6 +28,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _compare(args.baseline, args.candidate)
     if args.command == "check":
         return _check(args.candidate, args.against, tuple(args.requirement))
+    if args.command == "agent-context":
+        return _agent_context(args.run, args.format, args.output, args.objective)
+    if args.command == "verify-agent-plan":
+        return _verify_agent_plan(args.plan, args.context)
     parser.error("a command is required")
 
 
@@ -46,6 +52,32 @@ def _parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         help="metric gate such as 'f1>=0.85' or 'latency_ms<=10'",
+    )
+
+    agent_context = subparsers.add_parser(
+        "agent-context",
+        help="build provider-free evidence context for an external coding or research agent",
+    )
+    agent_context.add_argument("run", type=Path, help="portable TrainingRun JSON file")
+    agent_context.add_argument(
+        "--format",
+        choices=("json", "markdown"),
+        default="json",
+        help="output format; JSON is recommended for skills and agents",
+    )
+    agent_context.add_argument("--output", type=Path, default=None)
+    agent_context.add_argument("--objective", default="propose_next_experiment")
+
+    verify_plan = subparsers.add_parser(
+        "verify-agent-plan",
+        help="verify an external agent plan against TrainLens evidence IDs",
+    )
+    verify_plan.add_argument("plan", type=Path, help="agent response JSON")
+    verify_plan.add_argument(
+        "--context",
+        type=Path,
+        required=True,
+        help="JSON produced by 'trainlens agent-context'",
     )
     return parser
 
@@ -103,6 +135,50 @@ def _check(
         return 1
     print("PASS: all TrainLens checks satisfied")
     return 0
+
+
+def _agent_context(
+    run_path: Path,
+    output_format: str,
+    output_path: Path | None,
+    objective: str,
+) -> int:
+    context = build_agent_context_from_run(load_run(run_path), objective=objective)
+    rendered = context.to_json() if output_format == "json" else context.to_markdown()
+    _write_or_print(rendered, output_path)
+    return 0
+
+
+def _verify_agent_plan(plan_path: Path, context_path: Path) -> int:
+    context_payload = json.loads(context_path.read_text(encoding="utf-8"))
+    if not isinstance(context_payload, dict):
+        raise ValueError("agent context JSON root must be an object")
+    context = AgentContext.from_dict(context_payload)
+    response = plan_path.read_text(encoding="utf-8")
+    plan = verify_agent_plan(response, context=context)
+    payload = {
+        "fully_supported": plan.is_fully_supported,
+        "unsupported_evidence_ids": list(plan.unsupported_evidence_ids),
+        "recommendations": [
+            {
+                "action": recommendation.action,
+                "evidence_ids": list(recommendation.evidence_ids),
+                "supported": recommendation.is_supported,
+            }
+            for recommendation in plan.recommendations
+        ],
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0 if plan.is_fully_supported else 1
+
+
+def _write_or_print(content: str, output_path: Path | None) -> None:
+    rendered = content.rstrip() + "\n"
+    if output_path is None:
+        print(rendered, end="")
+        return
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(rendered, encoding="utf-8")
 
 
 def _parse_gate(expression: str) -> tuple[str, str, float]:
