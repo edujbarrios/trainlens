@@ -27,7 +27,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "check":
         return _check(args.candidate, args.against, tuple(args.requirement))
     parser.error("a command is required")
-    return 2
 
 
 def _parser() -> argparse.ArgumentParser:
