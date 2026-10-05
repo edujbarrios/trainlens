@@ -472,7 +472,8 @@ def _feature_kind(values: tuple[object, ...]) -> DatasetFeatureKind:
         return "numeric"
     if all(isinstance(value, str) for value in values):
         unique = _unique_count(values) or 0
-        average_length = fmean(len(value) for value in values)
+        text_values = tuple(value for value in values if isinstance(value, str))
+        average_length = fmean(len(value) for value in text_values)
         if average_length >= 32 or unique / len(values) > 0.50:
             return "text"
         return "categorical"
