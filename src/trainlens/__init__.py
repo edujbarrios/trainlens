@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from trainlens.analysis_config import AnalysisConfig
 from trainlens.callbacks import TrainLensCallback
+from trainlens.checkpoints import CheckpointSelection, select_checkpoint
 from trainlens.comparison import compare_runs, render_run_comparison
 from trainlens.experiments import (
     ExperimentRun,
@@ -84,6 +85,7 @@ __all__ = [
     "AlertDetector",
     "AnalysisConfig",
     "AnalysisResult",
+    "CheckpointSelection",
     "ContextPolicy",
     "EvidenceRef",
     "ExperimentRun",
@@ -152,6 +154,7 @@ __all__ = [
     "render_run_comparison",
     "save_run",
     "scientific_report_prompt",
+    "select_checkpoint",
     "show_trainlens_prompts",
     "suggest_multiobjective_experiment",
     "suggest_next_experiment",
