@@ -2,6 +2,20 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.14.3 - 2026-10-05
+
+- add a local-first `Project` store for portable training runs, names, and tags under `.trainlens`
+- add multi-run leaderboards with objectives, hard constraints, Pareto-front marking, and notebook-friendly Markdown rendering
+- add repeated-run aggregation and conservative group comparisons so seed-to-seed variability is visible before treating small metric changes as meaningful
+- add `parameter_effects()` to summarize observed changes only from controlled run pairs that differ in exactly one recorded parameter
+- add deterministic validation-based checkpoint selection with best-step evidence, late degradation, suggested patience, and explicit rejection of held-out test metrics for tuning
+- add reproducibility provenance for Git state, seed, Python/platform, selected package versions, and deterministic dataset fingerprints
+- add portable duration, throughput, memory, GPU-memory, and estimated-cost metrics that can participate in comparisons and Pareto objectives
+- add the `trainlens compare` and `trainlens check` CLI commands for portable run comparisons, material-regression failures, and repeatable metric gates in CI
+- expose the analyzer registry as a public plugin API with per-analysis selection through `AnalysisConfig`
+- add structured optional LLM improvement plans with stable deterministic evidence IDs and explicit reporting of unsupported citations
+- substantially shorten and reposition the README around experiment evidence and next-run decisions, with the new tagline “TrainLens turns training runs into evidence: what changed, what went wrong, and what experiment to run next.”
+
 ## 0.14.2 - 2026-10-04
 
 - add public `load_prompt()` so reusable prompt instructions can live in UTF-8 `.md` files instead of being embedded in Python or notebook cells
@@ -94,7 +108,7 @@ All notable changes to TrainLens will be documented here.
 - preserve metric history integrity with aligned step metadata, finite-value filtering, fractional epochs, and bounded one-dimensional array-like histories
 - centralize metric optimization semantics and natural bounds across run comparison and next-experiment recommendations
 - add persistent alert lifecycle handling so stagnation and overfitting alerts re-arm only after recovery
-- add optional framework-native callback adapters for Keras 3, Hugging Face Transformers, and Lightning while retaining the dependency-free callback core
+- add optional framework-native callback adapters for Keras 3, Hugging Face Transformers, and PyTorch Lightning while retaining the dependency-free callback core
 - make notebook capture local-first, including offline `--no-llm` runs, provider-failure fallback, stable run names, explicit run selection, and full `AnalysisResult` metadata
 - add exact outbound-context preview via `preview_notebook_context()` and `%explain_training --dry-run`, plus aligned metric steps and fractional epochs in bounded LLM context
 - render notebook reports natively as Markdown, deduplicate model candidates, preserve extension state across reloads, and add real IPython integration tests
