@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from trainlens import explain_dataset
+from trainlens import MultimodalDatasetExplanation, explain_dataset
 
 
 class ImageMetadata:
@@ -37,3 +37,5 @@ dataset_context = explain_dataset(
 )
 
 print(dataset_context.markdown)
+if isinstance(dataset_context, MultimodalDatasetExplanation):
+    print(dataset_context.modality_summaries)
