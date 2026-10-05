@@ -2,6 +2,14 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.16.1 - 2026-10-05
+
+- simplify the README around three clear workflows: local deterministic analysis, Agent Mode, and direct LLM reports
+- move the end-to-end Colab quickstart notebook to the top of the README as the recommended starting point
+- clarify that Agent Mode can use any LLM/provider already available to the surrounding agent, with Claude, Codex, Cursor, or another host normally owning that model connection
+- make explicit that Agent Mode is optional and TrainLens can still call an OpenAI-compatible provider directly for generated reports, diagnoses, and improvement ideas
+- refresh package, citation, badge, and release metadata for 0.16.1
+
 ## 0.16.0 - 2026-10-05
 
 - add provider-free Agent Mode so Claude, Codex, Cursor, and other already-running agents can use TrainLens as a deterministic evidence layer without TrainLens-side API keys or model calls
