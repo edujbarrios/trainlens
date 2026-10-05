@@ -17,6 +17,7 @@ from trainlens.llm.context import (
     LLMNotebookContext,
     build_llm_notebook_context_from_snapshot,
 )
+from trainlens.llm.dataset_context import append_dataset_explanation
 from trainlens.llm.enhancer import explain_with_llm
 from trainlens.llm.openai_compatible import LLMRequestPreview, OpenAICompatibleProvider
 from trainlens.llm.prompts import PromptOptions, ReportMode
@@ -216,38 +217,11 @@ def _prepare_report_context(
         deterministic_result=result,
         context_policy=context_policy,
     )
-    return result, _with_dataset_explanation(
+    return result, append_dataset_explanation(
         context,
         dataset_explanation=dataset_explanation,
         context_policy=context_policy,
     )
-
-
-def _with_dataset_explanation(
-    context: LLMNotebookContext,
-    *,
-    dataset_explanation: DatasetExplanation | None,
-    context_policy: ContextPolicy | None,
-) -> LLMNotebookContext:
-    if dataset_explanation is None:
-        return context
-    policy = context_policy or ContextPolicy()
-    dataset_block = (
-        "## Dataset Context\n\n"
-        "The following section contains aggregate deterministic dataset evidence only. "
-        "Treat it as descriptive context, not causal proof.\n\n"
-        + dataset_explanation.markdown
-    )
-    combined = context.markdown.rstrip() + "\n\n" + dataset_block.strip() + "\n"
-    if len(combined) <= policy.max_chars:
-        return LLMNotebookContext(markdown=combined, metrics=context.metrics)
-    marker = (
-        "\n\n> TrainLens combined notebook/dataset context truncated by ContextPolicy "
-        f"at {policy.max_chars} characters.\n"
-    )
-    available = max(0, policy.max_chars - len(marker))
-    bounded = combined[:available].rstrip() + marker
-    return LLMNotebookContext(markdown=bounded, metrics=context.metrics)
 
 
 def _current_user_namespace() -> Mapping[str, Any]:
