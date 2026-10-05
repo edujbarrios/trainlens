@@ -1,54 +1,39 @@
 # TrainLens
 
-**Understand a fine-tuning run, see where it is failing, and decide what to try next — from the notebook.**
+**TrainLens turns training runs into evidence: what changed, what went wrong, and what experiment to run next.**
 
-TrainLens reads training, validation, and held-out test results; understands common
-fine-tuning evidence from Hugging Face, PEFT/LoRA, Keras, Lightning, and PyTorch-style
-workflows; plots learning curves; compares runs; and can optionally ask an
-OpenAI-compatible LLM to turn the local evidence into an improvement plan.
+TrainLens is a lightweight, notebook-first toolkit for understanding ML training runs and
+small experiment histories. It keeps train, validation, and held-out test evidence distinct,
+compares runs with metric-aware semantics, and helps turn observations into controlled next
+experiments. Core analysis is local and deterministic; LLM support is optional.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/0.14.2/"><img alt="PyPI 0.14.2" src="https://img.shields.io/badge/pypi-0.14.2-blue?logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/0.14.3/"><img alt="PyPI 0.14.3" src="https://img.shields.io/badge/pypi-0.14.3-blue?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
-
-## Try the full notebook workflow
 
 <a href="https://colab.research.google.com/github/edujbarrios/trainlens/blob/main/examples/quickstart.ipynb">
   <img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg">
 </a>
 
-Install TrainLens with plotting support:
+## Quickstart
 
 ```python
 %pip install -q "trainlens[plots]"
 ```
 
-Imagine these are the results from a small LoRA/PEFT fine-tuning run. TrainLens accepts
-normal notebook variables, so you do not need an experiment tracker just to inspect them:
+TrainLens works with normal notebook state; no experiment-tracking server is required.
 
 ```python
 history = {
-    "train_loss":     [1.31, 0.93, 0.66, 0.47, 0.34, 0.25],
-    "val_loss":       [1.28, 0.91, 0.70, 0.58, 0.55, 0.57],
-    "train_accuracy": [0.55, 0.68, 0.79, 0.87, 0.92, 0.95],
-    "val_accuracy":   [0.54, 0.66, 0.75, 0.80, 0.82, 0.81],
+    "train_loss": [1.31, 0.93, 0.66, 0.47, 0.34, 0.25],
+    "val_loss":   [1.28, 0.91, 0.70, 0.58, 0.55, 0.57],
 }
 
-test_metrics = {
-    "loss": 0.64,
-    "accuracy": 0.75,
-    "f1": 0.74,
-    "precision": 0.77,
-    "recall": 0.72,
-}
-```
+test_metrics = {"loss": 0.64, "accuracy": 0.75, "f1": 0.74}
 
-Analyze the run and plot the curves:
-
-```python
 from trainlens import analyze, plot_training_curves, render_report
 
 analysis = analyze(globals())
@@ -56,216 +41,108 @@ plot_training_curves(globals())
 print(render_report(analysis))
 ```
 
-TrainLens keeps the split semantics instead of flattening everything into one metric bag:
-`train_*`, `validation_*`, and `test_*` remain distinct. It can flag a train/validation
-generalization gap, notice when the held-out test split is materially worse than validation,
-and keep F1/precision/recall/perplexity-style final metrics in the structured report.
+TrainLens preserves split semantics, detects evidence such as late validation degradation or
+a validation-to-test gap, and understands common fine-tuning context including PEFT/LoRA,
+trainable parameters, quantization, frozen components, and multimodal/VLM settings.
 
-When a real fine-tuning model/trainer is present, TrainLens can also inspect evidence such as
-trainable vs. frozen parameters, PEFT adapters, LoRA rank/alpha/targets, quantization,
-base/projector/vision learning rates, and common VLM fine-tuning strategies.
+## Build an experiment history
 
-## Ask an LLM what happened and what to try next
-
-The LLM is optional. TrainLens does the deterministic analysis locally first. The model gets
-a bounded, redacted summary of that evidence and is asked to explain and prioritize it.
-
-### 1. Load your model without putting the API key in the notebook
+Portable `TrainingRun` objects can live in a small local project instead of disappearing with
+the notebook session.
 
 ```python
-from getpass import getpass
-from trainlens import OpenAICompatibleProvider
+from trainlens import Project, select_checkpoint
 
-llm = OpenAICompatibleProvider.from_values(
-    base_url="https://your-provider.example/v1",
-    model="your-model",
-    api_key=getpass("LLM API key: "),
-)
-```
-
-For a local OpenAI-compatible server such as Ollama, LM Studio, vLLM, or llama.cpp, the same
-API works and an API key is usually unnecessary:
-
-```python
-llm = OpenAICompatibleProvider.from_values(
-    base_url="http://localhost:11434/v1",
-    model="your-local-model",
-)
-```
-
-### 2. Tell the LLM exactly what kind of training analysis you want
-
-```python
-from trainlens import improvement_plan_prompt, prompt_text
-
-prompt = improvement_plan_prompt(
-    objective=prompt_text("""
-        Explain what happened during this fine-tuning run and propose the three
-        highest-value next experiments.
-
-        Use the test split only as final generalization evidence; do not tune to it.
-        Prefer controlled, low-cost changes first.
-    """),
-    model_family="LLM fine-tuning with PEFT/LoRA",
-    focus_areas=(
-        "train/validation generalization gap",
-        "validation-to-test degradation",
-        "checkpoint selection and early stopping",
-        "learning-rate schedule",
-        "regularization and adapter capacity",
-    ),
-)
-```
-
-`prompt_text()` is a small convenience for long notebook instructions: write normal
-triple-quoted multiline text, keep it indented with the surrounding Python, and TrainLens
-removes the common indentation and outer blank space before the prompt is used. This avoids
-repeating quotes and implicit string concatenation on every line.
-
-For prompts that are longer, reused across notebooks, or easier to review separately, keep
-them in UTF-8 `.md` files and load them directly:
-
-```markdown
-# prompts/improvement_plan.md
-
-Explain what happened during this fine-tuning run and propose the three highest-value next experiments.
-
-Use the test split only as final generalization evidence; do not tune to it.
-
-Prefer:
-- controlled experiments
-- low-cost changes first
-- measurable hypotheses and success criteria
-```
-
-```python
-from trainlens import load_prompt
-
-prompt = improvement_plan_prompt(
-    objective=load_prompt("prompts/improvement_plan.md"),
-    model_family="LLM fine-tuning with PEFT/LoRA",
-)
-```
-
-`load_prompt()` preserves Markdown structure and relative indentation, strips only outer
-whitespace, and rejects non-`.md` paths so prompt files stay explicit and easy to version.
-The repository also includes `examples/prompts/improvement_plan.md` as a ready-to-copy example.
-
-The improvement recipe asks for the evidence behind every idea, the proposed change,
-expected effect, cost/risk, confidence, a measurable success criterion, and one concrete
-next run. Missing hyperparameters must be reported as missing rather than invented.
-
-### 3. Inspect exactly what will be sent
-
-```python
-from trainlens import preview_llm_request
-
-preview = preview_llm_request(
+project = Project(".trainlens")
+entry = project.capture(
     globals(),
-    mode="improvement_ideas",
-    provider=llm,
-    prompt_options=prompt,
+    name="lr-2e-5-seed-1",
+    parameters={"learning_rate": 2e-5, "seed": 1},
 )
 
-print(preview.system_prompt)  # trusted TrainLens instructions
-print(preview.user_prompt)    # sanitized notebook evidence
+selection = select_checkpoint(entry.run, metric="validation_loss")
+print(selection.best_step, selection.suggested_patience)
 ```
 
-`preview_llm_request()` makes no network request. It uses the same request-building path as
-the real provider call, excluding the API key.
+As runs accumulate, TrainLens can rank them, identify Pareto-efficient configurations,
+aggregate repeated seeds, compare observed improvements with between-run variability, and
+learn parameter effects only from controlled pairs that differ in one recorded parameter.
 
-### 4. Generate the explanation and next-step report
+## What TrainLens can do
 
-```python
-from trainlens import build_improvement_ideas
-
-report = build_improvement_ideas(
-    globals(),
-    provider=llm,
-    prompt_options=prompt,
-)
-
-report  # native Markdown display in Jupyter
-```
-
-A useful report should explain the observed train/validation/test behavior, distinguish
-observations from hypotheses, rank improvement ideas, and finish with controlled experiments
-and measurable success criteria.
-
-## Compare two runs too
-
-For a quick baseline-vs-experiment comparison, no LLM or plotting dependency is required:
-
-```python
-from trainlens import compare_runs
-
-comparison = compare_runs(
-    {"loss": 0.52, "accuracy": 0.84},
-    {"loss": 0.41, "accuracy": 0.89},
-    baseline_name="baseline",
-    experiment_name="new run",
-)
-
-comparison  # renders as Markdown in Jupyter
-```
-
-Keep the structured result or export it elsewhere:
-
-```python
-from trainlens import render_report
-
-comparison.improvements
-comparison.regressions
-html = render_report(comparison, format="html")
-json_text = render_report(comparison, format="json")
-```
-
-TrainLens also understands richer `TrainingRun` objects with metric trajectories and
-configuration changes.
-
-## What else can TrainLens do?
-
-- **Analyze train / validation / test results** without collapsing their roles.
-- **Inspect fine-tuning configuration** including PEFT/LoRA, trainable parameters,
-  quantization, frozen components, and common multimodal settings.
-- **Plot learning curves** with `plot_training_curves()` via the optional `plots` extra.
-- **Compare runs** with metric-aware improvement/regression semantics.
-- **Monitor training** with built-in and extensible alert detectors.
-- **Plan controlled next experiments** with objectives, constraints, and Pareto-aware helpers.
-- **Author prompts inline or in Markdown files** with `prompt_text()` and `load_prompt()`.
-- **Save and load portable runs** for repeatable comparisons.
+- **Analyze train / validation / test evidence** without collapsing their roles.
+- **Inspect fine-tuning configuration** across common Hugging Face, PEFT/LoRA, Keras,
+  Lightning, PyTorch-style, and VLM workflows through dependency-light introspection.
+- **Plot and monitor training** with learning curves, alerts, and framework callbacks.
+- **Compare experiments** pairwise or through multi-run leaderboards with objectives,
+  constraints, and Pareto fronts.
+- **Reason about repeated runs** with mean/spread summaries and conservative signal-to-noise
+  comparisons rather than overclaiming statistical significance.
+- **Estimate parameter effects** from controlled one-parameter run pairs.
+- **Select checkpoints deterministically** from training/validation trajectories while
+  rejecting held-out test metrics for tuning.
+- **Capture reproducibility evidence** such as Git revision, seed, environment, package
+  versions, and dataset fingerprints.
+- **Track resource and cost metrics** such as duration, throughput, memory, and estimated
+  cost so they can participate in experiment objectives.
+- **Store runs locally** with `Project`, or save/load portable run JSON directly.
+- **Gate regressions in CI** with the `trainlens` command-line interface.
+- **Extend analysis** with process-local analyzer plugins.
+- **Use an optional LLM** for structured improvement plans whose evidence citations are
+  checked against deterministic TrainLens evidence IDs.
 - **Export reports** to Markdown, JSON, HTML, and optional PDF.
-- **Use an optional LLM** to explain deterministic findings and propose evidence-backed next
-  steps through any OpenAI-compatible endpoint.
 
-Local analysis is deterministic and does not make an LLM request.
+## Compare or gate runs from the CLI
 
-## Deeper API
+```bash
+trainlens compare baseline.json candidate.json
+trainlens check candidate.json --against baseline.json --require 'f1>=0.85'
+```
+
+`trainlens check` exits non-zero on material regressions, failed metric gates, or missing
+required metrics, so portable runs can be used directly in CI.
+
+## Optional LLM layer
+
+LLM support is deliberately downstream of local analysis. You can preview the exact sanitized
+request, use any OpenAI-compatible endpoint, or request a structured plan with verified
+evidence references:
+
+```python
+from trainlens import build_verified_improvement_plan
+
+plan = build_verified_improvement_plan(globals(), provider=llm)
+print(plan.recommendations)
+print(plan.unsupported_evidence_ids)
+```
+
+Provider setup, prompt recipes, `prompt_text()`, `load_prompt()`, privacy controls, and request
+previewing are documented in [LLM setup and privacy](docs/en/llm-and-privacy.md) and
+[verified LLM plans](docs/en/verified-llm-plans.md).
+
+## Documentation
 
 - [Getting started](docs/en/getting-started.md)
+- [Experiment workflows](docs/en/experiment-workflows.md)
 - [Notebook workflows](docs/en/notebooks.md)
 - [Python API](docs/en/python-api.md)
 - [Monitoring](docs/en/monitoring.md)
+- [Analyzer plugins](docs/en/analyzer-plugins.md)
 - [LLM setup and privacy](docs/en/llm-and-privacy.md)
 - [Exports and troubleshooting](docs/en/exports-and-troubleshooting.md)
 - [Documentación en español](docs/es/README.md)
 
-## Privacy
+## Privacy and scope
 
-LLM support is optional. When enabled, TrainLens minimizes and bounds notebook evidence,
-redacts secrets, and keeps notebook-derived evidence separate from trusted system
-instructions. Treat generated explanations as assistance and verify them against the
-underlying training evidence.
+Local analysis does not make an LLM request. When LLM support is enabled, TrainLens bounds
+and redacts notebook evidence and keeps notebook-derived content separate from trusted
+instructions. Generated explanations should still be verified against the underlying data.
 
-## Scope
-
-TrainLens is a lightweight notebook reporting and experiment-understanding layer, not a
-full MLOps platform. It is designed for research and small-to-medium workflows where the
-important training context already lives in Python and Jupyter.
+TrainLens is an experiment-understanding layer, not a full MLOps platform, tracker, profiler,
+or causal diagnosis system. It is designed for research and small-to-medium workflows where
+the important training context already lives in Python and Jupyter.
 
 ## Contributing and license
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute and [SECURITY.md](SECURITY.md) to
-report vulnerabilities.
-
-TrainLens is licensed under the [Apache License 2.0](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute and [SECURITY.md](SECURITY.md) to report
+vulnerabilities. TrainLens is licensed under the [Apache License 2.0](LICENSE).
