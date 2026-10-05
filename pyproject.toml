@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "trainlens"
-version = "0.15.1"
+version = "0.16.0"
 description = "Notebook-first tools for understanding datasets and machine-learning training runs."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
