@@ -14,7 +14,6 @@ from trainlens.dataset import (
     DatasetFeatureSummary,
     DatasetSplitSummary,
     DatasetTargetSummary,
-    explain_dataset,
 )
 from trainlens.experiments import (
     ExperimentRun,
@@ -67,6 +66,12 @@ from trainlens.monitoring import (
     TrainingObservation,
     TrainLensMonitor,
 )
+from trainlens.multimodal_dataset import (
+    DatasetImageSummary,
+    DatasetModalitySummary,
+    MultimodalDatasetExplanation,
+    explain_dataset,
+)
 from trainlens.notebook import (
     LiveReport,
     build_improvement_ideas,
@@ -112,6 +117,8 @@ __all__ = [
     "DatasetClassBalance",
     "DatasetExplanation",
     "DatasetFeatureSummary",
+    "DatasetImageSummary",
+    "DatasetModalitySummary",
     "DatasetSplitSummary",
     "DatasetTargetSummary",
     "EvidenceRef",
@@ -128,6 +135,7 @@ __all__ = [
     "MetricRegistry",
     "MetricSpec",
     "MonitorConfig",
+    "MultimodalDatasetExplanation",
     "NextExperimentRecommendation",
     "ObjectiveSpec",
     "OpenAICompatibleProvider",
