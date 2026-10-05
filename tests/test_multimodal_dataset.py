@@ -76,7 +76,10 @@ def test_explain_dataset_detects_image_text_multimodal_split() -> None:
     assert modalities.modalities == ("image", "text")
     assert modalities.is_multimodal
     assert explanation.is_multimodal
-    assert any("combines image data with text" in item for item in explanation.splits[0].observations)
+    assert any(
+        "combines image data with text" in item
+        for item in explanation.splits[0].observations
+    )
 
 
 def test_explain_dataset_supports_array_shaped_images_and_multiple_images_per_row() -> None:
