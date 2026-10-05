@@ -6,7 +6,7 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from IPython import get_ipython
 
@@ -311,7 +311,7 @@ def _current_user_namespace() -> Mapping[str, Any]:
     shell = get_ipython()
     if shell is None:
         return {}
-    return shell.user_ns
+    return cast(Mapping[str, Any], shell.user_ns)
 
 
 def _required_text(value: object, name: str) -> str:
