@@ -1,12 +1,13 @@
 # TrainLens documentation
 
-TrainLens inspects training evidence already available in Python or a Jupyter notebook and
-turns it into reviewable reports, comparisons, alerts, and controlled follow-up experiments.
-Most analysis is local and deterministic; LLM-generated output is optional.
+TrainLens inspects training and dataset evidence already available in Python or a Jupyter
+notebook and turns it into reviewable reports, comparisons, alerts, and controlled follow-up
+experiments. Most analysis is local and deterministic; LLM-generated output is optional.
 
 ## Start here
 
 - [Installation and quickstart](getting-started.md)
+- [Dataset-aware model analysis](dataset-context.md)
 - [Experiment history, repeated runs, checkpoints, provenance, and CI](experiment-workflows.md)
 - [Notebook workflow and framework adapters](notebooks.md)
 - [Python API: reports, comparisons, and experiments](python-api.md)
@@ -19,9 +20,10 @@ Most analysis is local and deterministic; LLM-generated output is optional.
 ## When TrainLens is useful
 
 TrainLens is a good fit when experiment state lives in notebook variables and you want a
-lightweight, framework-neutral record without deploying a tracking server. It can persist a
-small local run history, compare objectives and constraints, reason cautiously about repeated
-seeds, capture reproducibility evidence, and turn observations into controlled next runs.
+lightweight, framework-neutral record without deploying a tracking server. It can explain
+aggregate dataset context, persist a small local run history, compare objectives and constraints,
+reason cautiously about repeated seeds, capture reproducibility evidence, and turn observations
+into controlled next runs.
 
 It is not a replacement for a full experiment tracker, profiler, model evaluator, or causal
 diagnosis system. Its deterministic heuristics are intentionally small and explainable. Always
