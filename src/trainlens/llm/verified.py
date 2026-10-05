@@ -6,7 +6,7 @@ import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from IPython import get_ipython
 
@@ -251,4 +251,4 @@ def _current_user_namespace() -> Mapping[str, Any]:
     shell = get_ipython()
     if shell is None:
         raise RuntimeError("No active IPython shell found; pass a namespace explicitly.")
-    return shell.user_ns
+    return cast(Mapping[str, Any], shell.user_ns)
