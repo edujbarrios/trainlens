@@ -57,6 +57,7 @@ from trainlens.notebook import (
 )
 from trainlens.pipeline import analyze
 from trainlens.plotting import TrainingCurve, plot_training_curves, training_curves
+from trainlens.project import Project, ProjectEntry
 from trainlens.prompt_recipes import (
     controlled_experiment_prompt,
     improvement_plan_prompt,
@@ -88,6 +89,8 @@ __all__ = [
     "ObjectiveSpec",
     "OpenAICompatibleProvider",
     "ParameterChange",
+    "Project",
+    "ProjectEntry",
     "PromptOptions",
     "Recommendation",
     "Signal",
