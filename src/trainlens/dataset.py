@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from math import isnan
 from numbers import Real
 from statistics import fmean
-from typing import Any, Literal, TypeAlias
+from typing import Literal, TypeAlias
 
 DatasetFeatureKind: TypeAlias = Literal[
     "numeric",
@@ -177,9 +177,12 @@ def _summarize_split(
 ) -> DatasetSplitSummary:
     columns = _tabular_columns(dataset)
     if not columns:
-        return DatasetSplitSummary(name=name, row_count=0, features=(), observations=(
-            f"Split `{name}` is empty.",
-        ))
+        return DatasetSplitSummary(
+            name=name,
+            row_count=0,
+            features=(),
+            observations=(f"Split `{name}` is empty.",),
+        )
 
     lengths = {len(values) for _, values in columns}
     if len(lengths) != 1:
@@ -189,7 +192,11 @@ def _summarize_split(
     if target is not None and target not in column_map:
         raise ValueError(f"target column {target!r} was not found in dataset split {name!r}")
 
-    feature_items = [(column_name, values) for column_name, values in columns if column_name != target]
+    feature_items = [
+        (column_name, values)
+        for column_name, values in columns
+        if column_name != target
+    ]
     features = tuple(
         _summarize_feature(column_name, values)
         for column_name, values in feature_items[:max_features]
@@ -210,7 +217,11 @@ def _summarize_split(
 
     target_summary = None
     if target is not None:
-        target_summary = _summarize_target(target, column_map[target], max_categories=max_categories)
+        target_summary = _summarize_target(
+            target,
+            column_map[target],
+            max_categories=max_categories,
+        )
         observations.extend(_target_observations(target_summary))
 
     return DatasetSplitSummary(
@@ -269,9 +280,7 @@ def _summarize_target(
         )
 
     target_kind: DatasetTargetKind
-    if feature_kind == "numeric":
-        target_kind = "categorical"
-    elif feature_kind == "categorical":
+    if feature_kind in ("numeric", "categorical"):
         target_kind = "categorical"
     elif feature_kind == "boolean":
         target_kind = "boolean"
@@ -364,7 +373,10 @@ def _target_distribution_shift(
     labels = set(left_rates) | set(right_rates)
     if not labels:
         return None
-    label = max(labels, key=lambda item: abs(left_rates.get(item, 0.0) - right_rates.get(item, 0.0)))
+    label = max(
+        labels,
+        key=lambda item: abs(left_rates.get(item, 0.0) - right_rates.get(item, 0.0)),
+    )
     delta = abs(left_rates.get(label, 0.0) - right_rates.get(label, 0.0))
     if delta < 0.10:
         return None
