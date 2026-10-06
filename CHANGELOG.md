@@ -2,6 +2,17 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.17.0 - 2026-10-06
+
+- preserve full metric trajectories and step metadata when converting deterministic analysis into portable `TrainingRun` objects, so `Project.capture()` no longer collapses histories to final scalars
+- keep train, validation, test, and custom split metrics distinct across run comparison, leaderboards, repeated-run analysis, checkpoint selection, and Agent Mode; ambiguous generic selectors now fail instead of silently choosing a split
+- make portable run JSON stricter by rejecting boolean/non-finite metric values and emitting standards-compliant JSON without NaN/Infinity
+- prevent pseudo-replication in `parameter_effects()` by matching repeated runs one-to-one and by seed when seed metadata is available
+- require complete objective coverage before assigning ranks in multi-objective leaderboards and expose missing objectives explicitly
+- make `AgentContext` mappings deeply immutable while keeping serialization round-trippable
+- serialize `Project` writers with a cross-process lock file and atomic run-file replacement to avoid lost index updates during parallel experiment capture
+- replace positional summary/signal/dataset evidence IDs with semantic content-derived identifiers that remain stable when findings are reordered
+
 ## 0.16.1 - 2026-10-05
 
 - simplify the README around three clear workflows: local deterministic analysis, Agent Mode, and direct LLM reports
