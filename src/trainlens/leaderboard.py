@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from math import isfinite
 
 from trainlens.experiments import ExperimentRun, MetricConstraint, ObjectiveSpec, pareto_front
 from trainlens.metric_semantics import MetricDirection, metric_direction
