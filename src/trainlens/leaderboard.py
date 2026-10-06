@@ -9,6 +9,7 @@ from math import isfinite
 from trainlens.experiments import ExperimentRun, MetricConstraint, ObjectiveSpec, pareto_front
 from trainlens.metric_semantics import MetricDirection, metric_direction
 from trainlens.models.run import TrainingRun
+from trainlens.run_metrics import final_metric_values
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class LeaderboardRow:
     metrics: Mapping[str, float | None]
     pareto: bool
     satisfies_constraints: bool
+    missing_objectives: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -35,7 +37,7 @@ class RunLeaderboard:
         """Render the leaderboard as a compact Markdown table."""
 
         metrics = tuple(objective.metric for objective in self.objectives)
-        header = ["Rank", "Run", *metrics, "Pareto", "Eligible"]
+        header = ["Rank", "Run", *metrics, "Pareto", "Eligible", "Missing objectives"]
         lines = [
             "| " + " | ".join(header) + " |",
             "| " + " | ".join("---" for _ in header) + " |",
@@ -47,6 +49,7 @@ class RunLeaderboard:
                 *(_format_metric(row.metrics.get(metric)) for metric in metrics),
                 "yes" if row.pareto else "",
                 "yes" if row.satisfies_constraints else "no",
+                ", ".join(row.missing_objectives),
             ]
             lines.append("| " + " | ".join(values) + " |")
         return "\n".join(lines) + "\n"
@@ -74,15 +77,19 @@ def leaderboard(
         run.name for run in pareto_front(experiments, objective_tuple, constraints=constraint_tuple)
     }
     primary = objective_tuple[0].metric
-    prepared = [
-        (run, _final_metrics(run), _satisfies_constraints(_final_metrics(run), constraint_tuple))
-        for run in runs
-    ]
+    prepared = []
+    for run in runs:
+        metrics = _final_metrics(run)
+        missing = tuple(
+            objective.metric for objective in objective_tuple if objective.metric not in metrics
+        )
+        eligible = not missing and _satisfies_constraints(metrics, constraint_tuple)
+        prepared.append((run, metrics, eligible, missing))
     prepared.sort(key=lambda item: _sort_key(item[1].get(primary), item[2], direction))
 
     rank = 0
     rows: list[LeaderboardRow] = []
-    for run, metrics, eligible in prepared:
+    for run, metrics, eligible, missing in prepared:
         current_rank: int | None = None
         if eligible and metrics.get(primary) is not None:
             rank += 1
@@ -98,18 +105,14 @@ def leaderboard(
                 },
                 pareto=run.run_id in frontier_ids,
                 satisfies_constraints=eligible,
+                missing_objectives=missing,
             )
         )
     return RunLeaderboard(tuple(rows), objective_tuple, constraint_tuple)
 
 
 def _final_metrics(run: TrainingRun) -> dict[str, float]:
-    output: dict[str, float] = {}
-    for series in run.metrics:
-        value = series.last
-        if value is not None and isfinite(value):
-            output[series.name] = value
-    return output
+    return final_metric_values(run)
 
 
 def _as_experiment_run(run: TrainingRun) -> ExperimentRun:
