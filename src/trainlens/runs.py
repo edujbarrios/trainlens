@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
-from math import isfinite
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
