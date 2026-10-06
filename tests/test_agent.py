@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
+
+import pytest
 
 from trainlens import (
     AgentContext,
@@ -77,3 +80,36 @@ def test_build_agent_context_from_portable_run_exposes_recorded_parameters() -> 
     assert "run:parameter:learning_rate" in evidence_ids
     assert "run:parameter:lora_r" in evidence_ids
     assert "run:note:1" in evidence_ids
+
+
+def test_agent_context_is_deeply_immutable() -> None:
+    context = build_agent_context(_history())
+
+    with pytest.raises(TypeError):
+        context.metrics["loss"] = 999.0  # type: ignore[index]
+    with pytest.raises(TypeError):
+        context.output_schema["type"] = "array"  # type: ignore[index]
+
+    properties = context.output_schema["properties"]
+    assert isinstance(properties, Mapping)
+    with pytest.raises(TypeError):
+        properties["extra"] = {}  # type: ignore[index]
+
+
+def test_agent_context_from_run_preserves_split_metrics_and_steps() -> None:
+    run = TrainingRun(
+        run_id="split-run",
+        metrics=(
+            MetricSeries("loss", (0.8, 0.5), split="train", steps=(10, 20)),
+            MetricSeries("loss", (0.9, 0.6), split="validation", steps=(10, 20)),
+            MetricSeries("loss", (1.1,), split="test", steps=(20,)),
+        ),
+    )
+
+    context = build_agent_context_from_run(run)
+
+    assert "train_loss" in context.markdown
+    assert "validation_loss" in context.markdown
+    assert "test_loss" in context.markdown
+    assert "(10, 0.8)" in context.markdown
+    assert "(20, 0.6)" in context.markdown
