@@ -76,7 +76,7 @@ def leaderboard(
         run.name for run in pareto_front(experiments, objective_tuple, constraints=constraint_tuple)
     }
     primary = objective_tuple[0].metric
-    prepared = []
+    prepared: list[tuple[TrainingRun, dict[str, float], bool, tuple[str, ...]]] = []
     for run in runs:
         metrics = _final_metrics(run)
         missing = tuple(
