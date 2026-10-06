@@ -63,7 +63,10 @@ def test_evidence_catalog_has_stable_metric_signal_and_reference_ids() -> None:
 
     assert "metric:validation_loss" in identifiers
     assert any(item.startswith("summary:validation-loss-stopped-improving") for item in identifiers)
-    assert any(item.startswith("signal:validation-drift-validation-loss-rose") for item in identifiers)
+    assert any(
+        item.startswith("signal:validation-drift-validation-loss-rose")
+        for item in identifiers
+    )
     assert any(":evidence:" in item for item in identifiers)
 
     reordered = AnalysisResult(
