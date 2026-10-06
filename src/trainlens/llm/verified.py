@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from collections.abc import Mapping
@@ -85,18 +86,19 @@ def evidence_catalog(
     """Build stable evidence IDs from deterministic model and dataset analysis."""
 
     items: list[LLMEvidenceItem] = []
-    for index, summary in enumerate(result.summary, start=1):
-        items.append(LLMEvidenceItem(f"summary:{index}", summary))
+    for summary in result.summary:
+        items.append(LLMEvidenceItem(f"summary:{_semantic_token(summary)}", summary))
     for name, value in sorted(result.metrics.items()):
         items.append(LLMEvidenceItem(f"metric:{name}", f"{name}={value:.8g}"))
-    for index, signal in enumerate(result.signals, start=1):
+    for signal in result.signals:
+        signal_id = f"signal:{_semantic_token(signal.title + '|' + signal.detail)}"
         items.append(
             LLMEvidenceItem(
-                f"signal:{index}",
+                signal_id,
                 f"{signal.title}: {signal.detail} (severity={signal.severity})",
             )
         )
-        for evidence_index, evidence in enumerate(signal.evidence_refs, start=1):
+        for evidence in signal.evidence_refs:
             parts = [f"source={evidence.source}", f"detail={evidence.detail}"]
             if evidence.metric is not None:
                 parts.append(f"metric={evidence.metric}")
@@ -106,7 +108,7 @@ def evidence_catalog(
                 parts.append(f"end_step={evidence.end_step}")
             items.append(
                 LLMEvidenceItem(
-                    f"signal:{index}:evidence:{evidence_index}",
+                    f"{signal_id}:evidence:{_semantic_token('|'.join(parts))}",
                     "; ".join(parts),
                 )
             )
@@ -215,39 +217,39 @@ def parse_verified_improvement_plan(
 
 def _dataset_evidence(explanation: DatasetExplanation) -> tuple[LLMEvidenceItem, ...]:
     items: list[LLMEvidenceItem] = []
-    for split_index, split in enumerate(explanation.splits, start=1):
-        prefix = f"dataset:split:{split_index}"
+    for split in explanation.splits:
+        prefix = f"dataset:split:{_semantic_token(split.name)}"
         items.append(
             LLMEvidenceItem(
                 f"{prefix}:rows",
                 f"split={split.name}; rows={split.row_count}",
             )
         )
-        for feature_index, feature in enumerate(split.features, start=1):
+        for feature in split.features:
             items.append(
                 LLMEvidenceItem(
-                    f"{prefix}:feature:{feature_index}",
+                    f"{prefix}:feature:{_semantic_token(feature.name)}",
                     _feature_evidence_detail(split.name, feature),
                 )
             )
         if split.target is not None:
             items.append(
                 LLMEvidenceItem(
-                    f"{prefix}:target",
+                    f"{prefix}:target:{_semantic_token(split.target.name)}",
                     _target_evidence_detail(split.name, split.target),
                 )
             )
-        for observation_index, observation in enumerate(split.observations, start=1):
+        for observation in split.observations:
             items.append(
                 LLMEvidenceItem(
-                    f"{prefix}:observation:{observation_index}",
+                    f"{prefix}:observation:{_semantic_token(observation)}",
                     observation,
                 )
             )
-    for observation_index, observation in enumerate(explanation.observations, start=1):
+    for observation in explanation.observations:
         items.append(
             LLMEvidenceItem(
-                f"dataset:observation:{observation_index}",
+                f"dataset:observation:{_semantic_token(observation)}",
                 observation,
             )
         )
@@ -291,6 +293,12 @@ def _target_evidence_detail(split_name: str, target: DatasetTargetSummary) -> st
         )
         parts.append(f"class_distribution={distribution}")
     return "; ".join(parts)
+
+
+def _semantic_token(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")[:48] or "item"
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
+    return f"{slug}-{digest}"
 
 
 def _render_evidence_catalog(evidence: tuple[LLMEvidenceItem, ...]) -> str:
