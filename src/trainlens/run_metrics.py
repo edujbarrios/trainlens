@@ -26,9 +26,10 @@ def qualified_metric_name(series: MetricSeries) -> str:
         return name
 
     normalized = _normalize_name(name)
+    prefixes = _SPLIT_PREFIXES.get(split, (split,))
     if any(
         normalized == prefix or normalized.startswith(f"{prefix}_")
-        for prefix in _SPLIT_PREFIXES[split]
+        for prefix in prefixes
     ):
         return name
     return f"{split}_{name}"
