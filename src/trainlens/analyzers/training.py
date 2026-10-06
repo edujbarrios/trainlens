@@ -70,6 +70,7 @@ class TrainingSessionAnalyzer(Analyzer):
             namespace=snapshot.raw_namespace,
         )
         result = AnalysisResult(model_name=model_name, framework=framework)
+        result.metric_series.update(metric_series)
         families = detect_foundation_architecture(model_ref, namespace)
 
         if model:
