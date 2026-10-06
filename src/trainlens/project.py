@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import os
 import time
-from contextlib import contextmanager
 from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -157,22 +157,20 @@ class Project:
                 except FileNotFoundError:
                     continue
                 if stale:
-                    try:
+                    with suppress(FileNotFoundError):
                         lock_path.unlink()
-                    except FileNotFoundError:
-                        pass
                     continue
                 if time.monotonic() >= deadline:
-                    raise TimeoutError(f"timed out waiting for TrainLens project lock: {lock_path}")
+                    raise TimeoutError(
+                        f"timed out waiting for TrainLens project lock: {lock_path}"
+                    ) from None
                 time.sleep(0.05)
         try:
             yield
         finally:
             os.close(descriptor)
-            try:
+            with suppress(FileNotFoundError):
                 lock_path.unlink()
-            except FileNotFoundError:
-                pass
 
     def _run_path(self, run_id: str) -> Path:
         if not run_id or Path(run_id).name != run_id:
