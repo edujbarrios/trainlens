@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
+
+import pytest
 
 from trainlens import TrainingRun, compare_runs, load_run, render_run_comparison, save_run
 from trainlens.models.metric import MetricSeries
@@ -52,3 +55,58 @@ def test_compare_training_runs_reports_configuration_and_best_trajectory() -> No
     assert comparison.trajectories[0].baseline_observations == 3
     assert "### Configuration changes" in rendered
     assert "### Training trajectories" in rendered
+
+
+def test_training_run_consumers_keep_metric_splits_distinct() -> None:
+    baseline = TrainingRun(
+        run_id="baseline-splits",
+        metrics=(
+            MetricSeries("loss", (0.20,), split="train"),
+            MetricSeries("loss", (0.30,), split="validation"),
+            MetricSeries("loss", (0.40,), split="test"),
+        ),
+    )
+    experiment = TrainingRun(
+        run_id="experiment-splits",
+        metrics=(
+            MetricSeries("loss", (0.18,), split="train"),
+            MetricSeries("loss", (0.28,), split="validation"),
+            MetricSeries("loss", (0.45,), split="test"),
+        ),
+    )
+
+    comparison = compare_runs(baseline, experiment)
+    by_name = {item.name: item for item in comparison.metrics}
+
+    assert set(by_name) == {"train_loss", "validation_loss", "test_loss"}
+    assert by_name["validation_loss"].baseline == pytest.approx(0.30)
+    assert by_name["test_loss"].experiment == pytest.approx(0.45)
+
+
+def test_portable_run_json_rejects_boolean_and_non_finite_metric_values(tmp_path) -> None:
+    invalid_path = tmp_path / "invalid.json"
+    invalid_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "run_id": "bad",
+                "created_at": datetime.now(UTC).isoformat(),
+                "model_name": None,
+                "framework": None,
+                "parameters": {},
+                "metadata": {},
+                "notes": [],
+                "metrics": [{"name": "loss", "values": [True], "split": None, "steps": []}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="finite numbers"):
+        load_run(invalid_path)
+
+    non_finite = TrainingRun(
+        run_id="nan",
+        metrics=(MetricSeries("loss", (float("nan"),)),),
+    )
+    with pytest.raises(ValueError):
+        save_run(non_finite, tmp_path / "nan.json")
