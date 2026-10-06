@@ -47,11 +47,14 @@ def test_dataset_evidence_receives_stable_citable_ids() -> None:
     catalog = evidence_catalog(AnalysisResult(), dataset_explanation=explanation)
     ids = {item.evidence_id for item in catalog}
 
-    assert "dataset:split:1:rows" in ids
-    assert "dataset:split:1:feature:1" in ids
-    assert "dataset:split:1:target" in ids
-    assert "dataset:split:2:target" in ids
-    assert "dataset:observation:1" in ids
+    assert any(item.startswith("dataset:split:train-") and item.endswith(":rows") for item in ids)
+    assert any(":feature:length-" in item for item in ids)
+    assert any(item.startswith("dataset:split:train-") and ":target:label-" in item for item in ids)
+    assert any(
+        item.startswith("dataset:split:validation-") and ":target:label-" in item
+        for item in ids
+    )
+    assert any(item.startswith("dataset:observation:") for item in ids)
 
 
 def test_dataset_evidence_contains_aggregate_values_not_feature_rows() -> None:
