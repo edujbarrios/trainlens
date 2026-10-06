@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
 import pytest
@@ -78,4 +79,23 @@ def test_project_capture_analyzes_and_saves_namespace(tmp_path) -> None:
     assert entry.run.run_id == "captured"
     assert entry.name == "notebook-run"
     assert entry.run.parameters["learning_rate"] == 0.001
+    series = {metric.name: metric for metric in entry.run.metrics}
+    assert series["train_loss"].values == (1.0, 0.7, 0.5)
+    assert series["validation_loss"].values == (1.1, 0.8, 0.6)
     assert project.get("captured") == entry
+
+
+def test_project_serializes_concurrent_writers_without_lost_index_entries(tmp_path) -> None:
+    project = Project(tmp_path / ".trainlens")
+
+    def add_run(index: int) -> None:
+        project.add(_run(f"run-{index}", value=0.5 - index * 0.01))
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(add_run, range(8)))
+
+    assert len(project) == 8
+    assert {entry.run.run_id for entry in project.entries()} == {
+        f"run-{index}" for index in range(8)
+    }
+    assert not (project.root / ".project.lock").exists()

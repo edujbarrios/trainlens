@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
@@ -23,9 +24,13 @@ def training_run_from_analysis(
 ) -> TrainingRun:
     """Create a portable run from a deterministic analysis result."""
 
-    metrics = tuple(
-        MetricSeries(name=name, values=(value,))
-        for name, value in sorted(result.metrics.items())
+    metrics = (
+        tuple(result.metric_series[name] for name in sorted(result.metric_series))
+        if result.metric_series
+        else tuple(
+            MetricSeries(name=name, values=(value,))
+            for name, value in sorted(result.metrics.items())
+        )
     )
     kwargs: dict[str, Any] = {
         "model_name": result.model_name,
@@ -45,7 +50,7 @@ def save_run(run: TrainingRun, path: str | Path) -> Path:
 
     destination = Path(path)
     destination.write_text(
-        json.dumps(_run_to_dict(run), indent=2, sort_keys=True) + "\n",
+        json.dumps(_run_to_dict(run), allow_nan=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     return destination
@@ -132,12 +137,12 @@ def _metric_from_dict(raw: Any) -> MetricSeries:
     split = raw.get("split")
     if not isinstance(name, str) or not name:
         raise ValueError("TrainLens metric name must be a non-empty string")
-    if not isinstance(values, list) or not all(isinstance(item, int | float) for item in values):
-        raise ValueError("TrainLens metric values must be numeric")
+    if not isinstance(values, list) or not all(_finite_number(item) for item in values):
+        raise ValueError("TrainLens metric values must be finite numbers")
     if not isinstance(steps, list) or not all(
-        item is None or isinstance(item, int | float) for item in steps
+        item is None or _finite_number(item) for item in steps
     ):
-        raise ValueError("TrainLens metric steps must be numeric or null")
+        raise ValueError("TrainLens metric steps must be finite numbers or null")
     if split is not None and not isinstance(split, str):
         raise ValueError("TrainLens metric split must be a string or null")
     return MetricSeries(
@@ -155,5 +160,15 @@ def _simple_mapping(value: Any, label: str) -> dict[str, RunValue]:
     for key, item in value.items():
         if not isinstance(key, str) or not isinstance(item, str | int | float | bool | type(None)):
             raise ValueError(f"TrainLens run {label} must contain JSON scalar values")
+        if isinstance(item, float) and not isfinite(item):
+            raise ValueError(f"TrainLens run {label} must contain finite numeric values")
         output[key] = item
     return output
+
+
+def _finite_number(value: object) -> bool:
+    return (
+        isinstance(value, int | float)
+        and not isinstance(value, bool)
+        and isfinite(float(value))
+    )

@@ -59,12 +59,22 @@ def test_evidence_catalog_has_stable_metric_signal_and_reference_ids() -> None:
     )
 
     catalog = evidence_catalog(result)
-    assert [item.evidence_id for item in catalog] == [
-        "summary:1",
-        "metric:validation_loss",
-        "signal:1",
-        "signal:1:evidence:1",
-    ]
+    identifiers = {item.evidence_id for item in catalog}
+
+    assert "metric:validation_loss" in identifiers
+    assert any(item.startswith("summary:validation-loss-stopped-improving") for item in identifiers)
+    assert any(
+        item.startswith("signal:validation-drift-validation-loss-rose")
+        for item in identifiers
+    )
+    assert any(":evidence:" in item for item in identifiers)
+
+    reordered = AnalysisResult(
+        summary=list(reversed(result.summary)),
+        metrics=dict(result.metrics),
+        signals=list(reversed(result.signals)),
+    )
+    assert {item.evidence_id for item in evidence_catalog(reordered)} == identifiers
 
 
 def test_parser_flags_evidence_ids_that_were_not_supplied() -> None:

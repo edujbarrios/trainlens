@@ -61,7 +61,11 @@ def test_visual_feature_and_observations_are_available_as_verified_evidence() ->
     catalog = evidence_catalog(AnalysisResult(), dataset_explanation=explanation)
     details = {item.evidence_id: item.detail for item in catalog}
 
-    assert "kind=image" in details["dataset:split:1:feature:1"]
+    image_details = [
+        detail for evidence_id, detail in details.items() if ":feature:image-" in evidence_id
+    ]
+    assert image_details
+    assert "kind=image" in image_details[0]
     assert any("variable dimensions" in detail for detail in details.values())
     assert any("combines image data with text" in detail for detail in details.values())
 

@@ -5,12 +5,13 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from math import isfinite, sqrt
+from math import sqrt
 from statistics import mean, median, stdev
 from typing import Literal
 
 from trainlens.metric_semantics import metric_direction
 from trainlens.models.run import RunValue, TrainingRun
+from trainlens.run_metrics import final_metric_values
 
 Confidence = Literal["low", "medium", "high"]
 
@@ -158,12 +159,17 @@ def parameter_effects(
 
     observations: dict[tuple[str, str, str], list[tuple[float, str]]] = defaultdict(list)
     values_by_key: dict[tuple[str, str, str], tuple[RunValue, RunValue]] = {}
-    for index, left in enumerate(runs):
-        for right in runs[index + 1 :]:
+    used_runs: dict[tuple[str, str, str], set[str]] = defaultdict(set)
+    ordered_runs = tuple(sorted(runs, key=lambda run: run.run_id))
+    for index, left in enumerate(ordered_runs):
+        for right in ordered_runs[index + 1 :]:
             changed = _single_parameter_change(left, right)
             if changed is None:
                 continue
             parameter, left_value, right_value = changed
+            matched, seed = _matching_seed(left, right)
+            if not matched:
+                continue
             left_metric = _final_metrics(left).get(metric)
             right_metric = _final_metrics(right).get(metric)
             if left_metric is None or right_metric is None:
@@ -177,8 +183,15 @@ def parameter_effects(
                 right.run_id,
             )
             key = (parameter, repr(from_value), repr(to_value))
+            if left.run_id in used_runs[key] or right.run_id in used_runs[key]:
+                continue
+            used_runs[key].update((left.run_id, right.run_id))
             delta = to_metric - from_metric
-            evidence = f"{from_id}->{to_id}: {metric} {from_metric:.6g}->{to_metric:.6g}"
+            seed_suffix = "" if seed is None else f"; seed={seed!r}"
+            evidence = (
+                f"{from_id}->{to_id}: {metric} {from_metric:.6g}->{to_metric:.6g}"
+                f"{seed_suffix}"
+            )
             observations[key].append((delta, evidence))
             values_by_key[key] = (from_value, to_value)
 
@@ -207,12 +220,20 @@ def parameter_effects(
 
 
 def _final_metrics(run: TrainingRun) -> dict[str, float]:
-    output: dict[str, float] = {}
-    for series in run.metrics:
-        value = series.last
-        if value is not None and isfinite(value):
-            output[series.name] = value
-    return output
+    return final_metric_values(run)
+
+
+def _matching_seed(left: TrainingRun, right: TrainingRun) -> tuple[bool, RunValue]:
+    sentinel = object()
+    left_seed: object = left.metadata.get("seed", sentinel)
+    right_seed: object = right.metadata.get("seed", sentinel)
+    if left_seed is sentinel and right_seed is sentinel:
+        return True, None
+    if left_seed is sentinel or right_seed is sentinel or left_seed != right_seed:
+        return False, None
+    if isinstance(left_seed, str | int | float | bool) or left_seed is None:
+        return True, left_seed
+    return False, None
 
 
 def _aggregate(values: Sequence[float]) -> MetricAggregate:

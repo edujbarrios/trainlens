@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping, Sequence
+import os
+import time
+from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -45,14 +48,18 @@ class Project:
 
         clean_name = _validate_name(name)
         clean_tags = _validate_tags(tags)
-        index = self._read_index()
-        if run.run_id in index and not overwrite:
-            raise FileExistsError(f"run {run.run_id!r} already exists in this project")
+        with self._write_lock():
+            index = self._read_index()
+            if run.run_id in index and not overwrite:
+                raise FileExistsError(f"run {run.run_id!r} already exists in this project")
 
-        self._runs_dir.mkdir(parents=True, exist_ok=True)
-        save_run(run, self._run_path(run.run_id))
-        index[run.run_id] = (clean_name, clean_tags)
-        self._write_index(index)
+            self._runs_dir.mkdir(parents=True, exist_ok=True)
+            path = self._run_path(run.run_id)
+            temporary = path.with_name(f".{path.name}.tmp")
+            save_run(run, temporary)
+            temporary.replace(path)
+            index[run.run_id] = (clean_name, clean_tags)
+            self._write_index(index)
         return ProjectEntry(run=run, name=clean_name, tags=clean_tags)
 
     def capture(
@@ -121,17 +128,49 @@ class Project:
     def remove(self, run_id: str) -> None:
         """Remove one run and its project metadata."""
 
-        index = self._read_index()
-        if run_id not in index:
-            raise KeyError(run_id)
-        path = self._run_path(run_id)
-        if path.exists():
-            path.unlink()
-        del index[run_id]
-        self._write_index(index)
+        with self._write_lock():
+            index = self._read_index()
+            if run_id not in index:
+                raise KeyError(run_id)
+            path = self._run_path(run_id)
+            if path.exists():
+                path.unlink()
+            del index[run_id]
+            self._write_index(index)
 
     def __len__(self) -> int:
         return len(self._read_index())
+
+    @contextmanager
+    def _write_lock(self) -> Iterator[None]:
+        self.root.mkdir(parents=True, exist_ok=True)
+        lock_path = self.root / ".project.lock"
+        deadline = time.monotonic() + 10.0
+        descriptor: int | None = None
+        while descriptor is None:
+            try:
+                descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(descriptor, f"{os.getpid()}\n".encode())
+            except FileExistsError:
+                try:
+                    stale = time.time() - lock_path.stat().st_mtime > 60.0
+                except FileNotFoundError:
+                    continue
+                if stale:
+                    with suppress(FileNotFoundError):
+                        lock_path.unlink()
+                    continue
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"timed out waiting for TrainLens project lock: {lock_path}"
+                    ) from None
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            os.close(descriptor)
+            with suppress(FileNotFoundError):
+                lock_path.unlink()
 
     def _run_path(self, run_id: str) -> Path:
         if not run_id or Path(run_id).name != run_id:

@@ -101,3 +101,27 @@ def test_repeated_run_helpers_validate_inputs_and_unknown_metrics() -> None:
         compare_run_groups(group, group, metric="accuracy")
     with pytest.raises(ValueError, match="cannot infer"):
         parameter_effects((run,), metric="custom")
+
+
+def test_parameter_effects_match_repeated_runs_one_to_one_by_seed() -> None:
+    runs = tuple(
+        _run(
+            f"{prefix}{seed}",
+            learning_rate=learning_rate,
+            dropout=0.1,
+            loss=losses[seed - 1],
+            seed=seed,
+        )
+        for prefix, learning_rate, losses in (
+            ("a", 0.001, (0.50, 0.52, 0.48)),
+            ("b", 0.0005, (0.40, 0.42, 0.38)),
+        )
+        for seed in range(1, 4)
+    )
+
+    effects = parameter_effects(runs, metric="validation_loss")
+    lr_effect = next(item for item in effects if item.parameter == "learning_rate")
+
+    assert lr_effect.pairs == 3
+    assert len(lr_effect.evidence) == 3
+    assert all("seed=" in item for item in lr_effect.evidence)

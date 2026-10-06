@@ -18,6 +18,7 @@ from trainlens.models.comparison import (
 )
 from trainlens.models.metric import MetricSeries
 from trainlens.models.run import TrainingRun
+from trainlens.run_metrics import final_metric_values, metric_series_by_name
 
 RunLike: TypeAlias = AnalysisResult | TrainingRun | Mapping[str, float]
 
@@ -172,8 +173,8 @@ def _trajectory_comparisons(
 ) -> tuple[TrajectoryComparison, ...]:
     if not isinstance(baseline, TrainingRun) or not isinstance(experiment, TrainingRun):
         return ()
-    baseline_series = {metric.name: metric for metric in baseline.metrics}
-    experiment_series = {metric.name: metric for metric in experiment.metrics}
+    baseline_series = metric_series_by_name(baseline)
+    experiment_series = metric_series_by_name(experiment)
     common = sorted(set(baseline_series) & set(experiment_series))
     return tuple(
         TrajectoryComparison(
@@ -284,9 +285,7 @@ def _metrics_from_run(run: RunLike) -> dict[str, float]:
     if isinstance(run, AnalysisResult):
         return _finite_metrics(run.metrics)
     if isinstance(run, TrainingRun):
-        return _finite_metrics(
-            {metric.name: metric.last for metric in run.metrics if metric.last is not None}
-        )
+        return final_metric_values(run)
     return _finite_metrics(run)
 
 

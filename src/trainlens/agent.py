@@ -6,6 +6,7 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, cast
 
 from IPython import get_ipython
@@ -22,6 +23,7 @@ from trainlens.llm.verified import (
 )
 from trainlens.models.run import TrainingRun
 from trainlens.pipeline import analyze_snapshot, snapshot_namespace
+from trainlens.run_metrics import metric_namespace_from_run
 
 _AGENT_INSTRUCTIONS = (
     "Use only the supplied deterministic TrainLens evidence when claiming observed facts.",
@@ -72,10 +74,14 @@ class AgentContext:
 
     objective: str
     markdown: str
-    metrics: dict[str, float]
+    metrics: Mapping[str, float]
     evidence: tuple[LLMEvidenceItem, ...]
     instructions: tuple[str, ...]
-    output_schema: dict[str, object]
+    output_schema: Mapping[str, object]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "metrics", MappingProxyType(dict(self.metrics)))
+        object.__setattr__(self, "output_schema", _freeze_mapping(self.output_schema))
 
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable representation for tools and skills."""
@@ -90,7 +96,7 @@ class AgentContext:
                 for item in self.evidence
             ],
             "instructions": list(self.instructions),
-            "output_schema": self.output_schema,
+            "output_schema": _thaw_mapping(self.output_schema),
             "markdown": self.markdown,
         }
 
@@ -159,9 +165,7 @@ def build_agent_context_from_run(
 ) -> AgentContext:
     """Build agent context from one portable :class:`TrainingRun` for CLI/skill workflows."""
 
-    namespace: dict[str, object] = {
-        series.name: list(series.values) for series in run.metrics
-    }
+    namespace = metric_namespace_from_run(run)
     extra_evidence = _portable_run_evidence(run)
     return _build_agent_context(
         namespace,
@@ -247,7 +251,7 @@ def _compose_markdown(
     objective: str,
     evidence: tuple[LLMEvidenceItem, ...],
     instructions: tuple[str, ...],
-    output_schema: dict[str, object],
+    output_schema: Mapping[str, object],
 ) -> str:
     lines = [
         "# TrainLens Agent Context",
@@ -276,7 +280,7 @@ def _compose_markdown(
             "Return JSON matching this schema so TrainLens can verify evidence references:",
             "",
             "```json",
-            json.dumps(output_schema, indent=2, sort_keys=True),
+            json.dumps(_thaw_mapping(output_schema), indent=2, sort_keys=True),
             "```",
             "",
         ]
@@ -305,6 +309,34 @@ def _portable_run_evidence(run: TrainingRun) -> tuple[LLMEvidenceItem, ...]:
 def _evidence_slug(value: str) -> str:
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", value).strip("_")
     return slug or "item"
+
+
+def _freeze_value(value: object) -> object:
+    if isinstance(value, Mapping):
+        return MappingProxyType(
+            {str(key): _freeze_value(item) for key, item in value.items()}
+        )
+    if isinstance(value, list | tuple):
+        return tuple(_freeze_value(item) for item in value)
+    return value
+
+
+def _freeze_mapping(value: Mapping[str, object]) -> Mapping[str, object]:
+    return MappingProxyType(
+        {str(key): _freeze_value(item) for key, item in value.items()}
+    )
+
+
+def _thaw_value(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _thaw_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_value(item) for item in value]
+    return value
+
+
+def _thaw_mapping(value: Mapping[str, object]) -> dict[str, object]:
+    return {str(key): _thaw_value(item) for key, item in value.items()}
 
 
 def _current_user_namespace() -> Mapping[str, Any]:
