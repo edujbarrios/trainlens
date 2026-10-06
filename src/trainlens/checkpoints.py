@@ -10,6 +10,7 @@ from typing import Literal, TypeAlias
 from trainlens.metric_semantics import MetricDirection, metric_direction
 from trainlens.models.metric import MetricSeries
 from trainlens.models.run import TrainingRun
+from trainlens.run_metrics import resolve_metric_series
 
 CheckpointDirection = Literal["min", "max"]
 CheckpointSource: TypeAlias = MetricSeries | TrainingRun | Mapping[str, Sequence[float]]
@@ -90,10 +91,10 @@ def _series_from_source(source: CheckpointSource, metric: str) -> MetricSeries:
             )
         return source
     if isinstance(source, TrainingRun):
-        for series in source.metrics:
-            if series.name == metric:
-                return series
-        raise ValueError(f"training run does not contain metric {metric!r}")
+        try:
+            return resolve_metric_series(source, metric)
+        except KeyError as exc:
+            raise ValueError(f"training run does not contain metric {metric!r}") from exc
 
     raw = source.get(metric)
     if raw is None:
