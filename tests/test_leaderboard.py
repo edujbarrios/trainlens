@@ -33,7 +33,7 @@ def test_leaderboard_ranks_primary_objective_and_marks_pareto_runs() -> None:
     assert board.rows[0].pareto
     assert board.rows[1].pareto
     assert not board.rows[2].satisfies_constraints
-    assert "| 1 | better-loss | 0.4 | 9 | yes | yes |" in board.to_markdown()
+    assert "| 1 | better-loss | 0.4 | 9 | yes | yes |  |" in board.to_markdown()
     assert board._repr_markdown_() == board.to_markdown()
 
 
@@ -56,3 +56,22 @@ def test_leaderboard_validates_objectives_ids_and_unknown_direction() -> None:
         leaderboard((run, run), (ObjectiveSpec("validation_loss"),))
     with pytest.raises(ValueError, match="cannot infer"):
         leaderboard((run,), (ObjectiveSpec("mystery_metric"),))
+
+
+def test_leaderboard_does_not_rank_runs_missing_secondary_objectives() -> None:
+    incomplete = TrainingRun(
+        run_id="incomplete",
+        metrics=(MetricSeries("validation_loss", (0.30,)),),
+    )
+    complete = _run("complete", 0.40, 8.0)
+
+    board = leaderboard(
+        (incomplete, complete),
+        (ObjectiveSpec("validation_loss"), ObjectiveSpec("latency_ms")),
+    )
+    by_id = {row.run_id: row for row in board.rows}
+
+    assert by_id["complete"].rank == 1
+    assert by_id["incomplete"].rank is None
+    assert by_id["incomplete"].missing_objectives == ("latency_ms",)
+    assert not by_id["incomplete"].satisfies_constraints
