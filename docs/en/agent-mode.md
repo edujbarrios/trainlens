@@ -101,6 +101,30 @@ trainlens verify-agent-plan plan.json --context agent-context.json
 The context includes recorded run parameters and notes as citeable evidence IDs in addition to
 metric-derived deterministic evidence.
 
+## History sketches and follow-up inspection
+
+Metric histories can have hundreds or thousands of observations. The Agent Context
+includes a bounded, deterministic curve sketch, not all raw points. The sketch
+retains both global extrema when `max_metric_points >= 4`, plus endpoints and
+salient deviations from the current piecewise-linear approximation.
+
+The raw `TrainingRun.metrics` trajectories remain complete. If an agent needs
+to investigate an anomaly near observation 500, it can request a focused slice
+locally rather than copying all 1,000 observations into a prompt:
+
+```python
+from trainlens import inspect_history_window, load_run
+
+run = load_run("candidate.json")
+series = next(m for m in run.metrics if m.name == "loss" and m.split == "validation")
+window = inspect_history_window(series, start=480, end=520, max_points=8)
+print(window.sampled_positions, window.sampled_values)
+```
+
+Positions are 1-based observations, never guessed epochs. Real step values and
+unknown steps remain available in `window.sampled_steps`. No LLM request is made
+by either inspection function.
+
 ## Recommended AutoResearch loop
 
 A Skill can use TrainLens as one component of an iterative research loop:
