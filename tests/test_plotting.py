@@ -38,7 +38,7 @@ def test_plot_training_curves_places_final_test_point_at_last_observation() -> N
     assert len(figure.axes) == 2
     loss_axis = figure.axes[0]
     assert loss_axis.get_title() == "Loss"
-    assert [line.get_label() for line in loss_axis.lines] == ["train", "validation", "test"]
+    assert [line.get_label() for line in loss_axis.lines] == ["train", "validation", "test (held-out)"]
     test_line = loss_axis.lines[-1]
     assert tuple(test_line.get_xdata()) == (3,)
     assert tuple(test_line.get_ydata()) == (0.57,)
