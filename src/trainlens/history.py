@@ -85,11 +85,13 @@ def _salient_indices(
     if limit >= 4:
         chosen.update((minimum_index, maximum_index))
     elif limit == 3:
-        expected = lambda i: values[0] + (values[-1] - values[0]) * i / (length - 1)
         chosen.add(
             max(
                 (minimum_index, maximum_index),
-                key=lambda i: (abs(values[i] - expected(i)), -i),
+                key=lambda i: (
+                    abs(values[i] - (values[0] + (values[-1] - values[0]) * i / (length - 1))),
+                    -i,
+                ),
             )
         )
     scale = max(max(values) - min(values), 1.0)
@@ -98,7 +100,7 @@ def _salient_indices(
         ordered = sorted(chosen)
         best_index = -1
         best_error = tolerance
-        for left, right in zip(ordered, ordered[1:]):
+        for left, right in zip(ordered, ordered[1:], strict=False):
             if right - left < 2:
                 continue
             slope = (values[right] - values[left]) / (right - left)
@@ -108,7 +110,7 @@ def _salient_indices(
                     best_error, best_index = error, index
         if best_index < 0:
             left, right = max(
-                zip(ordered, ordered[1:]), key=lambda pair: pair[1] - pair[0]
+                zip(ordered, ordered[1:], strict=False), key=lambda pair: pair[1] - pair[0]
             )
             if right - left < 2:
                 break

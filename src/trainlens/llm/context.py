@@ -413,7 +413,9 @@ def _format_step(step: int | float | None) -> str:
 def _render_metric_values(values: tuple[float, ...], max_metric_points: int) -> str:
     if len(values) <= max_metric_points:
         return "[" + ", ".join(f"{value:.6g}" for value in values) + "]"
-    digest = summarize_metric_history(MetricSeries(name="metric", values=values), max_points=max_metric_points)
+    digest = summarize_metric_history(
+        MetricSeries(name="metric", values=values), max_points=max_metric_points
+    )
     sampled = digest.sampled_values
     rendered_sample = ", ".join(f"{value:.6g}" for value in sampled)
     return (
