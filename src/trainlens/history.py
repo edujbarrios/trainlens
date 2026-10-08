@@ -6,7 +6,7 @@ LLM/agent context; callers can always inspect the original MetricSeries.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import isfinite
 
 from trainlens.models.metric import MetricSeries
@@ -117,3 +117,41 @@ def _salient_indices(
             best_index = (left + right) // 2
         chosen.add(best_index)
     return tuple(sorted(chosen))
+
+
+def inspect_history_window(
+    series: MetricSeries,
+    *,
+    start: int = 1,
+    end: int | None = None,
+    max_points: int = 12,
+) -> HistoryDigest:
+    """Drill into inclusive, 1-based observation positions without exporting raw history.
+
+    Positions in the returned digest refer to the complete original series.
+    For exact framework steps, use the sampled_steps field. The original series
+    is neither mutated nor shortened.
+    """
+
+    if isinstance(start, bool) or not isinstance(start, int):
+        raise TypeError("start must be an integer observation position")
+    if end is not None and (isinstance(end, bool) or not isinstance(end, int)):
+        raise TypeError("end must be an integer observation position")
+    final = len(series.values) if end is None else end
+    if start < 1 or final < start or final > len(series.values):
+        raise ValueError("window must satisfy 1 <= start <= end <= observations")
+    selection = slice(start - 1, final)
+    window = MetricSeries(
+        name=series.name,
+        values=series.values[selection],
+        split=series.split,
+        steps=series.steps[selection] if series.steps else (),
+    )
+    digest = summarize_metric_history(window, max_points=max_points)
+    offset = start - 1
+    return replace(
+        digest,
+        minimum_position=digest.minimum_position + offset,
+        maximum_position=digest.maximum_position + offset,
+        sampled_positions=tuple(i + offset for i in digest.sampled_positions),
+    )

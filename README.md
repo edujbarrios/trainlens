@@ -106,6 +106,38 @@ You can inspect the exact sanitized request before sending it with `preview_llm_
 
 See [LLM setup and privacy](docs/en/llm-and-privacy.md) and [Verified LLM plans](docs/en/verified-llm-plans.md).
 
+
+## Token-efficient training histories
+
+For 100, 200, or 1,000+ epochs, TrainLens **does not put the entire history
+into the LLM prompt**. Notebook/Agent Mode represents long curves with at most
+12 signal-aware observations per metric by default. It preserves the endpoints,
+global minimum/maximum (with a budget of at least four points), and informative
+local changes instead of sampling uniformly. Each long metric also reports the
+positions of its extrema. Exact step metadata is preserved where available.
+The full raw history stays local and portable runs remain lossless.
+
+For agents that need a closer look, read only a relevant observation window:
+
+```python
+from trainlens import inspect_history_window, load_run, summarize_metric_history
+
+run = load_run("candidate.json")
+series = next(m for m in run.metrics if m.name == "loss" and m.split == "validation")
+
+digest = summarize_metric_history(series, max_points=12)
+focused = inspect_history_window(series, start=200, end=260, max_points=8)
+print(digest.minimum_position, digest.maximum_position)
+print(focused.sampled_positions, focused.sampled_values, focused.sampled_steps)
+```
+
+Window boundaries are inclusive, **1-based observation positions**, not inferred
+epochs or global steps. This lets agents request a short, deterministic follow-up
+without repeatedly loading the 1,000-epoch trajectory into their context.
+Configure overall budgets with `ContextPolicy(max_metric_points=12, max_chars=...)`;
+the precise token count depends on the provider's tokenizer. The sketch is an
+approximation for communication, **not** a lossless compressed encoding.
+
 ## Dataset context
 
 ```python

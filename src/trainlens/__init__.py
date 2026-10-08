@@ -35,6 +35,7 @@ from trainlens.experiments import (
 )
 from trainlens.export import render_report, write_report
 from trainlens.framework_callbacks import keras_callback, lightning_callback, transformers_callback
+from trainlens.history import HistoryDigest, inspect_history_window, summarize_metric_history
 from trainlens.leaderboard import LeaderboardRow, RunLeaderboard, leaderboard
 from trainlens.llm.config import LLMConfig
 from trainlens.llm.context import ContextPolicy
@@ -131,6 +132,7 @@ __all__ = [
     "EvidenceRef",
     "ExperimentRun",
     "GroupComparison",
+    "HistoryDigest",
     "LLMConfig",
     "LLMEvidenceItem",
     "LLMProvider",
@@ -190,6 +192,7 @@ __all__ = [
     "fingerprint_data",
     "get_trainlens_prompt",
     "improvement_plan_prompt",
+    "inspect_history_window",
     "inspect_training_profile",
     "keras_callback",
     "leaderboard",
@@ -215,6 +218,7 @@ __all__ = [
     "select_checkpoint",
     "show_trainlens_prompts",
     "suggest_multiobjective_experiment",
+    "summarize_metric_history",
     "suggest_next_experiment",
     "training_curves",
     "training_diagnosis_prompt",
