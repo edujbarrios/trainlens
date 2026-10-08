@@ -13,8 +13,8 @@ write_report(report, "report.pdf")
 ```
 
 The format is inferred from `.md`, `.markdown`, `.html`, `.json`, or `.pdf`, or
-can be passed explicitly. PDF requires `trainlens[pdf]`. The built-in HTML and
-PDF renderers favor portable, dependency-light reports over full CommonMark or
+can be passed explicitly. PDF works after plain `pip install trainlens`.
+The built-in HTML and PDF renderers favor portable reports over full CommonMark or
 typographic fidelity. JSON converts non-finite floating values to `null`.
 
 ## Common problems
@@ -53,12 +53,14 @@ need. TrainLens marks omitted items and global character truncation explicitly.
 
 ### PDF export fails
 
-Install `python -m pip install "trainlens[pdf]"`. For complex publication-ready
+The standard install includes ReportLab. If it is missing (for example after
+using `--no-deps`), reinstall with `python -m pip install --upgrade --force-reinstall trainlens`.
+For complex publication-ready
 layout, export Markdown or JSON and render it with a dedicated publishing tool.
 
 ## Current limitations
 
-- Alpha-stage API and a Python 3.11+ requirement
+- Alpha-stage API and supported Python 3.11–3.14 (not 3.15)
 - Notebook magic history remains in-memory, although completed `TrainingRun`
   artifacts can now be saved/loaded as JSON
 - Heuristic framework detection; ambiguous notebooks should use `AnalysisConfig`

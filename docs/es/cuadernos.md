@@ -56,13 +56,13 @@ retenido.
 
 ## Curvas de entrenamiento
 
-El plotting es opcional para mantener ligero el paquete base:
+Los gráficos con Matplotlib ya vienen incluidos al instalar TrainLens:
 
 ```python
-%pip install -q "trainlens[plots]"
+%pip install -q trainlens
 ```
 
-Después:
+No necesitas el extra `[plots]`. Después:
 
 ```python
 from trainlens import plot_training_curves, training_curves

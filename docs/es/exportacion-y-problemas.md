@@ -13,7 +13,8 @@ write_report(report, "report.pdf")
 ```
 
 El formato se infiere de `.md`, `.markdown`, `.html`, `.json` o `.pdf`, o se
-puede indicar. PDF requiere `trainlens[pdf]`. Los renderers HTML y PDF priorizan
+puede indicar. El PDF funciona después de `pip install trainlens`, sin extras.
+Los renderers HTML y PDF priorizan
 portabilidad sobre soporte completo de CommonMark o maquetación avanzada. JSON
 convierte valores flotantes no finitos en `null`.
 
@@ -52,12 +53,15 @@ necesites. Las omisiones y el truncado global se marcan explícitamente.
 
 ### Falla la exportación PDF
 
-Instala `python -m pip install "trainlens[pdf]"`. Para maquetación editorial
+ReportLab se incluye en la instalación normal. Si falta (por ejemplo por una
+instalación con `--no-deps`), reinstala con
+`python -m pip install --upgrade --force-reinstall trainlens`.
+Para maquetación editorial
 compleja, exporta Markdown o JSON y utiliza una herramienta especializada.
 
 ## Limitaciones actuales
 
-- API en fase alpha y requisito de Python 3.11+
+- API en fase alpha y compatibilidad declarada con Python 3.11–3.14
 - El historial de magics sigue en memoria, aunque los `TrainingRun` terminados
   pueden guardarse y cargarse como JSON
 - La detección de frameworks sigue siendo heurística; usa `AnalysisConfig` para
