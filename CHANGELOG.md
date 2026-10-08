@@ -2,6 +2,15 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.18.0 - 2026-10-08
+
+- replace uniformly sampled LLM/Agent Mode metric trajectories with signal-aware, deterministic sketches that retain endpoints, global extrema when the budget permits, and informative local deviations
+- add public `HistoryDigest` and `summarize_metric_history()` for bounded metric summaries with original observation positions and exact step metadata
+- add `inspect_history_window()` for progressive, targeted investigation of long histories without including complete 100/200/1,000+ epoch trajectories in agent prompts
+- expose extrema positions alongside compact samples, while retaining full portable run histories locally and keeping train, validation, and test split evidence distinct
+- document token-efficient training diagnosis, selective follow-up inspection, and the distinction between bounded character/sample budgets and provider-specific token counts
+- add regression tests for isolated spikes, 100/200/1,000 observations, missing step metadata, and window boundaries
+
 ## 0.17.0 - 2026-10-06
 
 - preserve full metric trajectories and step metadata when converting deterministic analysis into portable `TrainingRun` objects, so `Project.capture()` no longer collapses histories to final scalars
