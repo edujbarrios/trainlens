@@ -104,9 +104,9 @@ jobs:
           payload = json.loads(render_report(comparison, format="json"))
           assert payload["metrics"][0]["name"] == "loss"
           import matplotlib
-          from matplotlib import pyplot as plt
 
           matplotlib.use("Agg")
+          from matplotlib import pyplot as plt
           from trainlens import plot_training_curves
           from trainlens.models.analysis import AnalysisResult
 

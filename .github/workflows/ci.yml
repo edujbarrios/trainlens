@@ -42,6 +42,7 @@ jobs:
             "ipython==8.12.0" \
             "jinja2==3.1.0" \
             "rich==13.7.0" \
+            "numpy==1.26.4" \
             "matplotlib==3.8.0" \
             "reportlab==4.0.0" \
             "pytest==8.0.0" \
