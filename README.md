@@ -6,7 +6,7 @@ TrainLens is notebook-first and local by default. Its core analysis is determini
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/0.18.1/"><img alt="PyPI 0.18.1" src="https://img.shields.io/badge/pypi-0.18.1-blue?logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/0.19.0/"><img alt="PyPI 0.19.0" src="https://img.shields.io/badge/pypi-0.19.0-blue?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
