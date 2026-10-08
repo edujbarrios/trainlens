@@ -111,7 +111,8 @@ See [LLM setup and privacy](docs/en/llm-and-privacy.md) and [Verified LLM plans]
 
 For 100, 200, or 1,000+ epochs, TrainLens **does not put the entire history
 into the LLM prompt**. Notebook/Agent Mode represents long curves with at most
-12 signal-aware observations per metric by default. It preserves the endpoints,
+12 signal-aware observations per metric by default (often only two for
+nearly linear curves). It preserves the endpoints,
 global minimum/maximum (with a budget of at least four points), and informative
 local changes instead of sampling uniformly. Each long metric also reports the
 positions of its extrema. Exact step metadata is preserved where available.

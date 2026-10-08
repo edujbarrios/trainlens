@@ -3,7 +3,8 @@
 TrainLens **conserva el historial original** de las métricas, incluidos los steps
 reales si están disponibles. Al generar contexto para un agente o LLM, no
 transmite las 1.000 epochs como texto: resume cada serie con un presupuesto
-acotado (12 observaciones por defecto).
+acotado (máximo 12 observaciones por defecto; las curvas casi lineales
+pueden requerir solo dos).
 
 ## Resumen adaptativo
 
