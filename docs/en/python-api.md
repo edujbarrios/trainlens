@@ -1,5 +1,11 @@
 # Python API
 
+Install with `python -m pip install trainlens`. The default wheel includes
+Matplotlib for plots, ReportLab for PDF, and the built-in OpenAI-compatible
+request client. No TrainLens extras are needed. External ML frameworks and LLM
+endpoints are not included.
+
+
 ## Explicit analysis selection
 
 ```python

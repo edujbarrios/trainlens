@@ -56,10 +56,11 @@ a final held-out evaluation.
 
 ## Plot learning curves
 
-Plotting is optional so the core package remains lightweight:
+Plots are installed automatically with `pip install trainlens`.
+No `[plots]` extra is needed. In a fresh notebook you can install with:
 
 ```python
-%pip install -q "trainlens[plots]"
+%pip install -q trainlens
 ```
 
 Then:
