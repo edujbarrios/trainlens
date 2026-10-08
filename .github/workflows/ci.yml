@@ -42,6 +42,8 @@ jobs:
             "ipython==8.12.0" \
             "jinja2==3.1.0" \
             "rich==13.7.0" \
+            "matplotlib==3.8.0" \
+            "reportlab==4.0.0" \
             "pytest==8.0.0" \
             "pytest-cov==5.0.0"
           pip install -e . --no-deps

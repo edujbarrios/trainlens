@@ -233,7 +233,7 @@ def _markdown_to_pdf(markdown: str) -> bytes:
         canvas_module = import_module("reportlab.pdfgen.canvas")
         pagesizes_module = import_module("reportlab.lib.pagesizes")
     except ImportError as exc:
-        msg = "PDF export requires the optional dependency: pip install 'trainlens[pdf]'."
+        msg = "ReportLab is missing. Reinstall with `pip install --upgrade trainlens`."
         raise RuntimeError(msg) from exc
 
     canvas_class: Any = canvas_module.Canvas

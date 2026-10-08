@@ -1,4 +1,4 @@
-"""Optional plotting helpers for notebook training diagnostics."""
+"""Plotting helpers for notebook training diagnostics."""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def plot_training_curves(
 ) -> Any:
     """Visualize split-aware training curves without obscuring long histories.
 
-    The optional Matplotlib dependency is loaded only when plotting. `auto`
+    Matplotlib is part of the default installation and is loaded only when plotting. `auto`
     uses recorded steps if every non-scalar curve has a complete step axis,
     otherwise it plots *all* curves against observation indices. Explicit
     `step` mode preserves missing step metadata as gaps instead of inventing
@@ -81,7 +81,7 @@ def plot_training_curves(
         import matplotlib.pyplot as plt
     except ImportError as exc:  # pragma: no cover - depends on optional extra
         raise RuntimeError(
-            'Plotting requires Matplotlib. Install it with `pip install "trainlens[plots]"`.'
+            'Matplotlib is missing. Reinstall with `pip install --upgrade trainlens`.'
         ) from exc
 
     curves = training_curves(namespace, metrics=metrics, splits=splits)
