@@ -1,7 +1,10 @@
 # LLM configuration, prompts, request preview, and privacy
 
 TrainLens talks to OpenAI-compatible `/chat/completions` endpoints using the
-Python standard library. LLM support is optional: local comparison, monitoring,
+Python standard library and is available after `pip install trainlens`.
+No separate LLM SDK is needed. You still need a reachable compatible server,
+a model name, and credentials if required by your provider. LLM support is
+optional: local comparison, monitoring,
 experiment planning, inspection, and export make no provider request.
 
 ## Create a provider explicitly

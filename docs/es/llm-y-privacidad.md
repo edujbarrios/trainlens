@@ -1,6 +1,9 @@
 # Configuración del LLM, prompts, previsualización y privacidad
 
-TrainLens usa endpoints OpenAI-compatible `/chat/completions`. El uso de LLM es
+TrainLens usa endpoints OpenAI-compatible `/chat/completions`, sin necesitar
+un SDK adicional tras `pip install trainlens`. Los endpoints, modelos y
+credenciales externos no se incluyen; debes configurarlos cuando corresponda.
+El uso de LLM es
 opcional: comparación, monitorización, planificación de experimentos,
 inspección y exportación locales no hacen ninguna petición al proveedor.
 

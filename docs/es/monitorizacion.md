@@ -47,8 +47,8 @@ callback.on_train_epoch_end(trainer)
 
 Para registrar TrainLens mediante la API normal de callbacks del framework,
 usa la factoría nativa. El framework solo se importa al llamar a la factoría,
-por lo que Keras, Transformers y Lightning siguen siendo dependencias
-opcionales.
+por lo que Keras, Transformers y Lightning no se instalan con TrainLens.
+Los adaptadores pueden utilizarlos cuando ya están disponibles en el entorno.
 
 ### Keras 3
 

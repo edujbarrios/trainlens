@@ -1,5 +1,11 @@
 # API de Python
 
+Instala con `python -m pip install trainlens`. La instalación normal incluye
+Matplotlib, ReportLab y el cliente de peticiones LLM compatible con OpenAI.
+No necesitas extras de TrainLens; los frameworks de entrenamiento y los
+servidores/modelos LLM externos siguen siendo responsabilidad del proyecto.
+
+
 ## Selección explícita del análisis
 
 ```python
