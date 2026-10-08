@@ -53,6 +53,11 @@ print(render_report(analysis))
 
 TrainLens keeps training, validation, and held-out test evidence distinct and turns notebook state into structured observations and recommendations.
 
+Plots now distinguish a held-out test point from training trajectories, mark
+the best validation observation, and keep lengthy runs legible with min/max-aware
+display downsampling. Use `plot_training_curves(..., x_axis="auto",
+max_plot_points=500)` for 1,000+ observations. The full history is untouched.
+
 ### 2. Agent Mode: TrainLens as the evidence layer
 
 **TrainLens can be used inside AutoResearch-style skills and coding agents.**

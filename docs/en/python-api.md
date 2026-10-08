@@ -67,6 +67,28 @@ report = build_paper_report(globals(), provider=provider)
 changing TrainLens. `LLMConfig.api_key` is optional; the OpenAI-compatible
 provider omits `Authorization` when no key is configured.
 
+## Long-run plotting
+
+```python
+from trainlens import plot_training_curves
+
+figure = plot_training_curves(
+    {"log_history": trainer.state.log_history},
+    metrics=("loss", "accuracy"),
+    x_axis="auto",
+    max_plot_points=500,
+    show_best=True,
+)
+```
+
+Plot thinning is deterministic, preserves bucket minima/maxima and endpoints,
+and affects only the displayed points—not `training_curves()` or portable
+run histories. `auto` selects recorded steps only when complete across
+the plotted non-scalar series, otherwise it selects observation positions
+for all plots. `step` mode retains gaps for unknown step coordinates.
+Validation-best markers use known metric direction and never tune against
+held-out test evidence.
+
 ## Inspect training configuration
 
 ```python

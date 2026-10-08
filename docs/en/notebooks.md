@@ -71,9 +71,36 @@ plot_training_curves(globals(), metrics=("loss", "accuracy"))
 curves = training_curves(globals())  # structured plot-ready data
 ```
 
-The helper plots train and validation histories and places a scalar held-out test
-result at the final observation when appropriate. It returns the Matplotlib
-`Figure`, so normal Matplotlib customization and saving still work.
+The helper plots train and validation histories, highlights the best *validation*
+checkpoint (not the test score), and shows the final held-out test score as a
+distinct point. It returns a Matplotlib `Figure` for normal customization or saving.
+
+### Long training runs, step axes and missing steps
+
+```python
+figure = plot_training_curves(
+    {"log_history": trainer.state.log_history},
+    metrics=("loss",),
+    x_axis="auto",            # "step" or "observation" are also supported
+    max_plot_points=300,      # bounds rendering, not the stored history
+    show_best=True,
+)
+```
+
+The default `max_plot_points=1200` reduces plotted trajectories using min/max
+buckets so isolated spikes and troughs remain visible without drawing thousands
+of markers. Raw `TrainingCurve.values` are **not** downsampled.
+
+`x_axis="auto"` uses true recorded steps only if all non-scalar series have
+complete step metadata. Otherwise, every series uses the **observation index**
+(1-based), avoiding a mixture of true steps and invented steps on the same
+horizontal axis. Use `x_axis="step"` explicitly when all histories have step
+metadata: missing individual step coordinates are omitted rather than given
+fake step numbers. When a non-scalar curve has no step metadata at all, explicit
+step mode raises and asks you to choose observation mode.
+
+The [Colab quickstart](../../examples/quickstart.ipynb) includes a runnable
+1,000-step example and prints the separate, token-efficient LLM preview.
 
 ## Magic commands
 
