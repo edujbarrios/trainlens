@@ -8,6 +8,7 @@ from typing import Any, cast
 
 from trainlens.analysis_config import AnalysisConfig
 from trainlens.analyzers.metrics import extract_metric_series
+from trainlens.history import summarize_metric_history
 from trainlens.introspection import NotebookInspector
 from trainlens.introspection.selection import framework_source_for_model
 from trainlens.models.analysis import AnalysisResult
@@ -385,8 +386,8 @@ def _render_metric_points(series: MetricSeries, max_metric_points: int) -> str:
     if len(points) <= max_metric_points:
         rendered = ", ".join(_format_metric_point(step, value) for step, value in points)
         return f"points=[{rendered}]"
-    indices = _sample_indices(len(points), max_metric_points)
-    sampled = tuple(points[index] for index in indices)
+    digest = summarize_metric_history(series, max_points=max_metric_points)
+    sampled = tuple(points[index - 1] for index in digest.sampled_positions)
     rendered_sample = ", ".join(
         _format_metric_point(step, value) for step, value in sampled
     )
@@ -394,7 +395,8 @@ def _render_metric_points(series: MetricSeries, max_metric_points: int) -> str:
         f"observations={len(points)}, first_step={_format_step(points[0][0])}, "
         f"last_step={_format_step(points[-1][0])}, first={series.values[0]:.6g}, "
         f"last={series.values[-1]:.6g}, min={min(series.values):.6g}, "
-        f"max={max(series.values):.6g}, ordered_sample=[{rendered_sample}]"
+        f"max={max(series.values):.6g}, min_at={digest.minimum_position}, "
+        f"max_at={digest.maximum_position}, ordered_sample=[{rendered_sample}]"
     )
 
 
@@ -411,19 +413,15 @@ def _format_step(step: int | float | None) -> str:
 def _render_metric_values(values: tuple[float, ...], max_metric_points: int) -> str:
     if len(values) <= max_metric_points:
         return "[" + ", ".join(f"{value:.6g}" for value in values) + "]"
-    indices = _sample_indices(len(values), max_metric_points)
-    sampled = tuple(values[index] for index in indices)
+    digest = summarize_metric_history(MetricSeries(name="metric", values=values), max_points=max_metric_points)
+    sampled = digest.sampled_values
     rendered_sample = ", ".join(f"{value:.6g}" for value in sampled)
     return (
         f"observations={len(values)}, first={values[0]:.6g}, last={values[-1]:.6g}, "
         f"min={min(values):.6g}, max={max(values):.6g}, "
+        f"min_at={digest.minimum_position}, max_at={digest.maximum_position}, "
         f"ordered_sample=[{rendered_sample}]"
     )
-
-
-def _sample_indices(length: int, limit: int) -> tuple[int, ...]:
-    last_index = length - 1
-    return tuple(round(position * last_index / (limit - 1)) for position in range(limit))
 
 
 def _namespace_with_framework_metrics(snapshot: NotebookSnapshot) -> dict[str, Any]:
