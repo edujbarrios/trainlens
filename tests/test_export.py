@@ -95,7 +95,7 @@ def test_write_report_infers_format_from_suffix(tmp_path) -> None:
     assert "TrainLens Report" in path.read_text(encoding="utf-8")
 
 
-def test_pdf_export_explains_optional_dependency(monkeypatch) -> None:
+def test_pdf_export_explains_missing_dependency(monkeypatch) -> None:
     def fake_import_module(name: str) -> object:
         if name == "reportlab.pdfgen.canvas":
             raise ImportError
@@ -103,7 +103,7 @@ def test_pdf_export_explains_optional_dependency(monkeypatch) -> None:
 
     monkeypatch.setattr("trainlens.export.import_module", fake_import_module)
 
-    with pytest.raises(RuntimeError, match=r"trainlens\[pdf\]"):
+    with pytest.raises(RuntimeError, match="pip install --upgrade trainlens"):
         render_report(_result(), format="pdf")
 
 

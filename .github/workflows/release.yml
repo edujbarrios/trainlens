@@ -103,7 +103,22 @@ jobs:
           comparison = compare_runs({"loss": 1.0}, {"loss": 0.8})
           payload = json.loads(render_report(comparison, format="json"))
           assert payload["metrics"][0]["name"] == "loss"
-          print(f"installed TrainLens {expected}: PASS")
+          import matplotlib
+
+          matplotlib.use("Agg")
+          from matplotlib import pyplot as plt
+          from trainlens import plot_training_curves
+          from trainlens.models.analysis import AnalysisResult
+
+          pdf = render_report(AnalysisResult(metrics={"loss": 0.5}), format="pdf")
+          assert isinstance(pdf, bytes) and pdf.startswith(b"%PDF-")
+          figure = plot_training_curves(
+              {"history": {"train_loss": [1.0, 0.7], "val_loss": [1.1, 0.8]}},
+              metrics=("loss",),
+          )
+          assert len(figure.axes) == 1
+          plt.close(figure)
+          print(f"installed TrainLens {expected} with plots/PDF: PASS")
           PY
       - uses: actions/upload-artifact@v6
         with:
