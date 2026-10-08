@@ -2,6 +2,16 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.19.0 - 2026-10-08
+
+- unify installation: `pip install trainlens` now includes Matplotlib plots and ReportLab PDF exports without additional extras
+- retain `[plots]` and `[pdf]` as backward-compatible no-op extras; optional external training frameworks, model endpoints and credentials are not bundled
+- use a ReportLab minimum that avoids legacy installations requiring system Cairo/pycairo for ordinary PDF generation
+- update plotting/PDF missing-dependency guidance to diagnose broken or `--no-deps` installs instead of recommending extras
+- validate plotting/PDF in default install tests, CI's minimum-dependency lane, and an isolated wheel-install smoke test during publishing
+- revise the README, Colab quickstart, English and Spanish installation, notebook, export, API, monitoring and LLM guides; clarify optional provider configuration and local no-LLM workflows
+- fix stale Python version documentation and add guard tests against reintroducing outdated install instructions
+
 ## 0.18.1 - 2026-10-08
 
 - fix signal-aware history sampling under large metric offsets: choose points relative to their observed variability rather than the absolute baseline, retaining meaningful local deviations
