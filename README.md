@@ -2,7 +2,7 @@
 
 **TrainLens turns ML training runs into evidence: what changed, what went wrong, and what experiment to run next.**
 
-TrainLens is lightweight, notebook-first, and local by default. Its core analysis is deterministic; LLM reasoning is optional.
+TrainLens is notebook-first and local by default. Its core analysis is deterministic; LLM reasoning is optional. Plots and PDF export are included in the standard installation.
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
@@ -25,11 +25,9 @@ It shows dataset context, training diagnosis, plots, experiment evidence, LLM re
 pip install trainlens
 ```
 
-For plots:
+**One install includes training analysis, Agent Mode, plots (Matplotlib), and PDF export (ReportLab).** No `[plots]` or `[pdf]` extra is needed. Existing extras still work for compatibility.
 
-```bash
-pip install "trainlens[plots]"
-```
+Optional direct LLM reports require you to supply an OpenAI-compatible endpoint and, when needed, API credentials. Training frameworks such as PyTorch, TensorFlow, Transformers, and Lightning are not bundled; use whatever training stack you already have.
 
 No tracking server or hosted TrainLens service is required.
 

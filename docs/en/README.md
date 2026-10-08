@@ -4,7 +4,7 @@ TrainLens inspects training and dataset evidence already available in Python or 
 notebook and turns it into reviewable reports, comparisons, alerts, and controlled follow-up
 experiments. Most analysis is local and deterministic; LLM-generated output is optional.
 
-TrainLens 0.16 also exposes a provider-free Agent Mode so AutoResearch-style skills and coding
+TrainLens also exposes a provider-free Agent Mode so AutoResearch-style skills and coding
 agents can use TrainLens as a deterministic evidence layer without configuring an API key inside
 TrainLens.
 
@@ -40,6 +40,6 @@ your data and domain knowledge.
 - Python 3.11–3.14
 - IPython/Jupyter for magic commands
 - no model provider or API key for Agent Mode
-- an OpenAI-compatible endpoint only for optional direct LLM-generated reports
-- `matplotlib` only for the `plots` extra
-- `reportlab` only for PDF export
+- an OpenAI-compatible endpoint only for optional direct LLM-generated reports (no endpoint is bundled)
+- `pip install trainlens` includes Matplotlib and ReportLab for plotting and PDF export
+- training frameworks (PyTorch, TensorFlow, Transformers, Lightning) are **not** installed by TrainLens; adapters can inspect their objects if present

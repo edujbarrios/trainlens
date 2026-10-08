@@ -30,8 +30,9 @@ conocimiento del dominio.
 
 ## Requisitos
 
-- Python 3.11 o posterior
+- Python 3.11–3.14
 - IPython/Jupyter para los comandos mágicos
-- Un endpoint compatible con OpenAI solo para informes generados por LLM
-- `reportlab` solo para exportar PDF
+- `pip install trainlens` incluye Matplotlib para gráficos y ReportLab para PDF
+- Los frameworks PyTorch, TensorFlow, Transformers y Lightning no se instalan con TrainLens
+- Un endpoint compatible con OpenAI solo para informes generados por LLM; no viene incluido un servidor ni credenciales
 

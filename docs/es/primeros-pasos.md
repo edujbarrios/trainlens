@@ -6,11 +6,11 @@
 python -m pip install trainlens
 ```
 
-Para exportar PDF:
-
-```bash
-python -m pip install "trainlens[pdf]"
-```
+La instalación normal ya incluye **gráficos, PDF, análisis local, Agent Mode
+y el cliente integrado para endpoints LLM compatibles con OpenAI**. No hace
+falta instalar extras. `trainlens[plots]` y `trainlens[pdf]` siguen funcionando
+por compatibilidad. Los frameworks de entrenamiento y los servidores LLM son
+externos; se configuran aparte si se necesitan.
 
 Para desarrollar localmente:
 
@@ -34,13 +34,20 @@ history = {
 }
 ```
 
-Configura un proveedor LLM y carga la extensión:
+Empieza por el análisis local, sin clave API:
 
 ```python
-%env TRAINLENS_LLM_BASE_URL=https://api.openai.com/v1
-%env TRAINLENS_LLM_API_KEY=reemplazar
-%env TRAINLENS_LLM_MODEL=tu-modelo
 %load_ext trainlens.magic.extension
+%explain_training --name baseline --no-llm
+```
+
+Solo para generar explicaciones con un LLM configura un endpoint compatible,
+un modelo y una clave si el servidor exige autenticación. Consulta
+[configuración de LLM](llm-y-privacidad.md).
+
+```python
+%env TRAINLENS_LLM_BASE_URL=https://tu-proveedor.example/v1
+%env TRAINLENS_LLM_MODEL=tu-modelo
 %explain_training
 %suggest_improvements
 ```
