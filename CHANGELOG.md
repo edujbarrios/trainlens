@@ -2,6 +2,15 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.18.1 - 2026-10-08
+
+- fix signal-aware history sampling under large metric offsets: choose points relative to their observed variability rather than the absolute baseline, retaining meaningful local deviations
+- improve long-run Matplotlib curves with optional min/max bucket display thinning, preserving endpoints and spikes without altering source metric histories
+- add smarter `x_axis="auto"|"step"|"observation"` behavior to avoid inventing step values when log metadata is incomplete
+- distinguish held-out test results visually and mark the best validation observation based on known metric direction (never optimize using test)
+- add plot options `max_plot_points` and `show_best`, plus regression tests for long histories, step gaps and validation/test markers
+- update the runnable Colab quickstart with an isolated 1,000-step plotting example and compact LLM evidence preview; refresh English and Spanish plotting documentation
+
 ## 0.18.0 - 2026-10-08
 
 - replace uniformly sampled LLM/Agent Mode metric trajectories with signal-aware, deterministic sketches that retain endpoints, global extrema when the budget permits, and informative local deviations
