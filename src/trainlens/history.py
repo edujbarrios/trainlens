@@ -96,7 +96,12 @@ def _salient_indices(
                 ),
             )
         )
-    scale = max(max(values) - min(values), max(abs(v) for v in values), 1e-12)
+    # Relative variation, not an arbitrary absolute offset, determines whether
+    # a deviation is meaningful. A curve near 1e9 with a local +3 spike must
+    # not be treated as perfectly flat merely because its baseline is large.
+    # The epsilon floor also absorbs floating-point interpolation roundoff.
+    magnitude = max(abs(v) for v in values)
+    scale = max(max(values) - min(values), magnitude * 1e-12, 1e-12)
     tolerance = scale * 0.005
     while len(chosen) < limit:
         ordered = sorted(chosen)
