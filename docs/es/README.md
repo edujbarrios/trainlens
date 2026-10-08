@@ -9,6 +9,7 @@ determinista; el texto generado por un LLM es opcional.
 
 - [Instalación y guía rápida](primeros-pasos.md)
 - [Flujo en cuadernos y adaptadores](cuadernos.md)
+- [Historiales largos sin desperdiciar tokens](historial-eficiente.md)
 - [API de Python: informes, comparaciones y experimentos](api-python.md)
 - [Monitorización y callbacks](monitorizacion.md)
 - [Configuración del LLM, prompts y privacidad](llm-y-privacidad.md)

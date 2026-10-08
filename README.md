@@ -6,7 +6,7 @@ TrainLens is lightweight, notebook-first, and local by default. Its core analysi
 
 <p align="center">
   <a href="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/edujbarrios/trainlens/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://pypi.org/project/trainlens/0.17.0/"><img alt="PyPI 0.17.0" src="https://img.shields.io/badge/pypi-0.17.0-blue?logo=pypi"></a>
+  <a href="https://pypi.org/project/trainlens/0.18.0/"><img alt="PyPI 0.18.0" src="https://img.shields.io/badge/pypi-0.18.0-blue?logo=pypi"></a>
   <a href="pyproject.toml"><img alt="Python" src="https://img.shields.io/badge/python-3.11%2B-blue"></a>
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-yellow"></a>
 </p>
@@ -111,7 +111,8 @@ See [LLM setup and privacy](docs/en/llm-and-privacy.md) and [Verified LLM plans]
 
 For 100, 200, or 1,000+ epochs, TrainLens **does not put the entire history
 into the LLM prompt**. Notebook/Agent Mode represents long curves with at most
-12 signal-aware observations per metric by default. It preserves the endpoints,
+12 signal-aware observations per metric by default (often only two for
+nearly linear curves). It preserves the endpoints,
 global minimum/maximum (with a budget of at least four points), and informative
 local changes instead of sampling uniformly. Each long metric also reports the
 positions of its extrema. Exact step metadata is preserved where available.
@@ -183,6 +184,7 @@ TrainLens is the **evidence layer**, not AutoML:
 - [Experiment workflows](docs/en/experiment-workflows.md)
 - [LLM setup and privacy](docs/en/llm-and-privacy.md)
 - [Python API](docs/en/python-api.md)
+- [Token-efficient training history guide (Spanish)](docs/es/historial-eficiente.md)
 - [Documentation in Spanish](docs/es/README.md)
 
 ## Contributing and license
