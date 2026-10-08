@@ -106,7 +106,10 @@ metric-derived deterministic evidence.
 Metric histories can have hundreds or thousands of observations. The Agent Context
 includes a bounded, deterministic curve sketch, not all raw points. The sketch
 retains both global extrema when `max_metric_points >= 4`, plus endpoints and
-salient deviations from the current piecewise-linear approximation.
+salient deviations from the current piecewise-linear approximation. It stops
+sampling early when the residual error falls below 0.5% of the series scale:
+near-linear 1,000-epoch curves may need only two points, while irregular
+curves use more of the same maximum budget.
 
 The raw `TrainingRun.metrics` trajectories remain complete. If an agent needs
 to investigate an anomaly near observation 500, it can request a focused slice
