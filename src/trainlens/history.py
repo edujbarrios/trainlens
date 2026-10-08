@@ -39,6 +39,8 @@ def summarize_metric_history(
 
     Uses a deterministic piecewise-linear error sketch, not uniform sampling.
     For budgets of four or more, both global extrema are always represented.
+    Stop early when residual errors are below 0.5% of the series scale, so
+    almost-linear histories use only two points instead of filling the budget.
     Complexity is O(observations * max_points) for typical small LLM budgets.
     Nothing mutates or discards the source history.
     """
@@ -94,8 +96,8 @@ def _salient_indices(
                 ),
             )
         )
-    scale = max(max(values) - min(values), 1.0)
-    tolerance = scale * 1e-12
+    scale = max(max(values) - min(values), max(abs(v) for v in values), 1e-12)
+    tolerance = scale * 0.005
     while len(chosen) < limit:
         ordered = sorted(chosen)
         best_index = -1
@@ -109,12 +111,8 @@ def _salient_indices(
                 if error > best_error:
                     best_error, best_index = error, index
         if best_index < 0:
-            left, right = max(
-                zip(ordered, ordered[1:], strict=False), key=lambda pair: pair[1] - pair[0]
-            )
-            if right - left < 2:
-                break
-            best_index = (left + right) // 2
+            # Remaining segments are sufficiently straight: save prompt tokens.
+            break
         chosen.add(best_index)
     return tuple(sorted(chosen))
 
