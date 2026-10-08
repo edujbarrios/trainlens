@@ -200,3 +200,29 @@ Cargar la extensión varias veces es idempotente. Al descargarla se eliminan
 los tres comandos mágicos; si se vuelve a cargar en la misma shell de IPython,
 se reutiliza la instancia de TrainLens y las capturas locales siguen
 disponibles.
+
+## Visualización de entrenamientos largos
+
+`plot_training_curves()` destaca ahora el mejor valor de **validación** y
+distingue el resultado final de test. Los gráficos de 1.000 o más observaciones
+pueden usar una selección min/max para conservar picos y valles sin dibujar
+miles de marcadores. El historial completo no se modifica.
+
+```python
+from trainlens import plot_training_curves
+
+figura = plot_training_curves(
+    {"log_history": trainer.state.log_history},
+    metrics=("loss",),
+    x_axis="auto",
+    max_plot_points=300,
+)
+```
+
+Con `x_axis="auto"` se usan los steps reales únicamente cuando están completos
+en todas las series. Si no, el eje X identifica **observaciones** (no epochs
+inventadas). `x_axis="step"` permite conservar huecos donde falta el step;
+requiere metadatos de steps para las trayectorias con varios valores.
+
+El [notebook de inicio](../../examples/quickstart.ipynb) contiene un ejemplo
+sintético reproducible de 1.000 observaciones.
