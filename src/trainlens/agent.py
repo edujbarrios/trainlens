@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from urllib.parse import quote
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -24,6 +25,7 @@ from trainlens.llm.verified import (
 from trainlens.models.run import TrainingRun
 from trainlens.pipeline import analyze_snapshot, snapshot_namespace
 from trainlens.run_metrics import metric_namespace_from_run
+from trainlens.security import redact_text, sanitize_value
 
 _AGENT_INSTRUCTIONS = (
     "Use only the supplied deterministic TrainLens evidence when claiming observed facts.",
@@ -228,12 +230,13 @@ def _build_agent_context(
     )
     evidence = evidence_catalog(result, dataset_explanation=dataset_explanation) + extra_evidence
     instructions = _AGENT_INSTRUCTIONS
-    markdown = _compose_markdown(
+    markdown, evidence = _compose_bounded_markdown(
         notebook_context.markdown,
         objective=objective,
         evidence=evidence,
         instructions=instructions,
         output_schema=_OUTPUT_SCHEMA,
+        max_chars=(context_policy or ContextPolicy()).max_chars,
     )
     return AgentContext(
         objective=objective,
@@ -288,27 +291,76 @@ def _compose_markdown(
     return "\n".join(lines)
 
 
+def _compose_bounded_markdown(
+    notebook_markdown: str,
+    *,
+    objective: str,
+    evidence: tuple[LLMEvidenceItem, ...],
+    instructions: tuple[str, ...],
+    output_schema: Mapping[str, object],
+    max_chars: int,
+) -> tuple[str, tuple[LLMEvidenceItem, ...]]:
+    """Bound the entire agent Markdown, keeping its citable evidence synchronized."""
+    complete = _compose_markdown(
+        notebook_markdown,
+        objective=objective,
+        evidence=evidence,
+        instructions=instructions,
+        output_schema=output_schema,
+    )
+    if len(complete) <= max_chars:
+        return complete, evidence
+
+    # The schema and instructions remain available as structured AgentContext fields.
+    # Never expose half of an evidence ID: verification may only accept displayed IDs.
+    heading = (
+        "# TrainLens Agent Context\n\n"
+        "> Context shortened to meet ContextPolicy.max_chars. "
+        "The structured output schema and instructions remain available in AgentContext.\n\n"
+        "## Evidence IDs\n\n"
+    )
+    retained: list[LLMEvidenceItem] = []
+    rows: list[str] = []
+    used = len(heading)
+    for item in evidence:
+        row = f"- `{item.evidence_id}`: {item.detail}\n"
+        if used + len(row) > max_chars:
+            continue
+        retained.append(item)
+        rows.append(row)
+        used += len(row)
+    result = heading + "".join(rows)
+    return result[:max_chars], tuple(retained)
+
+
 def _portable_run_evidence(run: TrainingRun) -> tuple[LLMEvidenceItem, ...]:
-    items = [LLMEvidenceItem("run:id", f"run_id={run.run_id}")]
+    items = [LLMEvidenceItem("run:id", f"run_id={redact_text(run.run_id)}")]
     if run.model_name:
-        items.append(LLMEvidenceItem("run:model", f"model_name={run.model_name}"))
+        items.append(LLMEvidenceItem("run:model", f"model_name={redact_text(run.model_name)}"))
     if run.framework:
-        items.append(LLMEvidenceItem("run:framework", f"framework={run.framework}"))
+        items.append(LLMEvidenceItem("run:framework", f"framework={redact_text(run.framework)}"))
     for name, value in sorted(run.parameters.items()):
+        safe_name = redact_text(name)
+        safe_value = sanitize_value(name, value)
         items.append(
             LLMEvidenceItem(
                 f"run:parameter:{_evidence_slug(name)}",
-                f"{name}={value!r}",
+                f"{safe_name}={safe_value!r}",
             )
         )
     for index, note in enumerate(run.notes, start=1):
-        items.append(LLMEvidenceItem(f"run:note:{index}", note))
+        items.append(
+            LLMEvidenceItem(
+                f"run:note:{index}", str(sanitize_value("note", note))
+            )
+        )
     return tuple(items)
 
 
 def _evidence_slug(value: str) -> str:
-    slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", value).strip("_")
-    return slug or "item"
+    # Unlike lossy punctuation replacement, percent encoding is injective:
+    # "learning rate" and "learning_rate" cannot collide.
+    return quote(value, safe="") or "%00"
 
 
 def _freeze_value(value: object) -> object:
