@@ -2,6 +2,15 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.19.1 - 2026-10-09
+
+- redact sensitive parameter values, identifiers and notes in portable-run Agent Mode evidence, preventing accidental credential inclusion in agent contexts
+- use collision-free percent-encoded parameter evidence identifiers (ordinary identifiers remain unchanged)
+- bound Agent Mode Markdown to ContextPolicy.max_chars and keep verified evidence synchronized with the IDs actually visible under tight budgets
+- prevent dataset-context truncation notices from exceeding the remaining character budget
+- avoid copying the full training-observation history on every monitor update when no custom detector requires it
+- add regression tests for privacy, evidence IDs, bounded contexts, and monitoring scalability
+
 ## 0.19.0 - 2026-10-08
 
 - unify installation: `pip install trainlens` now includes Matplotlib plots and ReportLab PDF exports without additional extras
