@@ -12,7 +12,7 @@ def test_builtin_monitor_does_not_iterate_over_full_history() -> None:
     monitor._observations = NoFullScan()
     for step in range(25):
         monitor.observe(step, {"train_loss": 2 - step * 0.01})
-    assert len(monitor.observations) == 25
+    assert len(monitor._observations) == 25
 
 
 def test_custom_detectors_still_receive_complete_immutable_history() -> None:
