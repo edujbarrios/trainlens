@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import re
-from urllib.parse import quote
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, cast
+from urllib.parse import quote
 
 from IPython import get_ipython
 
