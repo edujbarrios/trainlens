@@ -26,16 +26,19 @@ def append_dataset_explanation(
         + "\n"
     )
     separator = "\n\n"
-    remaining = policy.max_chars - len(context.markdown) - len(separator)
+    prefix = context.markdown.rstrip() + separator
+    remaining = policy.max_chars - len(prefix)
     if remaining <= 0:
         return context
     if len(dataset_block) <= remaining:
         bounded_block = dataset_block
     else:
         marker = "\n\n> Dataset context truncated by TrainLens ContextPolicy.\n"
-        available = max(0, remaining - len(marker))
+        if remaining < len(marker):
+            return context
+        available = remaining - len(marker)
         bounded_block = dataset_block[:available].rstrip() + marker
     return LLMNotebookContext(
-        markdown=context.markdown.rstrip() + separator + bounded_block,
+        markdown=prefix + bounded_block,
         metrics=context.metrics,
     )
