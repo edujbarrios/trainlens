@@ -180,9 +180,12 @@ class TrainLensMonitor:
                 if alert is not None:
                     alerts.append(alert)
 
-        history = tuple(self._observations)
-        for detector in self._detectors:
-            alerts.extend(detector(history, current, self.config))
+        # Built-in detectors only use the bounded patience window above. Avoid
+        # copying the entire history on every step when no plugin needs it.
+        if self._detectors:
+            history = tuple(self._observations)
+            for detector in self._detectors:
+                alerts.extend(detector(history, current, self.config))
         return tuple(alerts)
 
     def _stagnation_alerts(
