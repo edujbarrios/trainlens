@@ -113,3 +113,19 @@ def test_agent_context_from_run_preserves_split_metrics_and_steps() -> None:
     assert "test_loss" in context.markdown
     assert "(10, 0.8)" in context.markdown
     assert "(20, 0.6)" in context.markdown
+
+
+def test_verified_plan_explicitly_describes_citation_level_validity() -> None:
+    context = build_agent_context(_history())
+    response = {
+        "recommendations": [{
+            "action": "run a controlled experiment",
+            "rationale": "hypothesis to be tested",
+            "evidence_ids": [context.evidence[0].evidence_id],
+            "confidence": 0.5,
+            "success_criterion": "validation loss improves",
+        }],
+    }
+    result = verify_agent_plan(response, context=context)
+    assert result.has_valid_evidence_references
+    assert result.is_fully_supported == result.has_valid_evidence_references
