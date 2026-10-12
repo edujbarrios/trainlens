@@ -2,6 +2,17 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.19.2 - 2026-10-12
+
+- fix split-aware CLI gates so train/validation/test metrics are not overwritten by raw names
+- reject removed baseline metrics in `trainlens check` by default, with explicit `--allow-removed`
+- reject held-out test aliases during checkpoint selection and report original indices after excluding non-finite values
+- reduce repeated project index reads; add opt-in recovery of missing index references and orphan run files
+- order project removal operations to leave recoverable orphans, not broken index references, after interruptions
+- support optional bounded live monitoring history and deduplication memory
+- clarify the citation-only guarantee of agent-plan validation with a new explicit property
+- expand regression coverage and refresh project, monitoring, and Agent Mode documentation
+
 ## 0.19.1 - 2026-10-09
 
 - redact sensitive parameter values, identifiers and notes in portable-run Agent Mode evidence, preventing accidental credential inclusion in agent contexts
