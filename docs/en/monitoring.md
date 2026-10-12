@@ -21,6 +21,11 @@ It detects:
 `patience` must be an integer of at least 2. `min_delta` must be finite and
 non-negative. Individual detectors can be disabled in `MonitorConfig`.
 
+For long runs, `MonitorConfig(patience=3, max_observations=500)` bounds the
+number of stored observations and nonpersistent alert keys. The default
+retains full history for backward compatibility. Custom detectors receive
+only retained observations when this option is configured.
+
 ## Receive alerts immediately
 
 ```python
