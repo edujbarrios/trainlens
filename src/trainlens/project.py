@@ -103,7 +103,11 @@ class Project:
     def entries(self) -> tuple[ProjectEntry, ...]:
         """Return all project entries ordered by creation time and run id."""
 
-        entries = tuple(self.get(run_id) for run_id in self._read_index())
+        index = self._read_index()
+        entries = tuple(
+            self._entry_from_metadata(run_id, name, tags)
+            for run_id, (name, tags) in index.items()
+        )
         return tuple(sorted(entries, key=lambda item: (item.run.created_at, item.run.run_id)))
 
     def runs(self) -> tuple[TrainingRun, ...]:
@@ -119,11 +123,13 @@ class Project:
     ) -> tuple[ProjectEntry, ...]:
         """Filter stored runs by exact project name and/or tag."""
 
-        return tuple(
-            entry
-            for entry in self.entries()
-            if (name is None or entry.name == name) and (tag is None or tag in entry.tags)
+        index = self._read_index()
+        selected = (
+            self._entry_from_metadata(run_id, saved_name, tags)
+            for run_id, (saved_name, tags) in index.items()
+            if (name is None or saved_name == name) and (tag is None or tag in tags)
         )
+        return tuple(sorted(selected, key=lambda item: (item.run.created_at, item.run.run_id)))
 
     def remove(self, run_id: str) -> None:
         """Remove one run and its project metadata."""
@@ -133,10 +139,53 @@ class Project:
             if run_id not in index:
                 raise KeyError(run_id)
             path = self._run_path(run_id)
-            if path.exists():
-                path.unlink()
             del index[run_id]
+            # Index first: a crash leaves an orphan instead of a broken reference.
             self._write_index(index)
+            path.unlink(missing_ok=True)
+
+    def repair(
+        self,
+        *,
+        prune_missing: bool = False,
+        remove_orphans: bool = False,
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Find broken index references and orphan files after interrupted writes.
+
+        By default this is a read-only diagnostic. Opt in to removing entries
+        referencing absent files or deleting unindexed JSON run files.
+        Returns (missing_run_ids, orphan_run_ids) before any cleanup.
+        """
+
+        with self._write_lock():
+            index = self._read_index()
+            missing = tuple(
+                sorted(run_id for run_id in index if not self._run_path(run_id).is_file())
+            )
+            orphan_paths = (
+                sorted(
+                    (path for path in self._runs_dir.glob("*.json") if path.stem not in index),
+                    key=lambda path: path.name,
+                )
+                if self._runs_dir.is_dir()
+                else []
+            )
+            if prune_missing and missing:
+                for run_id in missing:
+                    del index[run_id]
+                self._write_index(index)
+            if remove_orphans:
+                for path in orphan_paths:
+                    path.unlink(missing_ok=True)
+            return missing, tuple(path.stem for path in orphan_paths)
+
+    def _entry_from_metadata(
+        self, run_id: str, name: str | None, tags: tuple[str, ...]
+    ) -> ProjectEntry:
+        path = self._run_path(run_id)
+        if not path.is_file():
+            raise FileNotFoundError(f"project index references missing run file: {path}")
+        return ProjectEntry(run=load_run(path), name=name, tags=tags)
 
     def __len__(self) -> int:
         return len(self._read_index())
