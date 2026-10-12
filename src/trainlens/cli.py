@@ -28,7 +28,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "compare":
         return _compare(args.baseline, args.candidate)
     if args.command == "check":
-        return _check(args.candidate, args.against, tuple(args.requirement), allow_removed=args.allow_removed)
+        return _check(
+            args.candidate,
+            args.against,
+            tuple(args.requirement),
+            allow_removed=args.allow_removed,
+        )
     if args.command == "agent-context":
         return _agent_context(args.run, args.format, args.output, args.objective)
     if args.command == "verify-agent-plan":
