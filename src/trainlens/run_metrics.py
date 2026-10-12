@@ -35,6 +35,23 @@ def qualified_metric_name(series: MetricSeries) -> str:
     return f"{split}_{name}"
 
 
+def is_held_out_test_metric(series: MetricSeries, metric: str | None = None) -> bool:
+    """Recognize test aliases in both metric names and split metadata."""
+
+    if _normalize_split(series.split) == "test":
+        return True
+    for name in (series.name, metric):
+        if name is None:
+            continue
+        normalized = _normalize_name(name)
+        if any(
+            normalized == prefix or normalized.startswith(f"{prefix}_")
+            for prefix in _SPLIT_PREFIXES["test"]
+        ):
+            return True
+    return False
+
+
 def metric_series_by_name(run: TrainingRun) -> dict[str, MetricSeries]:
     """Index run series by split-aware names and reject ambiguous collisions."""
 
