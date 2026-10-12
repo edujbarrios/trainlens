@@ -179,3 +179,25 @@ def test_monitor_rejects_steps_that_move_backwards():
 
     with pytest.raises(ValueError, match="cannot move backwards"):
         monitor.observe(2, {"loss": 0.8})
+
+
+def test_bounded_monitor_retains_patience_and_deduplicates_recent_events():
+    monitor = TrainLensMonitor(
+        MonitorConfig(patience=3, max_observations=3, detect_overfitting=False)
+    )
+    for step in range(1, 7):
+        monitor.observe(step, {"loss": 0.5})
+    assert tuple(item.step for item in monitor.observations) == (4, 5, 6)
+    assert [alert.code for alert in monitor.observe(6, {"loss": 0.5})] == []
+    assert all(key[1] >= 4 for key in monitor._emitted_events)
+
+
+@pytest.mark.parametrize("maximum", [True, 3.1, "3"])
+def test_monitor_rejects_invalid_retention_types(maximum):
+    with pytest.raises(TypeError, match="max_observations"):
+        MonitorConfig(max_observations=maximum)
+
+
+def test_monitor_requires_retention_to_cover_patience():
+    with pytest.raises(ValueError, match="at least patience"):
+        MonitorConfig(patience=4, max_observations=3)

@@ -41,6 +41,7 @@ class MonitorConfig:
     detect_non_finite: bool = True
     detect_stagnation: bool = True
     detect_overfitting: bool = True
+    max_observations: int | None = None
 
     def __post_init__(self) -> None:
         if isinstance(self.patience, bool) or not isinstance(self.patience, int):
@@ -53,6 +54,13 @@ class MonitorConfig:
             raise ValueError("min_delta must be finite")
         if self.min_delta < 0:
             raise ValueError("min_delta cannot be negative")
+        if self.max_observations is not None:
+            if isinstance(self.max_observations, bool) or not isinstance(
+                self.max_observations, int
+            ):
+                raise TypeError("max_observations must be an integer or None")
+            if self.max_observations < self.patience:
+                raise ValueError("max_observations must be at least patience")
 
 
 AlertHandler = Callable[[TrainingAlert], None]
@@ -63,7 +71,11 @@ AlertDetector = Callable[
 
 
 class TrainLensMonitor:
-    """Observe metric updates and emit deterministic alerts as training runs."""
+    """Observe metric updates and emit deterministic alerts as training runs.
+
+    When max_observations is set, custom detectors receive only retained history.
+    The default None preserves the complete original history and plugin semantics.
+    """
 
     def __init__(
         self,
@@ -124,12 +136,25 @@ class TrainLensMonitor:
             observation = TrainingObservation(step=step, metrics=MappingProxyType(normalized))
             self._observations.append(observation)
 
+        self._enforce_retention()
         alerts = self._evaluate(observation, event_metrics=normalized)
         fresh = self._fresh_alerts(alerts)
         if self._on_alert is not None:
             for alert in fresh:
                 self._on_alert(alert)
         return fresh
+
+    def _enforce_retention(self) -> None:
+        """Keep history and deduplication state bounded when configured."""
+
+        maximum = self.config.max_observations
+        if maximum is None or len(self._observations) <= maximum:
+            return
+        del self._observations[:-maximum]
+        first_step = self._observations[0].step
+        self._emitted_events = {
+            key for key in self._emitted_events if key[1] >= first_step
+        }
 
     def _fresh_alerts(self, alerts: tuple[TrainingAlert, ...]) -> tuple[TrainingAlert, ...]:
         active_now = {alert.code for alert in alerts if _is_persistent_alert(alert)}

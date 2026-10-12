@@ -70,12 +70,21 @@ class VerifiedImprovementPlan:
         return tuple(invalid)
 
     @property
-    def is_fully_supported(self) -> bool:
-        """Return whether every recommendation cites valid deterministic evidence."""
+    def has_valid_evidence_references(self) -> bool:
+        """Check citation IDs only, not scientific/causal validity of recommendations."""
 
         return bool(self.recommendations) and all(
             recommendation.is_supported for recommendation in self.recommendations
         )
+
+    @property
+    def is_fully_supported(self) -> bool:
+        """Backward-compatible alias for evidence-reference validation only.
+
+        A valid citation does not imply that the recommendation follows from it.
+        """
+
+        return self.has_valid_evidence_references
 
 
 def evidence_catalog(

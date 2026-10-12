@@ -10,7 +10,7 @@ from typing import Literal, TypeAlias
 from trainlens.metric_semantics import MetricDirection, metric_direction
 from trainlens.models.metric import MetricSeries
 from trainlens.models.run import TrainingRun
-from trainlens.run_metrics import resolve_metric_series
+from trainlens.run_metrics import is_held_out_test_metric, resolve_metric_series
 
 CheckpointDirection = Literal["min", "max"]
 CheckpointSource: TypeAlias = MetricSeries | TrainingRun | Mapping[str, Sequence[float]]
@@ -54,7 +54,7 @@ def select_checkpoint(
     series = _series_from_source(source, metric)
     _reject_test_selection(series, metric)
     optimization = _resolve_direction(metric, direction)
-    values, steps = _finite_aligned_values(series)
+    values, steps, original_indices = _finite_aligned_values(series)
     if not values:
         raise ValueError(f"metric {metric!r} has no finite observations")
 
@@ -72,7 +72,7 @@ def select_checkpoint(
     return CheckpointSelection(
         metric=metric,
         direction=optimization,
-        best_index=best_index,
+        best_index=original_indices[best_index],
         best_step=steps[best_index],
         best_value=best_value,
         last_value=last_value,
@@ -109,8 +109,7 @@ def _series_from_source(source: CheckpointSource, metric: str) -> MetricSeries:
 
 
 def _reject_test_selection(series: MetricSeries, metric: str) -> None:
-    normalized = metric.lower().replace("-", "_").replace("/", "_")
-    if series.split == "test" or normalized == "test" or normalized.startswith("test_"):
+    if is_held_out_test_metric(series, metric):
         raise ValueError(
             "checkpoint selection must use training/validation evidence, not test metrics"
         )
@@ -133,9 +132,10 @@ def _resolve_direction(
 
 def _finite_aligned_values(
     series: MetricSeries,
-) -> tuple[list[float], list[int | float]]:
+) -> tuple[list[float], list[int | float], list[int]]:
     values: list[float] = []
     steps: list[int | float] = []
+    original_indices: list[int] = []
     for index, value in enumerate(series.values):
         if not isfinite(value):
             continue
@@ -144,7 +144,8 @@ def _finite_aligned_values(
             step = index
         values.append(value)
         steps.append(step)
-    return values, steps
+        original_indices.append(index)
+    return values, steps, original_indices
 
 
 def _best_index(values: Sequence[float], direction: MetricDirection) -> int:

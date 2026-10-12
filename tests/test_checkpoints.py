@@ -71,3 +71,31 @@ def test_select_checkpoint_rejects_test_selection_and_invalid_inputs() -> None:
         select_checkpoint({"validation_loss": [1.0]}, min_delta=-1.0)
     with pytest.raises(TypeError, match="numeric"):
         select_checkpoint({"validation_loss": [1.0]}, min_delta=True)
+
+
+@pytest.mark.parametrize("split", ["test", "testing", "holdout", "heldout", "held_out"])
+def test_checkpoint_rejects_all_held_out_split_aliases(split: str) -> None:
+    with pytest.raises(ValueError, match="not test metrics"):
+        select_checkpoint(
+            MetricSeries("loss", (0.8, 0.6), split=split),
+            metric="loss",
+            direction="min",
+        )
+
+
+@pytest.mark.parametrize("name", ["test_loss", "testing_loss", "holdout_loss"])
+def test_checkpoint_rejects_held_out_name_aliases(name: str) -> None:
+    with pytest.raises(ValueError, match="not test metrics"):
+        select_checkpoint(MetricSeries(name, (0.8, 0.6)), metric=name, direction="min")
+
+
+def test_checkpoint_reports_original_index_when_nonfinite_points_are_skipped() -> None:
+    series = MetricSeries(
+        "validation_loss",
+        (float("nan"), 0.7, 0.5, float("inf"), 0.6),
+        steps=(10, 20, 30, 40, 50),
+    )
+    selected = select_checkpoint(series)
+    assert selected.best_index == 2
+    assert selected.best_step == 30
+    assert selected.overfit_after == 50

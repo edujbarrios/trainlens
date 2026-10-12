@@ -23,6 +23,11 @@ runs = project.runs()
 `Project` stores the existing portable TrainLens run JSON format under the project directory
 and keeps project labels such as names and tags in a separate local index.
 
+`project.repair()` reports orphan JSON files and missing indexed runs after
+an interrupted write, without deleting data by default. Opt in to
+`project.repair(prune_missing=True, remove_orphans=True)` after inspecting
+those reported IDs.
+
 ## Rank several runs
 
 ```python
@@ -147,8 +152,11 @@ trainlens compare baseline.json candidate.json
 trainlens check candidate.json --against baseline.json --require 'f1>=0.85'
 ```
 
-`trainlens check` returns a non-zero exit code for material regressions, failed gates, or
-missing required metrics.
+`trainlens check` returns a non-zero exit code for material regressions,
+failed gates, missing required metrics, or metrics removed relative to the
+baseline. Use `--allow-removed` for intentional metric schema changes. Gates
+are split-aware: select `train_loss` or `validation_loss`, not an ambiguous
+raw `loss`.
 
 ## Extend deterministic analysis
 
