@@ -99,3 +99,52 @@ def test_project_serializes_concurrent_writers_without_lost_index_entries(tmp_pa
         f"run-{index}" for index in range(8)
     }
     assert not (project.root / ".project.lock").exists()
+
+
+def test_project_queries_read_index_only_once(tmp_path, monkeypatch) -> None:
+    project = Project(tmp_path)
+    project.add(_run("a"), tags=("red",))
+    project.add(_run("b"), tags=("blue",))
+    reads = 0
+    original = project._read_index
+
+    def counted():
+        nonlocal reads
+        reads += 1
+        return original()
+
+    monkeypatch.setattr(project, "_read_index", counted)
+    assert len(project.entries()) == 2
+    assert reads == 1
+    assert len(project.find(tag="red")) == 1
+    assert reads == 2
+
+
+def test_project_repair_reports_and_recovers_interrupted_operations(tmp_path) -> None:
+    from trainlens.runs import save_run
+
+    project = Project(tmp_path)
+    project.add(_run("missing"))
+    (project.root / "runs" / "missing.json").unlink()
+    save_run(_run("orphan"), project.root / "runs" / "orphan.json")
+
+    assert project.repair() == (("missing",), ("orphan",))
+    assert len(project) == 1
+    assert project.repair(prune_missing=True, remove_orphans=True) == (
+        ("missing",), ("orphan",)
+    )
+    assert project.repair() == ((), ())
+    assert len(project) == 0
+
+
+def test_project_remove_preserves_file_when_index_write_fails(tmp_path, monkeypatch) -> None:
+    project = Project(tmp_path)
+    project.add(_run("important"))
+
+    def failed_write(index):
+        raise OSError("simulated disk failure")
+
+    monkeypatch.setattr(project, "_write_index", failed_write)
+    with pytest.raises(OSError, match="simulated disk failure"):
+        project.remove("important")
+    assert (project.root / "runs" / "important.json").is_file()
