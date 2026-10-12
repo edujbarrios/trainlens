@@ -75,11 +75,13 @@ contain `action`, `rationale`, `evidence_ids`, `confidence`, and `success_criter
 from trainlens import verify_agent_plan
 
 plan = verify_agent_plan(agent_response, context=context)
-print(plan.is_fully_supported)
+print(plan.has_valid_evidence_references)
 print(plan.unsupported_evidence_ids)
 ```
 
-Verification checks that cited evidence IDs exist in the deterministic context. This prevents an
+Verification checks that cited evidence IDs exist in the deterministic context.
+`has_valid_evidence_references` makes this narrow guarantee explicit. The
+existing `is_fully_supported` property remains an alias for compatibility. This prevents an
 agent from silently inventing TrainLens evidence references. It does **not** prove that the causal
 interpretation or proposed experiment is correct.
 
