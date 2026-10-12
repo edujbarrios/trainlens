@@ -11,6 +11,7 @@ from pathlib import Path
 from trainlens.agent import AgentContext, build_agent_context_from_run, verify_agent_plan
 from trainlens.comparison import compare_runs, render_run_comparison
 from trainlens.models.run import TrainingRun
+from trainlens.run_metrics import final_metric_values
 from trainlens.runs import load_run
 
 _GATE_PATTERN = re.compile(
@@ -27,7 +28,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "compare":
         return _compare(args.baseline, args.candidate)
     if args.command == "check":
-        return _check(args.candidate, args.against, tuple(args.requirement))
+        return _check(args.candidate, args.against, tuple(args.requirement), allow_removed=args.allow_removed)
     if args.command == "agent-context":
         return _agent_context(args.run, args.format, args.output, args.objective)
     if args.command == "verify-agent-plan":
@@ -46,6 +47,11 @@ def _parser() -> argparse.ArgumentParser:
     check = subparsers.add_parser("check", help="fail on material regressions or metric gates")
     check.add_argument("candidate", type=Path)
     check.add_argument("--against", type=Path, default=None)
+    check.add_argument(
+        "--allow-removed",
+        action="store_true",
+        help="allow baseline metrics absent from the candidate",
+    )
     check.add_argument(
         "--require",
         dest="requirement",
@@ -99,6 +105,8 @@ def _check(
     candidate_path: Path,
     baseline_path: Path | None,
     requirements: tuple[str, ...],
+    *,
+    allow_removed: bool = False,
 ) -> int:
     candidate = load_run(candidate_path)
     failures: list[str] = []
@@ -111,6 +119,11 @@ def _check(
             experiment_name=candidate_path.stem,
         )
         material = [item for item in comparison.regressions if item.magnitude == "material"]
+        if not allow_removed:
+            failures.extend(
+                f"removed baseline metric: {item.name}"
+                for item in comparison.metrics if item.direction == "removed"
+            )
         failures.extend(
             f"material regression: {item.name} "
             f"{_format_value(item.baseline)} -> {_format_value(item.experiment)}"
@@ -203,12 +216,8 @@ def _passes(value: float, operator: str, threshold: float) -> bool:
 
 
 def _final_metrics(run: TrainingRun) -> dict[str, float]:
-    output: dict[str, float] = {}
-    for series in run.metrics:
-        value = series.last
-        if value is not None:
-            output[series.name] = value
-    return output
+    """Use the same split-aware, finite-value semantics as run comparison."""
+    return final_metric_values(run)
 
 
 def _format_value(value: float | None) -> str:
