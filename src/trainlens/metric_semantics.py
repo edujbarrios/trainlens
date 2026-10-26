@@ -60,7 +60,8 @@ class MetricRegistry:
         )
         for alias in (canonical, *normalized_aliases):
             existing = self._aliases.get(alias)
-            if existing is not None and existing != canonical and not replace:
+            # Replacing a spec must not silently steal another metric's aliases.
+            if existing is not None and existing != canonical:
                 raise ValueError(f"metric alias {alias!r} is already registered")
         normalized = MetricSpec(
             name=canonical,
