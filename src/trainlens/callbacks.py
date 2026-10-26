@@ -25,6 +25,7 @@ class TrainLensCallback:
         explain_every: int | None = None,
         on_explain: ExplanationHandler | None = None,
         stop_on_anomaly: bool = False,
+        max_alerts: int | None = None,
     ) -> None:
         if explain_every is not None and (
             isinstance(explain_every, bool) or not isinstance(explain_every, int)
@@ -34,6 +35,12 @@ class TrainLensCallback:
             raise ValueError("explain_every must be at least 1")
         if explain_every is not None and on_explain is None:
             raise ValueError("on_explain is required when explain_every is configured")
+        if max_alerts is not None and (
+            isinstance(max_alerts, bool) or not isinstance(max_alerts, int) or max_alerts < 1
+        ):
+            raise ValueError("max_alerts must be a positive integer or None")
+        self.max_alerts = max_alerts
+        self.total_alerts = 0
         self.monitor = monitor or TrainLensMonitor()
         self.alerts_enabled = alerts
         self.explain_every = explain_every
@@ -56,8 +63,11 @@ class TrainLensCallback:
         if not numeric:
             return ()
         detected = self.monitor.observe(step, numeric)
+        self.total_alerts += len(detected)
         if self.alerts_enabled:
             self.alerts.extend(detected)
+            if self.max_alerts is not None:
+                del self.alerts[:-self.max_alerts]
         if self.stop_on_anomaly and any(alert.severity == "critical" for alert in detected):
             self.stop_requested = True
             if self.model is not None and hasattr(self.model, "stop_training"):
