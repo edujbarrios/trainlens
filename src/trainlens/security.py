@@ -164,13 +164,18 @@ def _sanitize_value(
             )
             for item in value
         }
-    return value
+    if isinstance(value, int | float | bool | type(None)):
+        return value
+    # Avoid invoking arbitrary repr() implementations in outbound context.
+    return OMITTED_VALUE
 
 
 def _sanitize_mapping_key(key: Any, max_text_chars: int) -> Any:
-    if not isinstance(key, str):
+    if isinstance(key, str):
+        return _truncate_text(redact_text(key), max_text_chars)
+    if isinstance(key, int | float | bool | type(None)):
         return key
-    return _truncate_text(redact_text(key), max_text_chars)
+    return OMITTED_VALUE
 
 
 def _truncate_text(text: str, max_text_chars: int) -> str:

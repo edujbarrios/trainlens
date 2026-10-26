@@ -102,3 +102,13 @@ def test_sensitive_names_are_detected_in_camel_case():
     for name in ("clientSecret", "privateKey", "accessToken", "refreshToken", "hfToken"):
         assert is_sensitive_name(name)
         assert sanitize_value(name, "opaque-credential") == REDACTED_VALUE
+
+
+def test_sanitizer_omits_unknown_objects_without_rendering_repr() -> None:
+    class PrivateObject:
+        def __repr__(self) -> str:
+            raise AssertionError("should never render private object")
+
+    private = PrivateObject()
+    assert sanitize_value("config", {"private": private}) == {"private": OMITTED_VALUE}
+    assert sanitize_value("config", {private: "safe"}) == {OMITTED_VALUE: "safe"}
