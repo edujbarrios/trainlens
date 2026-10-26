@@ -117,7 +117,7 @@ def _sanitize_value(
             return OMITTED_VALUE
         return {
             _sanitize_mapping_key(key, max_text_chars): _sanitize_value(
-                str(key),
+                key if isinstance(key, str) else "<non-string-key>",
                 nested_value,
                 max_collection_items=max_collection_items,
                 max_depth=max_depth - 1,
