@@ -182,3 +182,18 @@ Dataset evidence is descriptive. For example, TrainLens may report that:
 Those facts can make a model result easier to reason about, but they do **not** establish that a
 dataset property caused a training failure or performance gap. Treat dataset observations as
 hypotheses and experiment context, not causal conclusions.
+
+
+## Bounded dataset profiling
+
+For large datasets, set `max_rows` to profile only the leading records without
+materializing every input row in memory:
+
+```python
+summary = explain_dataset(dataset, target="label", max_rows=10_000)
+```
+
+The result explicitly reports when the configured row budget was reached.
+This is a deterministic **prefix**, not a random sample, and should not be treated
+as representative of a shuffled or time-ordered full dataset. Omitting
+`max_rows` preserves the original complete-profile behavior.
