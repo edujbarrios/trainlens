@@ -33,6 +33,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.against,
             tuple(args.requirement),
             allow_removed=args.allow_removed,
+            output_format=args.format,
+            output_path=args.output,
         )
     if args.command == "agent-context":
         return _agent_context(args.run, args.format, args.output, args.objective)
@@ -57,6 +59,8 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="allow baseline metrics absent from the candidate",
     )
+    check.add_argument("--format", choices=("text", "json"), default="text")
+    check.add_argument("--output", type=Path, default=None)
     check.add_argument(
         "--require",
         dest="requirement",
@@ -112,6 +116,8 @@ def _check(
     requirements: tuple[str, ...],
     *,
     allow_removed: bool = False,
+    output_format: str = "text",
+    output_path: Path | None = None,
 ) -> int:
     candidate = load_run(candidate_path)
     failures: list[str] = []
@@ -147,12 +153,17 @@ def _check(
                 f"gate failed: {metric}={value:.6g} does not satisfy {operator}{threshold:.6g}"
             )
 
-    if failures:
-        for failure in failures:
-            print(f"FAIL: {failure}")
-        return 1
-    print("PASS: all TrainLens checks satisfied")
-    return 0
+    if output_format == "json":
+        _write_or_print(
+            json.dumps({"passed": not failures, "failures": failures}, indent=2, sort_keys=True),
+            output_path,
+        )
+    else:
+        lines = [f"FAIL: {failure}" for failure in failures]
+        if not failures:
+            lines.append("PASS: all TrainLens checks satisfied")
+        _write_or_print("\n".join(lines), output_path)
+    return 1 if failures else 0
 
 
 def _agent_context(
