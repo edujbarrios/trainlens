@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import time
+from contextlib import suppress
 from dataclasses import dataclass
-from typing import Any, Self
-from urllib import request
+from typing import Any, Self, cast
+from urllib import error, request
 
 from trainlens.llm.config import LLMConfig
 from trainlens.llm.prompts import (
@@ -49,9 +51,32 @@ class LLMRequestPreview:
         return {"model": self.model, "messages": list(self.messages())}
 
 
+class ProviderError(RuntimeError):
+    """An LLM provider request failed."""
+
+
+class ProviderHTTPError(ProviderError):
+    """The provider returned an HTTP error."""
+
+
+class ProviderConnectionError(ProviderError):
+    """A network error prevented the provider request."""
+
+
 @dataclass
 class OpenAICompatibleProvider:
     config: LLMConfig
+    max_retries: int = 0
+    retry_delay_seconds: float = 0.25
+
+    def __post_init__(self) -> None:
+        if isinstance(self.max_retries, bool) or not isinstance(self.max_retries, int):
+            raise ValueError("max_retries must be a non-negative integer")
+        if self.max_retries < 0:
+            raise ValueError("max_retries must be a non-negative integer")
+        if self.retry_delay_seconds < 0:
+            raise ValueError("retry_delay_seconds must be non-negative")
+
 
     @classmethod
     def from_values(
@@ -61,6 +86,8 @@ class OpenAICompatibleProvider:
         model: str,
         api_key: str | None = None,
         timeout_seconds: float = 120.0,
+        max_retries: int = 0,
+        retry_delay_seconds: float = 0.25,
     ) -> Self:
         """Build a provider directly from explicit values."""
 
@@ -70,7 +97,9 @@ class OpenAICompatibleProvider:
                 api_key=api_key,
                 model=model,
                 timeout_seconds=timeout_seconds,
-            )
+            ),
+            max_retries=max_retries,
+            retry_delay_seconds=retry_delay_seconds,
         )
 
     @classmethod
@@ -123,6 +152,26 @@ class OpenAICompatibleProvider:
             user_prompt=user_content,
         )
 
+    def _request_with_retries(self, req: request.Request) -> bytes:
+        for attempt in range(self.max_retries + 1):
+            try:
+                with request.urlopen(req, timeout=self.config.timeout_seconds) as response:  # noqa: S310
+                    return cast(bytes, response.read(_MAX_RESPONSE_BYTES + 1))
+            except error.HTTPError as exc:
+                if exc.code not in {429, 500, 502, 503, 504} or attempt == self.max_retries:
+                    raise ProviderHTTPError(f"LLM provider HTTP error: {exc.code}") from exc
+                delay = self.retry_delay_seconds * (2**attempt)
+                retry_after = exc.headers.get("Retry-After") if exc.headers else None
+                if retry_after is not None:
+                    with suppress(ValueError):
+                        delay = max(0.0, float(retry_after))
+                time.sleep(min(delay, 30.0))
+            except (error.URLError, TimeoutError) as exc:
+                if attempt == self.max_retries:
+                    raise ProviderConnectionError("LLM provider request failed") from exc
+                time.sleep(min(self.retry_delay_seconds * (2**attempt), 30.0))
+        raise AssertionError("unreachable retry state")
+
     def explain(
         self,
         markdown_report: str,
@@ -145,8 +194,7 @@ class OpenAICompatibleProvider:
             headers=headers,
             method="POST",
         )
-        with request.urlopen(req, timeout=self.config.timeout_seconds) as response:  # noqa: S310
-            response_body = response.read(_MAX_RESPONSE_BYTES + 1)
+        response_body = self._request_with_retries(req)
         if len(response_body) > _MAX_RESPONSE_BYTES:
             msg = (
                 "LLM provider response exceeded the maximum supported size "
