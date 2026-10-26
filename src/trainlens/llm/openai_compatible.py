@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any, Self
 from urllib import error, request
@@ -162,10 +163,8 @@ class OpenAICompatibleProvider:
                 delay = self.retry_delay_seconds * (2**attempt)
                 retry_after = exc.headers.get("Retry-After") if exc.headers else None
                 if retry_after is not None:
-                    try:
+                    with suppress(ValueError):
                         delay = max(0.0, float(retry_after))
-                    except ValueError:
-                        pass
                 time.sleep(min(delay, 30.0))
             except (error.URLError, TimeoutError) as exc:
                 if attempt == self.max_retries:
