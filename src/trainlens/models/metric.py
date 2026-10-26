@@ -68,11 +68,12 @@ class MetricSeries:
             return None
         tail = min(3, len(self.values))
         positions = self.steps[-tail:]
-        if any(position is None for position in positions):
+        steps = tuple(position for position in positions if position is not None)
+        if len(steps) != len(positions):
             return None
-        if any(right <= left for left, right in zip(positions, positions[1:], strict=False)):
+        if any(right <= left for left, right in zip(steps, steps[1:], strict=False)):
             return None
-        distance = positions[-1] - positions[0]
+        distance = steps[-1] - steps[0]
         return (self.values[-1] - self.values[-tail]) / distance
 
     @property
