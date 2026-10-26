@@ -468,7 +468,7 @@ def _sequence_values(
 ) -> tuple[object, ...]:
     if not _is_sequence_like(value):
         raise TypeError(f"dataset column {column_name!r} must be a sequence of values")
-    if max_rows is not None:
+    if max_rows is not None and isinstance(value, Iterable):
         return tuple(islice(value, max_rows))
     if isinstance(value, Sequence):
         return tuple(value)
