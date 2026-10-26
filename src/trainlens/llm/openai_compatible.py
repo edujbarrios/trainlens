@@ -6,7 +6,7 @@ import json
 import time
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Any, Self
+from typing import Any, Self, cast
 from urllib import error, request
 
 from trainlens.llm.config import LLMConfig
@@ -156,7 +156,7 @@ class OpenAICompatibleProvider:
         for attempt in range(self.max_retries + 1):
             try:
                 with request.urlopen(req, timeout=self.config.timeout_seconds) as response:  # noqa: S310
-                    return response.read(_MAX_RESPONSE_BYTES + 1)
+                    return cast(bytes, response.read(_MAX_RESPONSE_BYTES + 1))
             except error.HTTPError as exc:
                 if exc.code not in {429, 500, 502, 503, 504} or attempt == self.max_retries:
                     raise ProviderHTTPError(f"LLM provider HTTP error: {exc.code}") from exc
