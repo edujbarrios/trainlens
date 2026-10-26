@@ -91,3 +91,19 @@ def test_constraints_filter_pareto_source_and_create_multiple_criteria() -> None
     assert recommendation.success_criteria[0].operator == ">="
     assert recommendation.success_criteria[1].operator == "<="
     assert any("Pareto-efficient" in item for item in recommendation.evidence)
+
+
+def test_replace_cannot_steal_another_metrics_alias() -> None:
+    import pytest
+
+    from trainlens.metric_semantics import MetricRegistry
+
+    registry = MetricRegistry()
+    registry.register(MetricSpec(name="accuracy", direction="higher", aliases=("acc",)))
+    with pytest.raises(ValueError, match="already registered"):
+        registry.register(
+            MetricSpec(name="other_metric", direction="lower", aliases=("acc",)),
+            replace=True,
+        )
+    assert registry.resolve("acc") is not None
+    assert registry.resolve("acc").name == "accuracy"
