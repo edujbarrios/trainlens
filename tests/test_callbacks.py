@@ -114,3 +114,22 @@ def test_callback_ignores_tensor_like_boolean_metrics():
     callback.observe(1, {"ready": BooleanScalar(), "loss": 0.75})
 
     assert callback.monitor.observations[0].metrics == {"loss": 0.75}
+
+
+def test_callback_bounds_retained_alerts_without_losing_counts() -> None:
+    callback = TrainLensCallback(max_alerts=2)
+    for step in range(10):
+        callback.observe(step, {"loss": float("nan")})
+
+    assert len(callback.alerts) == 2
+    assert callback.total_alerts == 10
+    assert [alert.step for alert in callback.alerts] == [8, 9]
+
+
+def test_callback_validates_alert_retention_configuration() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="max_alerts"):
+        TrainLensCallback(max_alerts=0)
+    with pytest.raises(ValueError, match="max_alerts"):
+        TrainLensCallback(max_alerts=True)
