@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from trainlens.cli import main
 from trainlens.models.metric import MetricSeries
 from trainlens.models.run import TrainingRun
@@ -81,3 +83,17 @@ def test_cli_rejects_missing_baseline_metrics_unless_explicitly_allowed(
     assert main(
         ["check", str(candidate), "--against", str(baseline), "--allow-removed"]
     ) == 0
+
+
+def test_check_json_output_and_exit_codes(tmp_path, capsys) -> None:
+    candidate = _write_run(tmp_path, "candidate", 0.4, 0.85)
+    args = ["check", str(candidate), "--format", "json", "--require", "f1>=0.9"]
+    assert main(args) == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output["passed"] is False
+    assert len(output["failures"]) == 1
+    assert "gate failed" in output["failures"][0]
+
+    destination = tmp_path / "result.json"
+    assert main(["check", str(candidate), "--format", "json", "--output", str(destination)]) == 0
+    assert json.loads(destination.read_text()) == {"passed": True, "failures": []}
