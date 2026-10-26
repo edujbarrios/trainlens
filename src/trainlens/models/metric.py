@@ -70,7 +70,7 @@ class MetricSeries:
         positions = self.steps[-tail:]
         if any(position is None for position in positions):
             return None
-        if any(right <= left for left, right in zip(positions, positions[1:])):
+        if any(right <= left for left, right in zip(positions, positions[1:], strict=False)):
             return None
         distance = positions[-1] - positions[0]
         return (self.values[-1] - self.values[-tail]) / distance
