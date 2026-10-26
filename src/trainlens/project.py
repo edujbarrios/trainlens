@@ -207,7 +207,7 @@ class Project:
                         import msvcrt
 
                         handle.seek(0)
-                        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)  # type: ignore[attr-defined]
                     else:
                         import fcntl
 
@@ -224,7 +224,7 @@ class Project:
             finally:
                 if os.name == "nt":
                     handle.seek(0)
-                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)  # type: ignore[attr-defined]
                 else:
                     fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
