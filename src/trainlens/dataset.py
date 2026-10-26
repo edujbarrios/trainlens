@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence, Sized
 from dataclasses import dataclass
+from itertools import islice
 from math import isfinite, isnan
 from numbers import Real
 from statistics import fmean
@@ -112,6 +113,7 @@ def explain_dataset(
     name: str | None = None,
     max_features: int = 50,
     max_categories: int = 20,
+    max_rows: int | None = None,
 ) -> DatasetExplanation:
     """Explain dataset structure and target evidence without sending raw rows anywhere.
 
@@ -122,6 +124,8 @@ def explain_dataset(
 
     _validate_limit("max_features", max_features, minimum=1)
     _validate_limit("max_categories", max_categories, minimum=2)
+    if max_rows is not None:
+        _validate_limit("max_rows", max_rows, minimum=1)
     split_inputs = _split_inputs(dataset, name=name)
     split_summaries = tuple(
         _summarize_split(
@@ -130,6 +134,7 @@ def explain_dataset(
             target=target,
             max_features=max_features,
             max_categories=max_categories,
+            max_rows=max_rows,
         )
         for split_name, split_dataset in split_inputs
     )
@@ -162,10 +167,9 @@ def _looks_like_split_mapping(dataset: Mapping[object, object]) -> bool:
 def _looks_tabular(value: object) -> bool:
     if isinstance(value, Mapping):
         return bool(value) and all(_is_sequence_like(item) for item in value.values())
-    rows = _row_sequence(value)
-    if rows is not None:
-        # Empty row sequences are ambiguous with empty column values.
-        return bool(rows)
+    # Probe one row instead of materializing a potentially huge dataset.
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
+        return bool(value) and isinstance(value[0], Mapping)
     return _column_names(value) is not None
 
 
@@ -176,8 +180,9 @@ def _summarize_split(
     target: str | None,
     max_features: int,
     max_categories: int,
+    max_rows: int | None,
 ) -> DatasetSplitSummary:
-    columns = _tabular_columns(dataset)
+    columns = _tabular_columns(dataset, max_rows=max_rows)
     if not columns:
         return DatasetSplitSummary(
             name=name,
@@ -204,6 +209,11 @@ def _summarize_split(
         for column_name, values in feature_items[:max_features]
     )
     observations: list[str] = []
+    if max_rows is not None and row_count == max_rows:
+        observations.append(
+            f"Profile includes at most the first {max_rows} rows; aggregate results "
+            "may not represent the complete dataset."
+        )
     omitted_features = len(feature_items) - len(features)
     if omitted_features > 0:
         observations.append(
@@ -385,16 +395,18 @@ def _target_distribution_shift(
     return label, delta
 
 
-def _tabular_columns(dataset: object) -> tuple[tuple[str, tuple[object, ...]], ...]:
+def _tabular_columns(
+    dataset: object, *, max_rows: int | None = None
+) -> tuple[tuple[str, tuple[object, ...]], ...]:
     if isinstance(dataset, Mapping):
         columns: list[tuple[str, tuple[object, ...]]] = []
         for name, values in dataset.items():
             if not isinstance(name, str) or not name:
                 raise ValueError("dataset column names must be non-empty strings")
-            columns.append((name, _sequence_values(values, column_name=name)))
+            columns.append((name, _sequence_values(values, column_name=name, max_rows=max_rows)))
         return tuple(columns)
 
-    rows = _row_sequence(dataset)
+    rows = _row_sequence(dataset, max_rows=max_rows)
     if rows is not None:
         row_names: list[str] = []
         for row in rows:
@@ -413,7 +425,7 @@ def _tabular_columns(dataset: object) -> tuple[tuple[str, tuple[object, ...]], .
                 values = dataset[name]  # type: ignore[index]
             except (KeyError, TypeError, AttributeError) as exc:
                 raise TypeError(f"could not read dataset column {name!r}") from exc
-            columns.append((name, _sequence_values(values, column_name=name)))
+            columns.append((name, _sequence_values(values, column_name=name, max_rows=max_rows)))
         return tuple(columns)
 
     raise TypeError(
@@ -436,12 +448,14 @@ def _column_names(dataset: object) -> tuple[str, ...] | None:
     return None
 
 
-def _row_sequence(dataset: object) -> tuple[Mapping[object, object], ...] | None:
+def _row_sequence(
+    dataset: object, *, max_rows: int | None = None
+) -> tuple[Mapping[object, object], ...] | None:
     if isinstance(dataset, str | bytes | bytearray | Mapping):
         return None
     if not isinstance(dataset, Sequence):
         return None
-    rows = tuple(dataset)
+    rows = tuple(islice(dataset, max_rows)) if max_rows is not None else tuple(dataset)
     if not rows:
         return ()
     if all(isinstance(row, Mapping) for row in rows):
@@ -449,9 +463,13 @@ def _row_sequence(dataset: object) -> tuple[Mapping[object, object], ...] | None
     return None
 
 
-def _sequence_values(value: object, *, column_name: str) -> tuple[object, ...]:
+def _sequence_values(
+    value: object, *, column_name: str, max_rows: int | None = None
+) -> tuple[object, ...]:
     if not _is_sequence_like(value):
         raise TypeError(f"dataset column {column_name!r} must be a sequence of values")
+    if max_rows is not None and isinstance(value, Iterable):
+        return tuple(islice(value, max_rows))
     if isinstance(value, Sequence):
         return tuple(value)
     if isinstance(value, Iterable):

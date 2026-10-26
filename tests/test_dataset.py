@@ -120,3 +120,28 @@ def test_optional_pandas_missing_value_is_counted_when_available() -> None:
     explanation = explain_dataset({"feature": [1.0, pandas.NA, 3.0]})
 
     assert explanation.splits[0].features[0].missing == 1
+
+
+def test_bounded_profile_only_consumes_requested_rows() -> None:
+    from collections.abc import Sequence
+
+    class LargeColumn(Sequence):
+        def __len__(self) -> int:
+            return 1_000_000
+
+        def __getitem__(self, index):
+            if isinstance(index, slice):
+                raise AssertionError("unbounded slicing is forbidden")
+            if index >= 3:
+                raise AssertionError("requested too many rows")
+            return index + 1
+
+    explanation = explain_dataset({"value": LargeColumn()}, max_rows=3)
+    assert explanation.splits[0].row_count == 3
+    assert explanation.splits[0].features[0].mean == 2.0
+    assert "at most the first 3 rows" in explanation.splits[0].observations[0]
+
+
+def test_bounded_profile_validates_positive_row_budget() -> None:
+    with pytest.raises(ValueError, match="max_rows"):
+        explain_dataset({"value": [1]}, max_rows=0)

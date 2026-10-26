@@ -122,6 +122,7 @@ def explain_dataset(
     name: str | None = None,
     max_features: int = 50,
     max_categories: int = 20,
+    max_rows: int | None = None,
 ) -> DatasetExplanation:
     """Explain tabular, image, and image-centered multimodal datasets locally.
 
@@ -134,6 +135,8 @@ def explain_dataset(
 
     _validate_limit("max_features", max_features, minimum=1)
     _validate_limit("max_categories", max_categories, minimum=2)
+    if max_rows is not None:
+        _validate_limit("max_rows", max_rows, minimum=1)
     split_inputs = _split_inputs(dataset, name=name)
 
     split_summaries: list[DatasetSplitSummary] = []
@@ -145,6 +148,7 @@ def explain_dataset(
             target=target,
             max_features=max_features,
             max_categories=max_categories,
+            max_rows=max_rows,
         )
         split_summaries.append(split)
         modality_summaries.append(modalities)
@@ -156,6 +160,7 @@ def explain_dataset(
             name=name,
             max_features=max_features,
             max_categories=max_categories,
+            max_rows=max_rows,
         )
 
     splits = tuple(split_summaries)
@@ -180,8 +185,9 @@ def _summarize_split(
     target: str | None,
     max_features: int,
     max_categories: int,
+    max_rows: int | None,
 ) -> tuple[DatasetSplitSummary, DatasetModalitySummary]:
-    columns = _tabular_columns(dataset)
+    columns = _tabular_columns(dataset, max_rows=max_rows)
     if not columns:
         split = DatasetSplitSummary(
             name=name,
@@ -224,6 +230,11 @@ def _summarize_split(
 
     features = tuple(feature_summaries)
     observations: list[str] = []
+    if max_rows is not None and row_count == max_rows:
+        observations.append(
+            f"Profile includes at most the first {max_rows} rows; aggregate results "
+            "may not represent the complete dataset."
+        )
     omitted_features = len(feature_items) - len(features)
     if omitted_features > 0:
         observations.append(
