@@ -95,3 +95,28 @@ def test_explain_dataset_limits_features_with_explicit_observation() -> None:
 
     assert len(explanation.splits[0].features) == 2
     assert any("1 additional features" in item for item in explanation.splits[0].observations)
+
+
+def test_empty_columns_are_not_misclassified_as_dataset_splits() -> None:
+    explanation = explain_dataset({"feature": [], "label": []}, target="label")
+
+    assert len(explanation.splits) == 1
+    assert explanation.splits[0].name == "dataset"
+    assert explanation.splits[0].row_count == 0
+    assert [feature.name for feature in explanation.splits[0].features] == ["feature"]
+
+
+def test_non_finite_numeric_values_do_not_contaminate_statistics() -> None:
+    explanation = explain_dataset({"feature": [1.0, float("inf"), 3.0]})
+
+    feature = explanation.splits[0].features[0]
+    assert feature.minimum == 1.0
+    assert feature.maximum == 3.0
+    assert feature.mean == 2.0
+
+
+def test_optional_pandas_missing_value_is_counted_when_available() -> None:
+    pandas = pytest.importorskip("pandas")
+    explanation = explain_dataset({"feature": [1.0, pandas.NA, 3.0]})
+
+    assert explanation.splits[0].features[0].missing == 1

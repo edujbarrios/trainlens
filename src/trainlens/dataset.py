@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence, Sized
 from dataclasses import dataclass
-from math import isnan
+from math import isfinite, isnan
 from numbers import Real
 from statistics import fmean
 from typing import Literal, TypeAlias
@@ -162,8 +162,10 @@ def _looks_like_split_mapping(dataset: Mapping[object, object]) -> bool:
 def _looks_tabular(value: object) -> bool:
     if isinstance(value, Mapping):
         return bool(value) and all(_is_sequence_like(item) for item in value.values())
-    if _row_sequence(value) is not None:
-        return True
+    rows = _row_sequence(value)
+    if rows is not None:
+        # Empty row sequences are ambiguous with empty column values.
+        return bool(rows)
     return _column_names(value) is not None
 
 
@@ -486,7 +488,7 @@ def _numeric_values(values: tuple[object, ...]) -> tuple[float, ...]:
     for value in values:
         if isinstance(value, Real):
             numeric = float(value)
-            if not isnan(numeric):
+            if isfinite(numeric):
                 output.append(numeric)
     return tuple(output)
 
@@ -511,6 +513,10 @@ def _safe_label(value: object) -> str:
 
 def _is_missing(value: object) -> bool:
     if value is None:
+        return True
+    # pandas.NA cannot be used as a boolean and pandas is an optional dependency.
+    value_type = type(value)
+    if value_type.__name__ == "NAType" and value_type.__module__.startswith("pandas."):
         return True
     if isinstance(value, Real):
         try:
