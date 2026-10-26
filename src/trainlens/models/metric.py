@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import isfinite
 from statistics import mean
 
 
@@ -33,6 +34,11 @@ class MetricSeries:
     def __post_init__(self) -> None:
         if self.steps and len(self.steps) != len(self.values):
             raise ValueError("MetricSeries steps must align 1:1 with values")
+        for step in self.steps:
+            if step is None:
+                continue
+            if isinstance(step, bool) or not isinstance(step, int | float) or not isfinite(step):
+                raise ValueError("MetricSeries steps must be finite numbers or None")
 
     @property
     def first(self) -> float | None:
@@ -54,6 +60,20 @@ class MetricSeries:
             return self.delta
         tail = self.values[-3:]
         return (tail[-1] - tail[0]) / 2
+
+    @property
+    def recent_slope_per_step(self) -> float | None:
+        """Slope over the recent actual steps; unavailable for incomplete metadata."""
+        if not self.steps or len(self.values) < 2:
+            return None
+        tail = min(3, len(self.values))
+        positions = self.steps[-tail:]
+        if any(position is None for position in positions):
+            return None
+        if any(right <= left for left, right in zip(positions, positions[1:])):
+            return None
+        distance = positions[-1] - positions[0]
+        return (self.values[-1] - self.values[-tail]) / distance
 
     @property
     def volatility(self) -> float:
