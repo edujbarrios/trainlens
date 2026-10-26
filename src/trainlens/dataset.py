@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence, Sized
-from itertools import islice
 from dataclasses import dataclass
+from itertools import islice
 from math import isfinite, isnan
 from numbers import Real
 from statistics import fmean
