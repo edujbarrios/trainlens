@@ -1,0 +1,32 @@
+name: Optional framework and platform compatibility
+
+on:
+  workflow_dispatch:
+
+jobs:
+  platform-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest tests/test_project.py tests/test_runs_persistence.py -q
+
+  frameworks:
+    runs-on: ubuntu-latest
+    env:
+      KERAS_BACKEND: torch
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pip install torch transformers lightning keras
+      - run: python -m pytest tests/test_framework_integrations_optional.py -q -rs
