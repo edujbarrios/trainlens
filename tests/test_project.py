@@ -98,7 +98,9 @@ def test_project_serializes_concurrent_writers_without_lost_index_entries(tmp_pa
     assert {entry.run.run_id for entry in project.entries()} == {
         f"run-{index}" for index in range(8)
     }
-    assert not (project.root / ".project.lock").exists()
+    # The stable inode must remain to prevent an unlink/recreate lock race.
+    assert (project.root / ".project.lock").exists()
+    project.add(_run("after-lock"))
 
 
 def test_project_queries_read_index_only_once(tmp_path, monkeypatch) -> None:
@@ -148,3 +150,12 @@ def test_project_remove_preserves_file_when_index_write_fails(tmp_path, monkeypa
     with pytest.raises(OSError, match="simulated disk failure"):
         project.remove("important")
     assert (project.root / "runs" / "important.json").is_file()
+
+
+def test_project_lock_can_be_reacquired_after_exception(tmp_path) -> None:
+    project = Project(tmp_path)
+    with pytest.raises(RuntimeError, match="failure"):
+        with project._write_lock():
+            raise RuntimeError("failure")
+    project.add(_run("after-failure"))
+    assert len(project) == 1

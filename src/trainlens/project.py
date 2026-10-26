@@ -6,7 +6,7 @@ import json
 import os
 import time
 from collections.abc import Iterator, Mapping, Sequence
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -192,34 +192,41 @@ class Project:
 
     @contextmanager
     def _write_lock(self) -> Iterator[None]:
+        """Use a kernel-managed lock, released automatically on process exit.
+
+        Keep the lock file: removing it allows a second writer to lock a
+        different inode while another process still holds the original lock.
+        """
         self.root.mkdir(parents=True, exist_ok=True)
         lock_path = self.root / ".project.lock"
         deadline = time.monotonic() + 10.0
-        descriptor: int | None = None
-        while descriptor is None:
-            try:
-                descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                os.write(descriptor, f"{os.getpid()}\n".encode())
-            except FileExistsError:
+        with lock_path.open("a+b") as handle:
+            while True:
                 try:
-                    stale = time.time() - lock_path.stat().st_mtime > 60.0
-                except FileNotFoundError:
-                    continue
-                if stale:
-                    with suppress(FileNotFoundError):
-                        lock_path.unlink()
-                    continue
-                if time.monotonic() >= deadline:
-                    raise TimeoutError(
-                        f"timed out waiting for TrainLens project lock: {lock_path}"
-                    ) from None
-                time.sleep(0.05)
-        try:
-            yield
-        finally:
-            os.close(descriptor)
-            with suppress(FileNotFoundError):
-                lock_path.unlink()
+                    if os.name == "nt":
+                        import msvcrt
+
+                        handle.seek(0)
+                        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    else:
+                        import fcntl
+
+                        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except OSError:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(
+                            f"timed out waiting for TrainLens project lock: {lock_path}"
+                        ) from None
+                    time.sleep(0.05)
+            try:
+                yield
+            finally:
+                if os.name == "nt":
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
     def _run_path(self, run_id: str) -> Path:
         if not run_id or Path(run_id).name != run_id:
