@@ -154,8 +154,7 @@ def test_project_remove_preserves_file_when_index_write_fails(tmp_path, monkeypa
 
 def test_project_lock_can_be_reacquired_after_exception(tmp_path) -> None:
     project = Project(tmp_path)
-    with pytest.raises(RuntimeError, match="failure"):
-        with project._write_lock():
-            raise RuntimeError("failure")
+    with pytest.raises(RuntimeError, match="failure"), project._write_lock():
+        raise RuntimeError("failure")
     project.add(_run("after-failure"))
     assert len(project) == 1
