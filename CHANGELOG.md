@@ -2,6 +2,21 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.20.0 - 2026-10-26
+
+- fix empty-column dataset mappings being mistaken for multiple dataset splits
+- exclude non-finite numeric dataset values from aggregate means and recognize nullable pandas values
+- add optional `explain_dataset(max_rows=...)` for bounded prefix profiling of large datasets, including multimodal datasets; warn that truncated results may not represent the full distribution
+- replace age-based project lock-file deletion with kernel-managed cross-process locks to prevent live-lock theft
+- prevent custom metric replacements from stealing aliases owned by other metric specifications
+- add optional bounded callback alert retention with a total emitted-event counter
+- validate explicit metric step metadata and expose `MetricSeries.recent_slope_per_step` for irregular training steps
+- add typed provider HTTP/connection errors and configurable transient retry handling with bounded exponential backoff
+- omit unsupported notebook objects and mapping keys before generating outbound LLM context
+- add optional native-framework compatibility smoke tests and manual platform-specific project-store tests
+- support machine-readable `trainlens check --format json --output result.json` without changing existing text output or exit codes
+- expand regression tests and English documentation across affected modules
+
 ## 0.19.2 - 2026-10-12
 
 - fix split-aware CLI gates so train/validation/test metrics are not overwritten by raw names
