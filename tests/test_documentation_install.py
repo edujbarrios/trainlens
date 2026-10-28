@@ -37,7 +37,7 @@ def test_local_documentation_links_resolve() -> None:
     ]
     for path in paths:
         content = path.read_text(encoding="utf-8")
-        for match in re.finditer(r"(?<!!)\\[[^\\]]+\\]\\(([^)]+)\\)", content):
+        for match in re.finditer(r"(?<!!)\[[^\]]+\]\(([^)]+)\)", content):
             target = match.group(1).split("#", 1)[0].split("?", 1)[0]
             if not target or "://" in target or target.startswith(("mailto:", "/", "data:")):
                 continue
