@@ -19,24 +19,37 @@ Install with Python 3.11–3.14:
 python -m pip install trainlens
 ```
 
-Analyze a training history without an API key:
+Analyze a training history without an API key. **Choose one input source**:
 
 ```python
+import json
+from pathlib import Path
 from trainlens import analyze, plot_training_curves, render_report
 
-namespace = {
-    "history": {
-        "train_loss": [1.0, 0.7, 0.4],
-        "val_loss": [1.1, 0.75, 0.52],
-    }
+# Option 1 (default): metrics already available as a Python dictionary.
+history = {
+    "train_loss": [1.0, 0.7, 0.4],
+    "val_loss": [1.1, 0.75, 0.52],
 }
 
+# Option 2: uncomment to read the same metric dictionary from history.json.
+# history = json.loads(Path("history.json").read_text(encoding="utf-8"))
+
+# Option 3: uncomment to read a JSON code block inside history.md.
+# Markdown training logs are NOT parsed automatically by TrainLens.
+# markdown = Path("history.md").read_text(encoding="utf-8")
+# history = json.loads(markdown.split("```json", 1)[1].split("```", 1)[0])
+
+# All three options provide the same input to TrainLens.
+namespace = {"history": history}
 result = analyze(namespace)
-print(render_report(result))
-plot_training_curves(namespace, metrics=("loss",))
+print(render_report(result))   # Local findings and recommendations
+plot_training_curves(namespace, metrics=("loss",))  # Train/validation curves
 ```
 
-In a real notebook, pass `globals()` to inspect available training metrics, models, and trainers. TrainLens uses the evidence it finds; it does not run training or fetch remote experiment data.
+Both `history.json` and the fenced `json` block inside `history.md` should contain a metric dictionary like `{"train_loss": [1.0, 0.7], "val_loss": [1.1, 0.75]}`. Arbitrary Markdown text is **not** a supported history input. In a live notebook, you can instead use `analyze(globals())` to inspect training objects and metrics already present.
+
+Portable **TrainLens run JSON** (created with `save_run()`) is a different format; use `load_run()` with run-comparison or Agent Mode tools rather than treating it as a plain history dictionary.
 
 **Prefer a guided example?** [Run the quickstart notebook in Google Colab](https://colab.research.google.com/github/edujbarrios/trainlens/blob/main/examples/quickstart.ipynb).
 
@@ -61,8 +74,13 @@ TrainLens prepares evidence with IDs for an external agent (such as Codex, Claud
 ```python
 from trainlens import build_agent_context
 
+# Works with the namespace prepared from memory, JSON, or Markdown above.
 context = build_agent_context(namespace)
-print(context.to_markdown())  # Give this to your existing agent
+print(context.to_markdown())  # Give this evidence to your existing agent
+
+# Alternatively, a portable TrainLens run JSON saved by save_run():
+# from trainlens import build_agent_context_from_run, load_run
+# context = build_agent_context_from_run(load_run("candidate.json"))
 ```
 
 See [Agent Mode and plan verification](docs/en/agent-mode.md).
@@ -72,10 +90,20 @@ See [Agent Mode and plan verification](docs/en/agent-mode.md).
 Configure `TRAINLENS_LLM_BASE_URL` and `TRAINLENS_LLM_MODEL`, plus `TRAINLENS_LLM_API_KEY` if the endpoint requires it.
 
 ```python
-from trainlens import build_llm_report
+from trainlens import build_improvement_ideas, build_llm_report, preview_llm_request
 
+# Reuse namespace from the quickstart: in-memory, history.json, or history.md.
+# Preview the evidence that will be sent (no LLM request yet):
+preview = preview_llm_request(namespace)
+print(preview.user_prompt)
+
+# Call the configured LLM to explain the training evidence:
 report = build_llm_report(namespace)
 print(report.markdown)
+
+# Or request evidence-backed suggestions for the next experiment:
+# ideas = build_improvement_ideas(namespace)
+# print(ideas.markdown)
 ```
 
 TrainLens calls the configured provider in this mode. See [LLM setup, request previews, and privacy](docs/en/llm-and-privacy.md).
