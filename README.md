@@ -47,7 +47,7 @@ print(render_report(result))   # Local findings and recommendations
 plot_training_curves(namespace, metrics=("loss",))  # Train/validation curves
 ```
 
-Both `history.json` and the fenced `json` block inside `history.md` should contain a metric dictionary like `{"train_loss": [1.0, 0.7], "val_loss": [1.1, 0.75]}`. Arbitrary Markdown text is **not** a supported history input. In a live notebook, you can instead use `analyze(globals())` to inspect training objects and metrics already present.
+The JSON file should contain a metric dictionary such as `{"train_loss": [1.0, 0.7], "val_loss": [1.1, 0.75]}`. For `history.md`, put that same object inside a fenced `json` code block. **TrainLens does not parse arbitrary Markdown training logs.** In a live notebook, you can instead use `analyze(globals())` to inspect training objects and metrics already present.
 
 Portable **TrainLens run JSON** (created with `save_run()`) is a different format; use `load_run()` with run-comparison or Agent Mode tools rather than treating it as a plain history dictionary.
 
