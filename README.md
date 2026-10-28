@@ -19,37 +19,32 @@ Install with Python 3.11–3.14:
 python -m pip install trainlens
 ```
 
-Analyze a training history without an API key. **Choose one input source**:
+Analyze a training history locally, without an API key:
 
 ```python
-import json
-from pathlib import Path
 from trainlens import analyze, plot_training_curves, render_report
 
-# Option 1 (default): metrics already available as a Python dictionary.
+# Option 1: use metrics already available in Python.
 history = {
     "train_loss": [1.0, 0.7, 0.4],
     "val_loss": [1.1, 0.75, 0.52],
 }
 
-# Option 2: uncomment to read the same metric dictionary from history.json.
+# Option 2: replace the history above with metrics from a plain JSON file.
+# import json
+# from pathlib import Path
 # history = json.loads(Path("history.json").read_text(encoding="utf-8"))
 
-# Option 3: uncomment to read a JSON code block inside history.md.
-# Markdown training logs are NOT parsed automatically by TrainLens.
-# markdown = Path("history.md").read_text(encoding="utf-8")
-# history = json.loads(markdown.split("```json", 1)[1].split("```", 1)[0])
-
-# All three options provide the same input to TrainLens.
-namespace = {"history": history}
-result = analyze(namespace)
-print(render_report(result))   # Local findings and recommendations
-plot_training_curves(namespace, metrics=("loss",))  # Train/validation curves
+# Give TrainLens a dictionary of variables to inspect.
+training_state = {"history": history}
+analysis = analyze(training_state)
+print(render_report(analysis))  # Local findings and recommendations
+plot_training_curves(training_state, metrics=("loss",))
 ```
 
-The JSON file should contain a metric dictionary such as `{"train_loss": [1.0, 0.7], "val_loss": [1.1, 0.75]}`. For `history.md`, put that same object inside a fenced `json` code block. **TrainLens does not parse arbitrary Markdown training logs.** In a live notebook, you can instead use `analyze(globals())` to inspect training objects and metrics already present.
+The `"history"` key tells TrainLens where to find the metrics. A plain `history.json` should contain the same metric dictionary shown above. In a Jupyter notebook, you can simply use `analyze(globals())` to inspect the variables already defined there.
 
-Portable **TrainLens run JSON** (created with `save_run()`) is a different format; use `load_run()` with run-comparison or Agent Mode tools rather than treating it as a plain history dictionary.
+Portable **TrainLens run JSON** (created with `save_run()`) has a different structure; use `load_run()` with the run-comparison or Agent Mode APIs rather than loading it as a plain history dictionary.
 
 **Prefer a guided example?** [Run the quickstart notebook in Google Colab](https://colab.research.google.com/github/edujbarrios/trainlens/blob/main/examples/quickstart.ipynb).
 
@@ -74,11 +69,11 @@ TrainLens prepares evidence with IDs for an external agent (such as Codex, Claud
 ```python
 from trainlens import build_agent_context
 
-# Works with the namespace prepared from memory, JSON, or Markdown above.
-context = build_agent_context(namespace)
-print(context.to_markdown())  # Give this evidence to your existing agent
+# Reuse the training_state from Quick start, or pass globals() in a notebook.
+context = build_agent_context(training_state)
+print(context.to_markdown())  # Share this evidence with your agent
 
-# Alternatively, a portable TrainLens run JSON saved by save_run():
+# For a portable TrainLens run JSON created with save_run():
 # from trainlens import build_agent_context_from_run, load_run
 # context = build_agent_context_from_run(load_run("candidate.json"))
 ```
@@ -90,26 +85,18 @@ See [Agent Mode and plan verification](docs/en/agent-mode.md).
 Configure `TRAINLENS_LLM_BASE_URL` and `TRAINLENS_LLM_MODEL`, plus `TRAINLENS_LLM_API_KEY` if the endpoint requires it.
 
 ```python
-import json
-from pathlib import Path
 from trainlens import build_improvement_ideas, build_llm_report, preview_llm_request
 
-# Reuse namespace from the quickstart, or uncomment ONE source below:
-# namespace = {"history": history}  # Python dictionary in memory
-# namespace = {"history": json.loads(Path("history.json").read_text(encoding="utf-8"))}
-# markdown = Path("history.md").read_text(encoding="utf-8")  # fenced JSON only
-# namespace = {"history": json.loads(markdown.split("```json", 1)[1].split("```", 1)[0])}
+# Reuse training_state from Quick start (inline history or JSON).
+# In a notebook, you can pass globals() instead.
+preview = preview_llm_request(training_state)
+print(preview.user_prompt)  # Inspect the evidence before any network request
 
-# Preview the evidence that will be sent (no LLM request yet):
-preview = preview_llm_request(namespace)
-print(preview.user_prompt)
-
-# Call the configured LLM to explain the training evidence:
-report = build_llm_report(namespace)
+report = build_llm_report(training_state)  # Calls your configured LLM
 print(report.markdown)
 
-# Or request evidence-backed suggestions for the next experiment:
-# ideas = build_improvement_ideas(namespace)
+# Or ask for evidence-backed ideas for the next experiment:
+# ideas = build_improvement_ideas(training_state)
 # print(ideas.markdown)
 ```
 
