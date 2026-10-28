@@ -1,6 +1,6 @@
 # Agent Mode
 
-TrainLens 0.16 adds a provider-free interface for coding agents and AutoResearch-style ML skills.
+Agent Mode provides a provider-free interface for coding agents and AutoResearch-style ML skills.
 The goal is simple: **TrainLens supplies deterministic evidence; the surrounding agent supplies
 reasoning.**
 

@@ -3,11 +3,13 @@
 TrainLens inspecciona la evidencia de entrenamiento disponible en Python o en
 un cuaderno Jupyter y la convierte en informes, comparaciones, alertas y
 experimentos de seguimiento revisables. La mayor parte del análisis es local y
-determinista; el texto generado por un LLM es opcional.
+determinista; el texto generado por un LLM es opcional. También puede preparar
+evidencia para un agente externo, que utiliza su propio modelo.
 
 ## Por dónde empezar
 
 - [Instalación y guía rápida](primeros-pasos.md)
+- [Modo agente y verificación de planes (guía en inglés)](../en/agent-mode.md)
 - [Flujo en cuadernos y adaptadores](cuadernos.md)
 - [Historiales largos sin desperdiciar tokens](historial-eficiente.md)
 - [API de Python: informes, comparaciones y experimentos](api-python.md)
