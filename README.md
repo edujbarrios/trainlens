@@ -90,9 +90,16 @@ See [Agent Mode and plan verification](docs/en/agent-mode.md).
 Configure `TRAINLENS_LLM_BASE_URL` and `TRAINLENS_LLM_MODEL`, plus `TRAINLENS_LLM_API_KEY` if the endpoint requires it.
 
 ```python
+import json
+from pathlib import Path
 from trainlens import build_improvement_ideas, build_llm_report, preview_llm_request
 
-# Reuse namespace from the quickstart: in-memory, history.json, or history.md.
+# Reuse namespace from the quickstart, or uncomment ONE source below:
+# namespace = {"history": history}  # Python dictionary in memory
+# namespace = {"history": json.loads(Path("history.json").read_text(encoding="utf-8"))}
+# markdown = Path("history.md").read_text(encoding="utf-8")  # fenced JSON only
+# namespace = {"history": json.loads(markdown.split("```json", 1)[1].split("```", 1)[0])}
+
 # Preview the evidence that will be sent (no LLM request yet):
 preview = preview_llm_request(namespace)
 print(preview.user_prompt)
