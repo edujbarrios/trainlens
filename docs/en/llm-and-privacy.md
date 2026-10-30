@@ -53,6 +53,13 @@ required. The API key is optional for local or otherwise unauthenticated
 OpenAI-compatible endpoints. Invalid or non-positive timeout values fall back
 to 120 seconds.
 
+For Docker, Kubernetes, or other secret mounts, configure
+`TRAINLENS_LLM_API_KEY_FILE=/run/secrets/trainlens_llm_key` rather than
+placing the key itself in an environment variable. TrainLens reads the
+UTF-8 file when a provider is configured. A non-empty `TRAINLENS_LLM_API_KEY`
+takes precedence if both are present; a missing, empty, multiline, or
+oversized secret file fails safely without printing its contents.
+
 Then construct the configured provider explicitly when useful:
 
 ```python
