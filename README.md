@@ -80,27 +80,139 @@ print(context.to_markdown())  # Share this evidence with your agent
 
 See [Agent Mode and plan verification](docs/en/agent-mode.md).
 
-### Direct LLM reports (optional)
+### Direct LLM reports (optional): Llama, prompts, and API keys
 
-Configure `TRAINLENS_LLM_BASE_URL` and `TRAINLENS_LLM_MODEL`, plus `TRAINLENS_LLM_API_KEY` if the endpoint requires it.
+TrainLens does **not** download, train, or run Llama models itself. It sends an
+OpenAI-compatible request to `<TRAINLENS_LLM_BASE_URL>/chat/completions`.
+You can use a local Llama server (for example, Ollama) or a hosted provider with
+a compatible API. This step is **optional**: local analysis and Agent Mode need
+no TrainLens API key.
 
-```python
-from trainlens import build_improvement_ideas, build_llm_report, preview_llm_request
+#### 1. Run Llama locally with Ollama (no API key)
 
-# Reuse training_state from Quick start (inline history or JSON).
-# In a notebook, you can pass globals() instead.
-preview = preview_llm_request(training_state)
-print(preview.user_prompt)  # Inspect the evidence before any network request
+Install and start [Ollama](https://ollama.com/download), then download a model:
 
-report = build_llm_report(training_state)  # Calls your configured LLM
-print(report.markdown)
-
-# Or ask for evidence-backed ideas for the next experiment:
-# ideas = build_improvement_ideas(training_state)
-# print(ideas.markdown)
+```bash
+ollama pull llama3.2
+ollama list  # Check the exact installed model name
 ```
 
-TrainLens calls the configured provider in this mode. See [LLM setup, request previews, and privacy](docs/en/llm-and-privacy.md).
+If Ollama is not already running as a service, start `ollama serve` in a
+separate terminal. Set these variables **before starting** Python/Jupyter
+(Bash/Zsh):
+
+```bash
+export TRAINLENS_LLM_BASE_URL="http://localhost:11434/v1"
+export TRAINLENS_LLM_MODEL="llama3.2"
+unset TRAINLENS_LLM_API_KEY  # Local Ollama normally needs no credentials
+```
+
+`/v1` is the OpenAI-compatible base URL; **do not** append
+`/chat/completions` yourself. The model value must match the model exposed
+by your server. LM Studio, vLLM, and llama.cpp also work **if** configured to
+serve a compatible chat-completions API; use their own URL and model name.
+
+#### 2. Configure a hosted model and its API key
+
+Get the **base URL**, **model ID**, and **API key** from your chosen provider.
+TrainLens reads the following environment variables (it does not read
+`OPENAI_API_KEY` automatically):
+
+| Variable | Required? | Purpose |
+| --- | --- | --- |
+| `TRAINLENS_LLM_BASE_URL` | Yes | Provider's OpenAI-compatible base URL, usually ending in `/v1` |
+| `TRAINLENS_LLM_MODEL` | Yes | Exact model ID supported by that endpoint (including hosted Llama models) |
+| `TRAINLENS_LLM_API_KEY` | Only when required | Sent as the `Authorization: Bearer …` header |
+| `TRAINLENS_LLM_TIMEOUT_SECONDS` | No | Request timeout in seconds; default: `120` |
+
+For example, in **Bash**, set the public values and enter the secret without
+putting it in shell history:
+
+```bash
+export TRAINLENS_LLM_BASE_URL="https://your-provider.example/v1"
+export TRAINLENS_LLM_MODEL="your-provider-model-id"
+read -r -s -p "Provider API key: " TRAINLENS_LLM_API_KEY; echo
+export TRAINLENS_LLM_API_KEY
+```
+
+For **Jupyter/Colab on any OS**, use `getpass()` in a cell; it keeps the secret
+out of the notebook source:
+
+```python
+import os
+from getpass import getpass
+
+os.environ["TRAINLENS_LLM_BASE_URL"] = "https://your-provider.example/v1"
+os.environ["TRAINLENS_LLM_MODEL"] = "your-provider-model-id"
+os.environ["TRAINLENS_LLM_API_KEY"] = getpass("Provider API key: ")
+```
+
+Alternatively, copy [`.env.example`](.env.example) to a local `.env` file
+and replace its placeholders. **TrainLens does not load `.env` automatically.**
+To make the values available from a trusted `.env` file in Bash/Zsh, run
+`set -a; source .env; set +a` **before** launching Python/Jupyter.
+If you use local Ollama, omit the API-key line entirely from that file.
+The `.env` file is excluded by [`.gitignore`](.gitignore): never commit API
+keys, paste them into tracked notebooks, or print them in logs. Environment
+changes made after starting Jupyter may not reach an existing kernel; configure
+the variables in the kernel with `os.environ` or restart it.
+
+#### 3. Load a prompt and preview the LLM call
+
+TrainLens includes built-in prompts and supports your own UTF-8 Markdown
+`.md` prompt files. `load_prompt()` **reads the file as text**; pass that
+text to `PromptOptions(objective=...)` to use it in a report. Prompts are not
+automatically loaded from a directory or sent just because a file exists.
+
+```python
+from trainlens import (
+    PromptOptions,
+    build_improvement_ideas,
+    load_prompt,
+    preview_llm_request,
+    show_trainlens_prompts,
+)
+
+# Use the training_state dictionary from Quick start.
+# This example path exists when you clone the repository; otherwise create
+# your own .md prompt file and pass its local path here.
+objective = load_prompt("examples/prompts/improvement_plan.md")
+options = PromptOptions(prompt_name="improvement_plan", objective=objective)
+
+print([item.name for item in show_trainlens_prompts()])
+preview = preview_llm_request(
+    training_state,
+    mode="improvement_ideas",
+    prompt_options=options,
+)
+print(preview.endpoint, preview.model)
+print(preview.system_prompt)
+print(preview.user_prompt)  # Review evidence BEFORE sending anything
+
+ideas = build_improvement_ideas(training_state, prompt_options=options)
+print(ideas.markdown)  # Makes the actual LLM request
+```
+
+`preview_llm_request()` does **not** call the network;
+`preview.payload()` shows the exact JSON request body without the API key.
+You can skip the custom prompt and generate a standard scientific report:
+
+```python
+from trainlens import build_llm_report
+
+report = build_llm_report(training_state)
+print(report.markdown)
+```
+
+If authentication fails (HTTP 401/403), check the key and endpoint. For a
+connection error, check that the local server is running and the base URL is
+reachable; for model-related errors, check the model ID. Outbound reports send
+bounded, best-effort-redacted training evidence to your chosen provider, so
+inspect the preview and review its privacy terms first.
+
+For provider injection, more prompt recipes, and privacy details, see
+[LLM setup, prompts, and request previews](docs/en/llm-and-privacy.md)
+or [la guía en español](docs/es/llm-y-privacidad.md).
 
 ## Compare saved runs
 
