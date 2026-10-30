@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.0 - 2026-10-30
+
+- support reusable Markdown prompts with explicit `$variable` interpolation through `load_prompt(..., variables=...)`, without changing legacy prompt loading
+- support LLM API key resolution from Docker/Kubernetes-mounted secret files via `TRAINLENS_LLM_API_KEY_FILE`, preserving direct environment variable precedence and validating malformed secrets
+- expand regression tests and documentation for both features, including safer Llama/provider setup, prompt previews, and API-key instructions in the README
+
 All notable changes to TrainLens will be documented here.
 
 ## 0.20.0 - 2026-10-26
