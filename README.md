@@ -123,6 +123,7 @@ TrainLens reads the following environment variables (it does not read
 | `TRAINLENS_LLM_BASE_URL` | Yes | Provider's OpenAI-compatible base URL, usually ending in `/v1` |
 | `TRAINLENS_LLM_MODEL` | Yes | Exact model ID supported by that endpoint (including hosted Llama models) |
 | `TRAINLENS_LLM_API_KEY` | Only when required | Sent as the `Authorization: Bearer …` header |
+| `TRAINLENS_LLM_API_KEY_FILE` | Alternative to key above | Path to a mounted file containing the API key |
 | `TRAINLENS_LLM_TIMEOUT_SECONDS` | No | Request timeout in seconds; default: `120` |
 
 For example, in **Bash**, set the public values and enter the secret without
@@ -134,6 +135,13 @@ export TRAINLENS_LLM_MODEL="your-provider-model-id"
 read -r -s -p "Provider API key: " TRAINLENS_LLM_API_KEY; echo
 export TRAINLENS_LLM_API_KEY
 ```
+
+For **containers or managed deployments**, you can mount a secret file and set
+`TRAINLENS_LLM_API_KEY_FILE=/run/secrets/trainlens_llm_key` instead of putting
+its value in an environment variable. If both variables are set, the non-empty
+`TRAINLENS_LLM_API_KEY` takes precedence. TrainLens reads the secret file only
+when a provider is configured; missing, empty, multiline, or oversized key
+files are rejected with an error that does not print the key.
 
 For **Jupyter/Colab on any OS**, use `getpass()` in a cell; it keeps the secret
 out of the notebook source:
