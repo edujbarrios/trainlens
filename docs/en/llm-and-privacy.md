@@ -104,6 +104,42 @@ from trainlens import (
 
 More specialized recipes remain available from `trainlens.prompt_recipes`.
 
+## Reuse parameterized Markdown prompt files
+
+For prompts shared across runs, store a UTF-8 `.md` file and inject variables
+explicitly. `load_prompt()` uses Python's `string.Template` syntax:
+`$name` (or `${name}`) is replaced from the supplied mapping. Use `$` for a
+literal dollar sign. Missing variables raise `KeyError` instead of silently
+sending an incomplete prompt. Without `variables`, loading still returns the
+original Markdown text unchanged.
+
+Example `experiment.md`:
+
+```markdown
+Compare $model_family on the $split split.
+Focus on $metric and propose one controlled next experiment.
+```
+
+```python
+from trainlens import PromptOptions, build_improvement_ideas, load_prompt
+
+objective = load_prompt(
+    "experiment.md",
+    variables={
+        "model_family": "Llama fine-tuning",
+        "split": "validation",
+        "metric": "validation loss",
+    },
+)
+options = PromptOptions(prompt_name="improvement_plan", objective=objective)
+report = build_improvement_ideas(globals(), prompt_options=options)
+print(report.markdown)
+```
+
+Files are only read when `load_prompt()` is called: there is no automatic
+prompt directory discovery or network request during loading. Treat dynamic
+variables as prompt input, not as trusted instructions from your notebook.
+
 ## Preview the exact request before sending it
 
 `preview_notebook_context()` shows the sanitized notebook evidence. For a full

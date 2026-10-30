@@ -59,3 +59,38 @@ def test_load_prompt_rejects_non_markdown_files(tmp_path: Path):
 
     with pytest.raises(ValueError, match=r"expects a \.md file"):
         load_prompt(prompt_path)
+
+
+def test_load_prompt_substitutes_named_variables(tmp_path: Path):
+    prompt_path = tmp_path / "plan.md"
+    prompt_path.write_text(
+        "Analyze $model on $dataset. Keep $$100 as a literal cost.\n",
+        encoding="utf-8",
+    )
+
+    assert load_prompt(
+        prompt_path, variables={"model": "Llama", "dataset": "validation"}
+    ) == "Analyze Llama on validation. Keep $100 as a literal cost."
+
+
+def test_load_prompt_without_variables_preserves_dollar_placeholders(tmp_path: Path):
+    prompt_path = tmp_path / "plan.md"
+    prompt_path.write_text("Analyze $model and charge $$100.", encoding="utf-8")
+
+    assert load_prompt(prompt_path) == "Analyze $model and charge $$100."
+
+
+def test_load_prompt_missing_variable_raises_key_error(tmp_path: Path):
+    prompt_path = tmp_path / "plan.md"
+    prompt_path.write_text("Analyze $model and $dataset.", encoding="utf-8")
+
+    with pytest.raises(KeyError, match="dataset"):
+        load_prompt(prompt_path, variables={"model": "Llama"})
+
+
+def test_load_prompt_rejects_invalid_template_placeholder(tmp_path: Path):
+    prompt_path = tmp_path / "plan.md"
+    prompt_path.write_text("Invalid: $!.", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid placeholder"):
+        load_prompt(prompt_path, variables={})
