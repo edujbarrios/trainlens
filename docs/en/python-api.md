@@ -27,6 +27,41 @@ concrete object. `metrics` and `labels` provide authoritative evidence when
 name-based inference is not appropriate. With `strict=True`, ambiguous automatic
 model selection raises instead of silently choosing one candidate.
 
+## Scale-aware training diagnostics (opt-in)
+
+TrainLens 0.22 introduces an optional, local and deterministic trend diagnostic.
+Existing heuristic output stays unchanged unless the opt-in flag is provided.
+
+```python
+from trainlens import AnalysisConfig, analyze, diagnose_trend
+from trainlens.models.metric import MetricSeries
+
+result = analyze(
+    {"history": {
+        "train_loss": [1.0, 0.9, 0.8, 0.7, 0.6],
+        "val_loss": [0.7, 0.8, 0.9, 1.0, 1.1],
+    }},
+    config=AnalysisConfig(adaptive_diagnostics=True),
+)
+print([signal.title for signal in result.signals])
+
+trend = diagnose_trend(
+    MetricSeries("validation_loss", (1.0, 0.8, 0.6, 0.4, 0.2)),
+    window=5,
+)
+print(trend.state if trend else "insufficient data")
+```
+
+The diagnostic compares recent change to metric scale and a robust estimate of
+historical increment variability. The returned states are `stable`,
+`improving`, `worsening`, and `changing` (when metric direction is unknown).
+It returns `None` for insufficient or non-finite data.
+
+The function is deterministic, but it is **not** a statistical significance test,
+causal analysis, or proof of convergence. `stable` means only that the observed
+change is within the selected tolerance. Customize `relative_tolerance` and
+`noise_multiplier` for domain-specific metric scales and logging noise.
+
 ## LLM reports
 
 ```python
