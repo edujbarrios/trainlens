@@ -25,3 +25,4 @@ class AnalysisConfig:
     labels: Iterable[Any] | None = None
     strict: bool = False
     analyzer: str = "training_session"
+    adaptive_diagnostics: bool = False
