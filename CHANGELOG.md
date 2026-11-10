@@ -2,6 +2,14 @@
 
 All notable changes to TrainLens will be documented here.
 
+## 0.22.0 - 2026-11-10
+
+- add deterministic scale-aware `diagnose_trend()` and typed `TrendDiagnostic` results for metric histories
+- compare recent trajectory against metric scale and robust historical increment variability, classifying stable/improving/worsening/unknown-direction changes
+- add opt-in `AnalysisConfig(adaptive_diagnostics=True)` to emit adaptive validation-trend signals without changing default analysis behavior
+- add synthetic scaling, non-finite input, plateau, direction, and integration regression tests
+- document diagnostic thresholds and explicitly distinguish trend classification from proof of convergence or causality
+
 ## 0.21.0 - 2026-10-30
 
 - support reusable Markdown prompts with explicit `$variable` interpolation through `load_prompt(..., variables=...)`, without changing legacy prompt loading
