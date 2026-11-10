@@ -45,7 +45,7 @@ def diagnose_trend(
     if len(values) < window or not all(isfinite(v) for v in values):
         return None
     tail = values[-window:]
-    changes = [right - left for left, right in zip(values, values[1:])]
+    changes = [right - left for left, right in zip(values, values[1:], strict=False)]
     # A robust noise estimate based on deviation from the median increment.
     baseline = median(changes)
     noise = median(abs(value - baseline) for value in changes) * 1.4826
