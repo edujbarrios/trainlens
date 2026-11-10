@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from trainlens.adaptive import TrendDiagnostic, diagnose_trend
 from trainlens.agent import (
     AgentContext,
     build_agent_context,
@@ -168,6 +169,7 @@ __all__ = [
     "TrainingObservation",
     "TrainingProfile",
     "TrainingRun",
+    "TrendDiagnostic",
     "TrajectoryComparison",
     "VerifiedImprovementPlan",
     "VerifiedLLMRecommendation",
@@ -186,6 +188,7 @@ __all__ = [
     "compare_runs",
     "controlled_experiment_prompt",
     "default_metric_registry",
+    "diagnose_trend",
     "evidence_catalog",
     "experiment_config",
     "explain_dataset",
