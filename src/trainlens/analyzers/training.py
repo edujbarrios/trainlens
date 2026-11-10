@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, cast
 
+from trainlens.adaptive import diagnose_trend
 from trainlens.analysis_config import AnalysisConfig
 from trainlens.analyzers.base import Analyzer
 from trainlens.analyzers.metrics import extract_metric_series, metric_splits
@@ -30,7 +31,7 @@ from trainlens.heuristics.vlm_training import (
 )
 from trainlens.introspection.models import ModelCandidate
 from trainlens.introspection.selection import framework_source_for_model
-from trainlens.models.analysis import AnalysisResult, Recommendation
+from trainlens.models.analysis import AnalysisResult, Recommendation, Signal
 from trainlens.models.metric import MetricSeries
 from trainlens.models.snapshot import NotebookSnapshot
 from trainlens.training_profile import TrainingProfile, inspect_training_profile
@@ -134,6 +135,25 @@ class TrainingSessionAnalyzer(Analyzer):
         ):
             if signal:
                 result.signals.append(signal)
+
+        if config is not None and config.adaptive_diagnostics:
+            for series in metric_series.values():
+                if not series.name.startswith(("validation_", "val_", "eval_")):
+                    continue
+                trend = diagnose_trend(series)
+                if trend is None or trend.state not in ("stable", "worsening"):
+                    continue
+                result.signals.append(
+                    Signal(
+                        title=f"Adaptive trend: {trend.state}",
+                        detail=f"{series.name}: {trend.explanation}",
+                        severity="warning" if trend.state == "worsening" else "info",
+                        evidence=(
+                            f"recent_change={trend.recent_change:.6g}",
+                            f"noise_floor={trend.noise_floor:.6g}",
+                        ),
+                    )
+                )
 
         vlm_signals = detect_vlm_training_signals(training_profile)
         result.signals.extend(vlm_signals)
