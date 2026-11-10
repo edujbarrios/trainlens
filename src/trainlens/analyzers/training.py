@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, cast
 
-from trainlens.analysis_config import AnalysisConfig
 from trainlens.adaptive import diagnose_trend
+from trainlens.analysis_config import AnalysisConfig
 from trainlens.analyzers.base import Analyzer
 from trainlens.analyzers.metrics import extract_metric_series, metric_splits
 from trainlens.analyzers.traces import extract_trace_events
